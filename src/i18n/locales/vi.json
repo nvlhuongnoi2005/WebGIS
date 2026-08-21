@@ -8,16 +8,15 @@
     "measure": "Đo khoảng cách / diện tích",
     "marker": "Đánh dấu",
     "layer": "Lớp bản đồ",
-    "language": "Ngôn ngữ"
+    "language": "Ngôn ngữ",
+    "draw": "Vẽ ký hiệu"
   },
   "layers": {
     "baseMap": "Bản đồ nền",
     "streets": "Đường phố",
     "satellite": "Vệ tinh",
     "outdoor": "Địa hình",
-    "overlays": "Lớp phủ",
-    "overlayLabels": "Nhãn địa danh",
-    "overlayHillshade": "Đổ bóng địa hình"
+    "overlays": "Lớp phủ"
   },
   "measure": {
     "distance": "Khoảng cách",

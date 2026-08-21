@@ -2,6 +2,7 @@ import {
   Ruler,
   MapPin,
   Layers,
+  Pencil,
 } from "lucide-react";
 import {
   Tooltip,
@@ -29,7 +30,19 @@ function ToolPanel({
 
   return (
     <div className="tool-panel">
-
+      
+      <Tooltip title={t("tools.draw")} placement="left">
+       <button
+       className={
+        activeTool === "draw"? "tool-item active" : "tool-item"
+       }
+       onClick={() =>
+        onSelectTool("draw")
+       }
+       > 
+       <Pencil size={18}> Check </Pencil>
+       </button>
+      </Tooltip>
       <Tooltip title={t("tools.measure")} placement="left">
         <button
           className={
@@ -48,7 +61,9 @@ function ToolPanel({
 
       <Tooltip title={t("tools.marker")} placement="left">
         <button
-          className="tool-item"
+          className={
+          activeTool === "marker" ? "tool-item active" : "tool-item"
+          }
           onClick={() =>
             onSelectTool("marker")
           }
@@ -60,7 +75,9 @@ function ToolPanel({
 
       <Tooltip title={t("tools.layer")} placement="left">
         <button
-          className="tool-item"
+          className={
+          activeTool === "layer" ? "tool-item active" : "tool-item"
+          }
           onClick={() =>
             onSelectTool("layer")
           }

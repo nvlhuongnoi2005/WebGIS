@@ -103,13 +103,12 @@ function MapView() {
         sx={{
           position: "absolute",
           top: 20,
-          right: 20,
+          right: 50,
           zIndex: "var(--z-top-controls)",
           alignItems: "center",
         }}
       >
         <LanguageSwitcher />
-
         <Profile />
       </Stack>
 

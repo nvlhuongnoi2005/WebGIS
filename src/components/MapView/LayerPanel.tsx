@@ -12,13 +12,9 @@ interface LayerPanelProps {
 function LayerPanel({
   baseMapStyle,
   onChange,
-  activeOverlayLayers,
-  onToggleOverlayLayer,
 }: LayerPanelProps) {
-  const { t } = useTranslation();
 
-  const labelsActive = activeOverlayLayers.includes("labels");
-  const hillshadeActive = activeOverlayLayers.includes("hillshade");
+  const { t } = useTranslation();
 
   return (
     <div className="layer-panel">
@@ -55,30 +51,6 @@ function LayerPanel({
         onClick={() => onChange("outdoor")}
       >
         {t("layers.outdoor")}
-      </button>
-
-      <span>{t("layers.overlays")}</span>
-
-      <button
-        className={
-          labelsActive
-            ? "layer-option active"
-            : "layer-option"
-        }
-        onClick={() => onToggleOverlayLayer("labels")}
-      >
-        {t("layers.overlayLabels")}
-      </button>
-
-      <button
-        className={
-          hillshadeActive
-            ? "layer-option active"
-            : "layer-option"
-        }
-        onClick={() => onToggleOverlayLayer("hillshade")}
-      >
-        {t("layers.overlayHillshade")}
       </button>
     </div>
   );

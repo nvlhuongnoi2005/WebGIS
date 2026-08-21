@@ -8,16 +8,14 @@
     "measure": "Measure distance / area",
     "marker": "Marker",
     "layer": "Map layers",
-    "language": "Language"
+    "language": "Language",
+    "draw": "Draw"
   },
   "layers": {
     "baseMap": "Base map",
     "streets": "Streets",
     "satellite": "Satellite",
-    "outdoor": "Outdoor",
-    "overlays": "Overlays",
-    "overlayLabels": "Place labels",
-    "overlayHillshade": "Terrain hillshade"
+    "outdoor": "Outdoor"
   },
   "measure": {
     "distance": "Distance",
