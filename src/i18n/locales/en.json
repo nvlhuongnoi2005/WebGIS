@@ -1,0 +1,49 @@
+{
+  "search": {
+    "placeholder": "Search for a location...",
+    "button": "Search",
+    "clearTitle": "Clear search"
+  },
+  "tools": {
+    "measure": "Measure distance / area",
+    "marker": "Marker",
+    "layer": "Map layers",
+    "language": "Language"
+  },
+  "layers": {
+    "baseMap": "Base map",
+    "streets": "Streets",
+    "satellite": "Satellite",
+    "outdoor": "Outdoor",
+    "overlays": "Overlays",
+    "overlayLabels": "Place labels",
+    "overlayHillshade": "Terrain hillshade"
+  },
+  "measure": {
+    "distance": "Distance",
+    "area": "Area",
+    "totalDistance": "Total distance",
+    "areaLabel": "Area",
+    "areaPreview": "Area preview",
+    "closeAreaHint": "Click an existing point to close the area.",
+    "errorSelfIntersect": "Area cannot contain intersecting edges.",
+    "undo": "Undo",
+    "redo": "Redo",
+    "finish": "Finish",
+    "clear": "Clear",
+    "undoTitle": "Undo (Ctrl/Cmd + Z)",
+    "redoTitle": "Redo (Ctrl/Cmd + Shift + Z)"
+  },
+  "language": {
+    "vietnamese": "Tiếng Việt",
+    "english": "English",
+    "switchToEn": "Switch to English",
+    "switchToVi": "Switch to Vietnamese"
+  },
+  "profile": {
+    "openMenu": "Open profile menu",
+    "uploadAvatar": "Upload avatar",
+    "viewProfile": "View profile",
+    "signOut": "Sign out"
+  }
+}

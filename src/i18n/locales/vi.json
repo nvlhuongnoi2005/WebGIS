@@ -1,0 +1,49 @@
+{
+  "search": {
+    "placeholder": "Nhập địa điểm cần tìm...",
+    "button": "Tìm kiếm",
+    "clearTitle": "Xóa tìm kiếm"
+  },
+  "tools": {
+    "measure": "Đo khoảng cách / diện tích",
+    "marker": "Đánh dấu",
+    "layer": "Lớp bản đồ",
+    "language": "Ngôn ngữ"
+  },
+  "layers": {
+    "baseMap": "Bản đồ nền",
+    "streets": "Đường phố",
+    "satellite": "Vệ tinh",
+    "outdoor": "Địa hình",
+    "overlays": "Lớp phủ",
+    "overlayLabels": "Nhãn địa danh",
+    "overlayHillshade": "Đổ bóng địa hình"
+  },
+  "measure": {
+    "distance": "Khoảng cách",
+    "area": "Diện tích",
+    "totalDistance": "Tổng khoảng cách",
+    "areaLabel": "Diện tích",
+    "areaPreview": "Xem trước diện tích",
+    "closeAreaHint": "Nhấp vào điểm đã có để khép kín vùng.",
+    "errorSelfIntersect": "Vùng đo không được có các cạnh cắt nhau.",
+    "undo": "Hoàn tác",
+    "redo": "Làm lại",
+    "finish": "Hoàn thành",
+    "clear": "Xóa",
+    "undoTitle": "Hoàn tác (Ctrl/Cmd + Z)",
+    "redoTitle": "Làm lại (Ctrl/Cmd + Shift + Z)"
+  },
+  "language": {
+    "vietnamese": "Tiếng Việt",
+    "english": "English",
+    "switchToEn": "Chuyển sang Tiếng Anh",
+    "switchToVi": "Chuyển sang Tiếng Việt"
+  },
+  "profile": {
+    "openMenu": "Mở menu hồ sơ",
+    "uploadAvatar": "Tải ảnh đại diện",
+    "viewProfile": "Xem hồ sơ",
+    "signOut": "Đăng xuất"
+  }
+}

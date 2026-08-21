@@ -1,0 +1,215 @@
+.map-wrapper {
+  position: relative;
+
+  --z-tool-panel: 1000;
+  --z-overlay-panel: 1100;
+  --z-top-controls: 1200;
+
+  width: 100%;
+  height: 100%;
+
+  overflow: hidden;
+}
+
+.map-container {
+  width: 100%;
+  height: 100%;
+}
+
+.layer-panel {
+  position: absolute;
+
+  right: 48px;
+  bottom: 160px;
+
+  z-index: var(--z-overlay-panel);
+
+  display: flex;
+  flex-direction: column;
+
+  min-width: 130px;
+
+  padding: 10px;
+
+  gap: 6px;
+
+  border-radius: 6px;
+
+  background: white;
+
+  box-shadow:
+    0 2px 10px
+    rgba(0, 0, 0, 0.2);
+}
+
+.layer-panel span {
+  padding: 2px 4px 4px;
+
+  color: #666;
+
+  font-size: 12px;
+}
+
+.layer-option {
+  height: 30px;
+
+  border: 1px solid #d9d9d9;
+
+  border-radius: 4px;
+
+  background: #f7f7f7;
+
+  color: #333;
+
+  cursor: pointer;
+}
+
+.layer-option.active {
+  border-color: #1976d2;
+
+  background: #e3f2fd;
+
+  color: #1565c0;
+}
+
+.measure-panel {
+  position: absolute;
+  left: 50px;
+  bottom: 20px;
+  z-index: var(--z-overlay-panel);
+  min-width: 370px;
+  background: white;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 10px
+    rgba(0, 0, 0, 0.2);
+}
+
+.measure-mode-switch {
+  display: flex;
+
+  padding: 8px 8px 0;
+
+  gap: 6px;
+}
+
+.measure-mode {
+  flex: 1;
+
+  height: 30px;
+
+  border: 1px solid #d9d9d9;
+
+  border-radius: 4px;
+
+  background: #f7f7f7;
+
+  color: #555;
+
+  cursor: pointer;
+}
+
+.measure-mode.active {
+  border-color: #1976d2;
+
+  background: #1976d2;
+
+  color: white;
+}
+
+.measure-total {
+  display: flex;
+
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 12px 14px;
+
+  border-bottom:
+    1px solid #eee;
+
+  font-size: 14px;
+}
+
+.measure-total span {
+  color: #666;
+}
+
+.measure-total strong {
+  margin-left: 20px;
+
+  color: #1976d2;
+
+  font-size: 16px;
+}
+
+.measure-error {
+  padding: 10px 14px;
+
+  border-bottom: 1px solid #f3c3c3;
+
+  background: #fff4f4;
+
+  color: #c62828;
+
+  font-size: 12px;
+}
+
+.measure-hint {
+  padding: 8px 14px;
+
+  border-bottom: 1px solid #eee;
+
+  color: #666;
+
+  font-size: 12px;
+}
+
+.measure-actions {
+  display: flex;
+
+  gap: 8px;
+
+  padding: 8px;
+}
+
+.measure-actions button {
+  flex: 1;
+
+  height: 32px;
+
+  border: none;
+
+  border-radius: 4px;
+
+  cursor: pointer;
+
+  font-size: 13px;
+}
+
+.measure-actions button:disabled {
+  cursor: not-allowed;
+
+  opacity: 0.5;
+}
+
+.measure-finish {
+  background: #1976d2;
+
+  color: white;
+}
+
+.measure-finish:hover {
+  background: #1565c0;
+}
+
+.measure-clear {
+  background: #f2f2f2;
+
+  color: #333;
+}
+
+.measure-clear:hover {
+  background: #e5e5e5;
+}
