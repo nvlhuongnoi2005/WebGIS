@@ -63,7 +63,6 @@ export function LanguageSwitcher() {
           <ReactCountryFlag
             countryCode={isVi ? "VN" : "GB"}
             svg
-            aria-hidden="true"
             style={{
               width: "100%",
               height: "100%",

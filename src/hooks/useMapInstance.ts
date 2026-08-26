@@ -7,7 +7,7 @@ import {
 import * as maplibregl from "maplibre-gl";
 
 import {
-  getMapStyleUrl,
+  getMapStyle,
 } from "../tools/MapStyleTool";
 
 export function useMapInstance() {
@@ -28,31 +28,19 @@ export function useMapInstance() {
       return;
     }
 
-    const apiKey =
-      import.meta.env
-        .VITE_MAPTILER_API_KEY;
-
-    if (!apiKey) {
-      console.error(
-        "VITE_MAPTILER_API_KEY is missing"
-      );
-
-      return;
-    }
-
     const mapInstance =
       new maplibregl.Map({
         container: mapContainer.current,
-        style: getMapStyleUrl("streets", apiKey),
+        style: getMapStyle("streets", "asia-full"),
         center: [105.8342, 21.0278],
-        zoom: 12,
+        zoom: 7,
       });
 
     map.current = mapInstance;
 
     mapInstance.addControl(
       new maplibregl.NavigationControl(),
-      "bottom-right"
+      "bottom-left"
     );
 
     // MapLibre navigation buttons are outside React tree, so we set title manually.

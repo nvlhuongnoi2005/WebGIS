@@ -48,9 +48,7 @@ function MeasurePanel({
       <div className="measure-mode-switch">
         <button
           className={
-            measureMode === "distance"
-              ? "measure-mode active"
-              : "measure-mode"
+            measureMode === "distance" ? "measure-mode active" : "measure-mode"
           }
           onClick={() => onChangeMode("distance")}
         >
@@ -59,9 +57,7 @@ function MeasurePanel({
 
         <button
           className={
-            measureMode === "area"
-              ? "measure-mode active"
-              : "measure-mode"
+            measureMode === "area" ? "measure-mode active" : "measure-mode"
           }
           onClick={() => onChangeMode("area")}
         >
@@ -80,9 +76,7 @@ function MeasurePanel({
         <>
           <div className="measure-total">
             <span>
-              {isAreaComplete
-                ? t("measure.areaLabel")
-                : t("measure.areaPreview")}
+              {isAreaComplete ? t("measure.areaLabel") : t("measure.areaPreview")}
             </span>
             <strong>{formatArea(area)}</strong>
           </div>

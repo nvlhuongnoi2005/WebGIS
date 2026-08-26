@@ -12,6 +12,7 @@
     "draw": "Draw"
   },
   "layers": {
+    "dataSource": "Data source",
     "baseMap": "Base map",
     "streets": "Streets",
     "satellite": "Satellite",
@@ -31,6 +32,26 @@
     "clear": "Clear",
     "undoTitle": "Undo (Ctrl/Cmd + Z)",
     "redoTitle": "Redo (Ctrl/Cmd + Shift + Z)"
+  },
+  "draw": {
+    "savedFeatures": "Saved features",
+    "select": "Select",
+    "point": "Point",
+    "line": "Line",
+    "polygon": "Polygon",
+    "selectHint": "Click a feature to select it.",
+    "editHint": "Drag a vertex to edit the selected feature.",
+    "modeHint": "Click the map to add vertices ({{count}}).",
+    "errorLinePoints": "A line needs at least two points.",
+    "errorPolygonPoints": "A polygon needs at least three points.",
+    "edit": "Edit",
+    "done": "Done",
+    "save": "Save",
+    "delete": "Delete",
+    "undo": "Undo",
+    "redo": "Redo",
+    "clear": "Clear all",
+    "geoJsonHint": "Features are saved as GeoJSON in this browser."
   },
   "language": {
     "vietnamese": "Tiếng Việt",

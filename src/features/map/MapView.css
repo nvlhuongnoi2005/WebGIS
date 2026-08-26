@@ -1,0 +1,34 @@
+.map-wrapper {
+  position: relative;
+  --z-tool-panel: 1000;
+  --z-overlay-panel: 1100;
+  --z-top-controls: 1200;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.map-container {
+  width: 100%;
+  height: 100%;
+}
+
+.search-popup-container {
+  padding: 2px 4px;
+  color: #1e293b;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.search-popup-container strong {
+  display: block;
+  margin-bottom: 2px;
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.search-popup-desc {
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.35;
+}
+

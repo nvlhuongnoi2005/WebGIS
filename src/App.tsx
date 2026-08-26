@@ -1,4 +1,4 @@
-import MapView from "./components/MapView/MapView";
+import { MapView } from "./features/map";
 
 function App() {
   return <MapView />;

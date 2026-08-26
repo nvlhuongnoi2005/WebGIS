@@ -12,11 +12,11 @@
     "draw": "Vẽ ký hiệu"
   },
   "layers": {
+    "dataSource": "Nguồn dữ liệu",
     "baseMap": "Bản đồ nền",
     "streets": "Đường phố",
     "satellite": "Vệ tinh",
-    "outdoor": "Địa hình",
-    "overlays": "Lớp phủ"
+    "outdoor": "Địa hình"
   },
   "measure": {
     "distance": "Khoảng cách",
@@ -32,6 +32,26 @@
     "clear": "Xóa",
     "undoTitle": "Hoàn tác (Ctrl/Cmd + Z)",
     "redoTitle": "Làm lại (Ctrl/Cmd + Shift + Z)"
+  },
+  "draw": {
+    "savedFeatures": "Số hình đã lưu",
+    "select": "Chọn",
+    "point": "Điểm",
+    "line": "Đường",
+    "polygon": "Vùng",
+    "selectHint": "Nhấp vào một hình để chọn.",
+    "editHint": "Kéo đỉnh để chỉnh sửa hình đang chọn.",
+    "modeHint": "Nhấp trên bản đồ để thêm đỉnh ({{count}}).",
+    "errorLinePoints": "Đường cần ít nhất hai điểm.",
+    "errorPolygonPoints": "Vùng cần ít nhất ba điểm.",
+    "edit": "Sửa",
+    "done": "Xong",
+    "save": "Lưu",
+    "delete": "Xóa",
+    "undo": "Hoàn tác",
+    "redo": "Làm lại",
+    "clear": "Xóa tất cả",
+    "geoJsonHint": "Các hình được lưu dưới dạng GeoJSON trên trình duyệt này."
   },
   "language": {
     "vietnamese": "Tiếng Việt",

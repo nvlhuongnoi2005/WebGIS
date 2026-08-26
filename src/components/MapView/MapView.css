@@ -74,8 +74,8 @@
 
 .measure-panel {
   position: absolute;
-  left: 50px;
-  bottom: 20px;
+  right: 50px;
+  bottom: 170px;
   z-index: var(--z-overlay-panel);
   min-width: 370px;
   background: white;
@@ -211,5 +211,88 @@
 }
 
 .measure-clear:hover {
+  background: #e5e5e5;
+}
+
+.draw-panel {
+  position: absolute;
+  right: 50px;
+  bottom: 170px;
+  z-index: var(--z-overlay-panel);
+  min-width: 370px;
+  background: white;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.draw-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid #eee;
+  font-size: 14px;
+}
+
+.draw-summary span {
+  color: #666;
+}
+
+.draw-summary strong {
+  color: #e65100;
+  font-size: 16px;
+}
+
+.draw-hint {
+  padding: 8px 14px;
+  border-bottom: 1px solid #eee;
+  color: #666;
+  font-size: 12px;
+}
+
+.draw-error {
+  padding: 10px 14px;
+  border-bottom: 1px solid #f3c3c3;
+  background: #fff4f4;
+  color: #c62828;
+  font-size: 12px;
+}
+
+.draw-actions {
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+}
+
+.draw-actions button {
+  flex: 1;
+  height: 32px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.draw-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.draw-primary {
+  background: #e65100;
+  color: white;
+}
+
+.draw-primary:hover {
+  background: #bf360c;
+}
+
+.draw-secondary {
+  background: #f2f2f2;
+  color: #333;
+}
+
+.draw-secondary:hover {
   background: #e5e5e5;
 }

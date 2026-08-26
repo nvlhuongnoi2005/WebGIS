@@ -10,7 +10,6 @@ import {
   useRef,
 } from "react";
 import { useTranslation } from "react-i18next";
-
 interface ProfilePanelProps {
   userName: string;
   avatarUrl: string;
@@ -89,7 +88,6 @@ export default function ProfilePanel({
           variant="outlined"
           size="small"
           onClick={handleOpenFilePicker}
-        
         >
           {t("profile.uploadAvatar")}
         </Button>

@@ -13,14 +13,23 @@ import type {
 
 import * as maplibregl from "maplibre-gl";
 import {
-  Loader2,
+  Box,
+  Button,
+  CircularProgress,
+  IconButton,
+  InputBase,
+  List,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Paper,
+} from "@mui/material";
+import {
   MapPin,
   Search,
   X,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-
-import "./SearchBar.css";
 
 export interface GeocodingFeature {
   id: string;
@@ -142,9 +151,7 @@ function SearchBar({ map }: SearchBarProps) {
       : "en,vi";
 
     try {
-      const url = `https://api.maptiler.com/geocoding/${encodeURIComponent(
-        searchQuery.trim()
-      )}.json?key=${apiKey}&language=${activeLang}${proximityParam}`;
+      const url = `https://api.maptiler.com/geocoding/${encodeURIComponent(searchQuery.trim())}.json?key=${apiKey}&language=${activeLang}${proximityParam}`;
 
       const response = await fetch(url);
 
@@ -268,86 +275,99 @@ function SearchBar({ map }: SearchBarProps) {
   }, []);
 
   return (
-    <div
+    <Box
       ref={containerRef}
-      className="search-bar"
+      sx={{
+        position: "absolute",
+        top: 20,
+        left: 20,
+        zIndex: "var(--z-top-controls)",
+        width: { xs: "calc(100vw - 40px)", sm: 450 },
+        maxWidth: "calc(100vw - 40px)",
+      }}
     >
-      <form
-        className="search-input-wrapper"
+      <Paper
+        component="form"
         onSubmit={handleSearchSubmit}
+        elevation={3}
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          minHeight: 42,
+          px: 1,
+          borderRadius: 21,
+          border: "1px solid",
+          borderColor: "divider",
+          transition: "border-color 0.2s, box-shadow 0.2s",
+          "&:focus-within": {
+            borderColor: "primary.main",
+            boxShadow: theme => `0 3px 12px ${theme.palette.primary.main}40`,
+          },
+        }}
       >
-        <Search
-          className="search-icon"
-          size={18}
-        />
-
-        <input
-          type="text"
+        <Search size={18} color="#757575" />
+        <InputBase
           value={query}
           onChange={handleInputChange}
-          onFocus={() => {
-            if (suggestions.length > 0) {
-              setIsOpen(true);
-            }
-          }}
+          onFocus={() => suggestions.length > 0 && setIsOpen(true)}
           onKeyDown={handleKeyDown}
           placeholder={t("search.placeholder")}
           autoComplete="off"
-          spellCheck="false"
+          spellCheck={false}
+          sx={{ flex: 1, ml: 1, minWidth: 0, fontSize: 14 }}
         />
 
         {isLoading ? (
-          <Loader2
-            className="search-loading-icon"
-            size={16}
-          />
+          <CircularProgress size={17} sx={{ mr: 1 }} />
         ) : query ? (
-          <button
+          <IconButton
             type="button"
-            className="search-clear-button"
+            size="small"
             onClick={handleClear}
             title={t("search.clearTitle")}
+            sx={{ mr: 0.5 }}
           >
             <X size={15} />
-          </button>
+          </IconButton>
         ) : null}
 
-        <button
+        <Button
           type="submit"
-          className="search-button"
+          variant="contained"
+          size="small"
           disabled={isLoading}
+          sx={{ minWidth: 82, borderRadius: 16 }}
         >
           {t("search.button")}
-        </button>
-      </form>
+        </Button>
+      </Paper>
 
       {isOpen && suggestions.length > 0 && (
-        <div className="search-suggestions-dropdown">
-          {suggestions.map(feature => (
-            <div
-              key={feature.id}
-              className="search-suggestion-item"
-              onClick={() => selectLocation(feature)}
-            >
-              <MapPin
-                className="suggestion-pin-icon"
-                size={16}
-              />
-              <div className="suggestion-text-wrapper">
-                <span className="suggestion-title">
-                  {feature.text || feature.place_name}
-                </span>
-                {feature.place_name && (
-                  <span className="suggestion-subtitle">
-                    {feature.place_name}
-                  </span>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+        <Paper elevation={5} sx={{ mt: 0.75, maxHeight: 280, overflowY: "auto", borderRadius: 3 }}>
+          <List disablePadding>
+            {suggestions.map(feature => (
+              <ListItemButton key={feature.id} onClick={() => selectLocation(feature)}>
+                <ListItemIcon sx={{ minWidth: 32, color: "error.main" }}>
+                  <MapPin size={16} />
+                </ListItemIcon>
+                <ListItemText
+                  primary={
+                    <Box component="span" sx={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13.5, fontWeight: 600 }}>
+                      {feature.text || feature.place_name}
+                    </Box>
+                  }
+                  secondary={
+                    <Box component="span" sx={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 12 }}>
+                      {feature.place_name}
+                    </Box>
+                  }
+                />
+              </ListItemButton>
+            ))}
+          </List>
+        </Paper>
       )}
-    </div>
+    </Box>
   );
 }
 
