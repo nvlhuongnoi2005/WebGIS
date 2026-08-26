@@ -19,6 +19,7 @@
     "i18next-browser-languagedetector": "^8.2.1",
     "lucide-react": "^1.31.0",
     "maplibre-gl": "^6.4.0",
+    "proj4": "^2.21.0",
     "react": "^19.2.8",
     "react-country-flag": "^3.1.0",
     "react-dom": "^19.2.8",

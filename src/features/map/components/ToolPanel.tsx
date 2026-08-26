@@ -1,4 +1,4 @@
-import { Layers, MapPin, Pen, Ruler } from "lucide-react";
+import { Layers, MapPin, Pen, Ruler, Map } from "lucide-react";
 import { IconButton, Paper, Stack, Tooltip } from "@mui/material";
 import { useTranslation } from "react-i18next";
 
@@ -14,6 +14,7 @@ const tools = [
   { id: "measure", icon: Ruler, label: "tools.measure" },
   { id: "marker", icon: MapPin, label: "tools.marker" },
   { id: "layer", icon: Layers, label: "tools.layer" },
+  { id: "CRS", icon: Map, label: "tools.CRS" }
 ] as const;
 
 function ToolPanel({ activeTool, onSelectTool }: ToolPanelProps) {

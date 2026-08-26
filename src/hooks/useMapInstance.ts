@@ -1,16 +1,26 @@
 import {
+  createElement,
   useEffect,
   useRef,
   useState,
 } from "react";
+import { createRoot, type Root } from "react-dom/client";
 
 import * as maplibregl from "maplibre-gl";
 
 import {
   getMapStyle,
 } from "../tools/MapStyleTool";
+import MapPositionPopup from "../features/map/components/MapPositionPopup";
+import {
+  transformFromWgs84,
+  type CoordinateReferenceSystem,
+} from "../tools/CoordinateTool";
 
-export function useMapInstance() {
+export function useMapInstance(
+  coordinateReferenceSystem: CoordinateReferenceSystem,
+  coordinatePickingEnabled: boolean
+) {
   const mapContainer =
     useRef<HTMLDivElement | null>(null);
 
@@ -19,6 +29,56 @@ export function useMapInstance() {
 
   const [mapLoaded, setMapLoaded] =
     useState(false);
+
+  const marker =
+    useRef<maplibregl.Marker | null>(null);
+
+  const popupRoot =
+    useRef<Root | null>(null);
+
+  const lastClickedCoordinate =
+    useRef<[number, number] | null>(null);
+
+  const coordinateReferenceSystemRef =
+    useRef(coordinateReferenceSystem);
+
+  const coordinatePickingEnabledRef =
+    useRef(coordinatePickingEnabled);
+
+  useEffect(() => {
+    coordinateReferenceSystemRef.current = coordinateReferenceSystem;
+
+    if (!popupRoot.current || !lastClickedCoordinate.current) {
+      return;
+    }
+
+    const transformed = transformFromWgs84(
+      lastClickedCoordinate.current,
+      coordinateReferenceSystem
+    );
+
+    popupRoot.current.render(
+      createElement(MapPositionPopup, {
+        longitude: transformed[0],
+        latitude: transformed[1],
+        crs: coordinateReferenceSystem,
+      })
+    );
+  }, [coordinateReferenceSystem]);
+
+  useEffect(() => {
+    coordinatePickingEnabledRef.current = coordinatePickingEnabled;
+
+    if (coordinatePickingEnabled) {
+      return;
+    }
+
+    marker.current?.remove();
+    marker.current = null;
+    popupRoot.current?.unmount();
+    popupRoot.current = null;
+    lastClickedCoordinate.current = null;
+  }, [coordinatePickingEnabled]);
 
   useEffect(() => {
     if (
@@ -33,7 +93,7 @@ export function useMapInstance() {
         container: mapContainer.current,
         style: getMapStyle("streets", "asia-full"),
         center: [105.8342, 21.0278],
-        zoom: 7,
+        zoom: 4,
       });
 
     map.current = mapInstance;
@@ -65,6 +125,55 @@ export function useMapInstance() {
       setMapLoaded(true);
     });
 
+    const handleMapClick = (event: maplibregl.MapMouseEvent) => {
+      if (!coordinatePickingEnabledRef.current) {
+        return;
+      }
+
+      marker.current?.remove();
+      popupRoot.current?.unmount();
+      popupRoot.current = null;
+
+      lastClickedCoordinate.current = [
+        event.lngLat.lng,
+        event.lngLat.lat,
+      ];
+
+      const transformed = transformFromWgs84(
+        lastClickedCoordinate.current,
+        coordinateReferenceSystemRef.current
+      );
+
+      const popupContent = document.createElement("div");
+      const popup = new maplibregl.Popup({
+        closeButton: true,
+        closeOnClick: false,
+        offset: 38,
+        maxWidth: "none",
+        className: "map-position-popup-container",
+      }).setDOMContent(popupContent);
+
+      popupRoot.current = createRoot(popupContent);
+      popupRoot.current.render(
+        createElement(MapPositionPopup, {
+          longitude: transformed[0],
+          latitude: transformed[1],
+          crs: coordinateReferenceSystemRef.current,
+        })
+      );
+
+      marker.current = new maplibregl.Marker({
+        color: "#1976d2",
+      })
+        .setLngLat(event.lngLat)
+        .setPopup(popup)
+        .addTo(mapInstance);
+
+      marker.current.togglePopup();
+    };
+
+    mapInstance.on("click", handleMapClick);
+
     mapInstance.on("error", event => {
       console.error(
         "MapLibre error:",
@@ -74,7 +183,13 @@ export function useMapInstance() {
 
     return () => {
       mapInstance.off("load", applyNavigationTooltips);
+      mapInstance.off("click", handleMapClick);
+      popupRoot.current?.unmount();
+      popupRoot.current = null;
       mapInstance.remove();
+      marker.current?.remove();
+      marker.current = null;
+      lastClickedCoordinate.current = null;
 
       map.current = null;
 

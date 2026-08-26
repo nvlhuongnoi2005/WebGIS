@@ -14,14 +14,23 @@ import { useMeasureLayers } from "../../hooks/useMeasureLayers";
 import { useMeasureTool } from "../../hooks/useMeasureTool";
 import type { MapTool } from "../../types/map";
 import DrawPanel from "./components/DrawPanel";
+import CRSPanel from "./components/CRSPanel";
 import LayerPanel from "./components/LayerPanel";
 import MeasurePanel from "./components/MeasurePanel";
 import ToolPanel from "./components/ToolPanel";
+import {
+  type CoordinateReferenceSystem,
+} from "../../tools/CoordinateTool";
 import "./MapView.css";
 
 function MapView() {
   const [activeTool, setActiveTool] = useState<MapTool>(null);
-  const { mapContainer, map, mapLoaded } = useMapInstance();
+  const [coordinateReferenceSystem, setCoordinateReferenceSystem] =
+    useState<CoordinateReferenceSystem>("EPSG:4326");
+  const { mapContainer, map, mapLoaded } = useMapInstance(
+    coordinateReferenceSystem,
+    activeTool !== "draw" && activeTool !== "measure"
+  );
   const {
     baseMapStyle,
     changeBaseMapStyle,
@@ -54,6 +63,15 @@ function MapView() {
   });
 
   const handleSelectTool = (tool: MapTool) => {
+    if (activeTool === tool) {
+      if (tool === "measure") {
+        measure.resetMeasure();
+      }
+
+      setActiveTool(null);
+      return;
+    }
+
     if (tool === "measure") measure.startMeasure();
     setActiveTool(tool);
   };
@@ -67,7 +85,7 @@ function MapView() {
     <Box className="map-wrapper">
       <Box ref={mapContainer} className="map-container" />
       <SearchBar map={map} />
-      <ToolPanel activeTool={activeTool} onSelectTool={handleSelectTool} />  
+      <ToolPanel activeTool={activeTool} onSelectTool={handleSelectTool} />
       <Stack
         direction="row"
         spacing={1.5}
@@ -92,6 +110,13 @@ function MapView() {
           onChange={changeBaseMapStyle}
           mapDataSource={mapDataSource}
           onChangeDataSource={changeMapDataSource}
+        />
+      )}
+
+      {activeTool === "CRS" && (
+        <CRSPanel
+          value={coordinateReferenceSystem}
+          onChange={setCoordinateReferenceSystem}
         />
       )}
 

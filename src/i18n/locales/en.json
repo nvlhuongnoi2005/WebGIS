@@ -9,7 +9,8 @@
     "marker": "Marker",
     "layer": "Map layers",
     "language": "Language",
-    "draw": "Draw"
+    "draw": "Draw",
+    "CRS": "Change Coordinate Reference System"
   },
   "layers": {
     "dataSource": "Data source",
@@ -17,6 +18,17 @@
     "streets": "Streets",
     "satellite": "Satellite",
     "outdoor": "Outdoor"
+  },
+  "coordinates": {
+    "title": "Map position",
+    "label": "Coordinates",
+    "longitude": "Longitude",
+    "latitude": "Latitude"
+  },
+  "crs": {
+    "title": "Coordinate system",
+    "description": "Choose the format used for clicked coordinates.",
+    "label": "CRS"
   },
   "measure": {
     "distance": "Distance",
@@ -64,5 +76,8 @@
     "uploadAvatar": "Upload avatar",
     "viewProfile": "View profile",
     "signOut": "Sign out"
+  },
+  "data": {
+    "asia": "Asia"
   }
 }

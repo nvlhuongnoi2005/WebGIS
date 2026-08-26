@@ -60,7 +60,7 @@ function LayerPanel({
             },
           }}
         >
-          <ToggleButton value="asia-full">Asia full</ToggleButton>
+          <ToggleButton value="asia-full">{t("data.asia")}</ToggleButton>
           <ToggleButton value="maptiler">MapTiler</ToggleButton>
         </ToggleButtonGroup>
 

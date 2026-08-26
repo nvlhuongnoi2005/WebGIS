@@ -19,6 +19,37 @@
   font-family: system-ui, -apple-system, sans-serif;
 }
 
+.maplibregl-popup.map-position-popup-container {
+  z-index: var(--z-overlay-panel);
+}
+
+.map-position-popup-container .maplibregl-popup-content {
+  padding: 0;
+  border: 1px solid #b9d5fb;
+  border-radius: 14px;
+  box-shadow: 0 8px 20px rgb(15 23 42 / 15%);
+}
+
+.map-position-popup-container .maplibregl-popup-close-button {
+  top: 9px;
+  right: 10px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  color: #64748b;
+  font-size: 22px;
+  line-height: 26px;
+}
+
+.map-position-popup-container .maplibregl-popup-close-button:hover {
+  background: #eef4fb;
+  color: #1e293b;
+}
+
+.map-position-popup-container .maplibregl-popup-tip {
+  border-top-color: #ffffff;
+}
+
 .search-popup-container strong {
   display: block;
   margin-bottom: 2px;
@@ -31,4 +62,3 @@
   font-size: 12px;
   line-height: 1.35;
 }
-

@@ -9,7 +9,8 @@
     "marker": "Đánh dấu",
     "layer": "Lớp bản đồ",
     "language": "Ngôn ngữ",
-    "draw": "Vẽ ký hiệu"
+    "draw": "Vẽ ký hiệu",
+    "CRS": "Chuyển hệ tọa độ"
   },
   "layers": {
     "dataSource": "Nguồn dữ liệu",
@@ -17,6 +18,17 @@
     "streets": "Đường phố",
     "satellite": "Vệ tinh",
     "outdoor": "Địa hình"
+  },
+  "coordinates": {
+    "title": "Vị trí bản đồ",
+    "label": "Tọa độ",
+    "longitude": "Kinh độ",
+    "latitude": "Vĩ độ"
+  },
+  "crs": {
+    "title": "Hệ tọa độ",
+    "description": "Chọn hệ tọa độ hiển thị khi click bản đồ.",
+    "label": "CRS"
   },
   "measure": {
     "distance": "Khoảng cách",
@@ -64,5 +76,8 @@
     "uploadAvatar": "Tải ảnh đại diện",
     "viewProfile": "Xem hồ sơ",
     "signOut": "Đăng xuất"
+  },
+  "data": {
+    "asia": "Châu Á"
   }
 }
