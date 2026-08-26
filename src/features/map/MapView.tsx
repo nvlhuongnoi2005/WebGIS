@@ -22,7 +22,13 @@ import "./MapView.css";
 function MapView() {
   const [activeTool, setActiveTool] = useState<MapTool>(null);
   const { mapContainer, map, mapLoaded } = useMapInstance();
-  const { baseMapStyle, changeBaseMapStyle, mapStyleVersion } = useBaseMapStyle(map);
+  const {
+    baseMapStyle,
+    changeBaseMapStyle,
+    mapDataSource,
+    changeMapDataSource,
+    mapStyleVersion,
+  } = useBaseMapStyle(map);
 
   useMapLanguage({ map, mapLoaded, mapStyleVersion });
 
@@ -84,6 +90,8 @@ function MapView() {
         <LayerPanel
           baseMapStyle={baseMapStyle}
           onChange={changeBaseMapStyle}
+          mapDataSource={mapDataSource}
+          onChangeDataSource={changeMapDataSource}
         />
       )}
 
