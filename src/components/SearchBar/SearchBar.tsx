@@ -112,10 +112,15 @@ function SearchBar({ map }: SearchBarProps) {
         offset: 25,
         closeButton: true,
         closeOnClick: false,
-      }).setDOMContent(popupContent);
+      })
+        .setLngLat(coordinates)
+        .setDOMContent(popupContent);
 
       const marker = new maplibregl.Marker({
         color: "#e53935",
+        anchor: "bottom",
+        offset: [0, 6],
+        subpixelPositioning: true,
       })
         .setLngLat(coordinates)
         .setPopup(popup)

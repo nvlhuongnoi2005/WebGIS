@@ -66,7 +66,9 @@ export function useMapInstance(
       offset: 38,
       maxWidth: "none",
       className: "map-position-popup-container",
-    }).setDOMContent(popupContent);
+    })
+      .setLngLat(coordinate)
+      .setDOMContent(popupContent);
 
     popupRoot.current = createRoot(popupContent);
     popupRoot.current.render(
@@ -80,6 +82,8 @@ export function useMapInstance(
     marker.current = new maplibregl.Marker({
       color: "#1976d2",
       anchor: "bottom",
+      offset: [0, 6],
+      subpixelPositioning: true,
     })
       .setLngLat(coordinate)
       .setPopup(popup)

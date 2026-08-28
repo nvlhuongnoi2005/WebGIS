@@ -16,7 +16,8 @@ function MapPositionPopup({
   crs,
 }: MapPositionPopupProps) {
   const { t } = useTranslation();
-  const coordinates = `[${longitude.toFixed(3)}, ${latitude.toFixed(3)}]`;
+  const precision = crs === "EPSG:4326" ? 6 : 3;
+  const coordinates = `[${longitude.toFixed(precision)}, ${latitude.toFixed(precision)}]`;
 
   return (
     <Paper
