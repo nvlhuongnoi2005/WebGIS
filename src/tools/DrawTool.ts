@@ -23,6 +23,8 @@ export type DrawFeatureCollection = Omit<
 };
 export type DrawMode = "select" | "point" | "line" | "polygon" | "edit";
 
+export const DRAW_FEATURE_ID_PROPERTY = "__drawFeatureId";
+
 export function emptyDrawFeatureCollection(): DrawFeatureCollection {
   return { type: "FeatureCollection", features: [] };
 }

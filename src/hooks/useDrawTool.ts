@@ -6,6 +6,7 @@ import {
   createLineFeature,
   createPointFeature,
   createPolygonFeature,
+  DRAW_FEATURE_ID_PROPERTY,
   emptyDrawFeatureCollection,
   type DrawCoordinate,
   type DrawFeatureCollection,
@@ -189,8 +190,15 @@ export function useDrawTool({
             "drawings-point-layer",
           ],
         });
-        const featureId = features[0]?.id;
-        selectFeature(typeof featureId === "string" ? featureId : null);
+        const feature = features[0];
+        const featureId = feature?.properties?.[DRAW_FEATURE_ID_PROPERTY] ?? feature?.id;
+        selectFeature(
+          typeof featureId === "string"
+            ? featureId
+            : typeof featureId === "number"
+              ? String(featureId)
+              : null
+        );
         return;
       }
 

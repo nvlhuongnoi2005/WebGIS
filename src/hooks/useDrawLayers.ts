@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import type { MutableRefObject } from "react";
 import * as maplibregl from "maplibre-gl";
 import type { Feature, FeatureCollection, Geometry, Point } from "geojson";
+import { DRAW_FEATURE_ID_PROPERTY } from "../tools/DrawTool";
 
 import type {
   DrawCoordinate,
@@ -45,7 +46,7 @@ export function useDrawLayers({
     if (!map.current || !mapLoaded) return;
 
     const mapInstance = map.current;
-    setSourceData(mapInstance, DRAWINGS_SOURCE_ID, drawings);
+    setSourceData(mapInstance, DRAWINGS_SOURCE_ID, createRenderableDrawings(drawings));
 
     const selectedFeature = drawings.features.find(
       feature => feature.id === selectedFeatureId
@@ -92,6 +93,19 @@ function ensureDrawLayers(map: maplibregl.Map) {
   addLineLayer(map, "drawings-draft-line-layer", DRAFT_SOURCE_ID, "#1976d2", 4, 1, [2, 1]);
   addPointLayer(map, "drawings-vertices-layer", VERTICES_SOURCE_ID, "#1976d2");
   addPointLayer(map, "drawings-draft-vertices-layer", DRAFT_VERTICES_SOURCE_ID, "#1976d2");
+}
+
+function createRenderableDrawings(drawings: DrawFeatureCollection): FeatureCollection<Geometry> {
+  return {
+    ...drawings,
+    features: drawings.features.map(feature => ({
+      ...feature,
+      properties: {
+        ...(feature.properties ?? {}),
+        [DRAW_FEATURE_ID_PROPERTY]: feature.id,
+      },
+    })),
+  };
 }
 
 function addSourceIfMissing(map: maplibregl.Map, id: string) {
