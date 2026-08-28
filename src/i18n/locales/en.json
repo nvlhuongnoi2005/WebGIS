@@ -27,7 +27,7 @@
   },
   "crs": {
     "title": "Coordinate system",
-    "description": "Choose the format used for clicked coordinates.",
+    "description": "Choose the format used for coordinates.",
     "label": "CRS"
   },
   "measure": {
@@ -63,7 +63,18 @@
     "undo": "Undo",
     "redo": "Redo",
     "clear": "Clear all",
-    "geoJsonHint": "Features are saved as GeoJSON in this browser."
+    "geoJsonHint": "Edit the current GeoJSON or import one from a file.",
+    "geoJsonTitle": "Edit GeoJSON",
+    "geoJsonFeatureCount": "{{count}} feature(s)",
+    "geoJsonLabel": "Current GeoJSON",
+    "geoJsonPlaceholder": "Paste a GeoJSON FeatureCollection",
+    "geoJsonFormat": "Format",
+    "geoJsonReset": "Reset",
+    "geoJsonApply": "Apply",
+    "geoJsonImport": "Import GeoJSON",
+    "geoJsonExport": "Export GeoJSON",
+    "geoJsonInvalidJson": "The JSON is not valid.",
+    "geoJsonInvalidStructure": "Use a valid drawing FeatureCollection with supported geometries."
   },
   "language": {
     "vietnamese": "Tiếng Việt",

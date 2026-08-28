@@ -7,8 +7,6 @@ import {
   createPointFeature,
   createPolygonFeature,
   emptyDrawFeatureCollection,
-  readDrawFeatureCollection,
-  writeDrawFeatureCollection,
   type DrawCoordinate,
   type DrawFeatureCollection,
   type DrawFeatureId,
@@ -38,7 +36,7 @@ export function useDrawTool({
   activeTool,
   setActiveTool,
 }: UseDrawToolOptions) {
-  const [drawings, setDrawings] = useState<DrawFeatureCollection>(readDrawFeatureCollection);
+  const [drawings, setDrawings] = useState<DrawFeatureCollection>(emptyDrawFeatureCollection);
   const [editorMode, setEditorMode] = useState<DrawMode>("select");
   const [draftCoordinates, setDraftCoordinates] = useState<DrawCoordinate[]>([]);
   const [selectedFeatureId, setSelectedFeatureId] = useState<DrawFeatureId | null>(null);
@@ -48,8 +46,6 @@ export function useDrawTool({
 
   const drawingsRef = useRef(drawings);
   const editSessionRef = useRef<EditSession | null>(null);
-
-  useEffect(() => writeDrawFeatureCollection(drawings), [drawings]);
 
   const setDrawingsWithRef = useCallback((nextDrawings: DrawFeatureCollection) => {
     drawingsRef.current = nextDrawings;
@@ -91,7 +87,7 @@ export function useDrawTool({
         ...drawingsRef.current,
         features: [...drawingsRef.current.features, feature],
       });
-      setSelectedFeatureId(feature.properties.drawId);
+      setSelectedFeatureId(feature.id);
       setDraftCoordinates([]);
       setEditorMode("select");
       setDrawError(null);
@@ -109,7 +105,7 @@ export function useDrawTool({
         ...drawingsRef.current,
         features: [...drawingsRef.current.features, feature],
       });
-      setSelectedFeatureId(feature.properties.drawId);
+      setSelectedFeatureId(feature.id);
       setDraftCoordinates([]);
       setEditorMode("select");
       setDrawError(null);
@@ -122,7 +118,7 @@ export function useDrawTool({
     commitDrawings({
       ...drawingsRef.current,
       features: drawingsRef.current.features.filter(
-        feature => feature.properties.drawId !== selectedFeatureId
+        feature => feature.id !== selectedFeatureId
       ),
     });
     setSelectedFeatureId(null);
@@ -141,6 +137,20 @@ export function useDrawTool({
     setDrawError(null);
   }, [commitDrawings]);
 
+  const applyGeoJSON = useCallback((nextDrawings: DrawFeatureCollection) => {
+    if (JSON.stringify(nextDrawings) === JSON.stringify(drawingsRef.current)) return;
+
+    commitDrawings(nextDrawings);
+    setSelectedFeatureId(currentId =>
+      currentId && nextDrawings.features.some(feature => feature.id === currentId)
+        ? currentId
+        : null
+    );
+    setDraftCoordinates([]);
+    setEditorMode("select");
+    setDrawError(null);
+  }, [commitDrawings]);
+
   const undoDraw = useCallback(() => {
     const previous = undoStack.at(-1);
     if (!previous) return;
@@ -149,7 +159,7 @@ export function useDrawTool({
     setUndoStack(history => history.slice(0, -1));
     setDrawingsWithRef(previous);
     setSelectedFeatureId(currentId =>
-      currentId && previous.features.some(feature => feature.properties.drawId === currentId)
+      currentId && previous.features.some(feature => feature.id === currentId)
         ? currentId
         : null
     );
@@ -179,7 +189,7 @@ export function useDrawTool({
             "drawings-point-layer",
           ],
         });
-        const featureId = features[0]?.properties?.drawId;
+        const featureId = features[0]?.id;
         selectFeature(typeof featureId === "string" ? featureId : null);
         return;
       }
@@ -190,7 +200,7 @@ export function useDrawTool({
           ...drawingsRef.current,
           features: [...drawingsRef.current.features, feature],
         });
-        setSelectedFeatureId(feature.properties.drawId);
+        setSelectedFeatureId(feature.id);
         setEditorMode("select");
         return;
       }
@@ -332,7 +342,7 @@ export function useDrawTool({
   }, [activeTool, editorMode, redoDraw, setActiveTool, undoDraw]);
 
   const selectedFeature = drawings.features.find(
-    feature => feature.properties.drawId === selectedFeatureId
+    feature => feature.id === selectedFeatureId
   );
 
   return {
@@ -348,6 +358,7 @@ export function useDrawTool({
     canFinish: (editorMode === "line" && draftCoordinates.length >= 2) ||
       (editorMode === "polygon" && draftCoordinates.length >= 3),
     changeMode,
+    applyGeoJSON,
     clearAllDrawings,
     deleteSelected,
     finishDraft,
@@ -366,7 +377,7 @@ function updateFeatureVertex(
 ): DrawFeatureCollection {
   let changed = false;
   const features = collection.features.map(feature => {
-    if (feature.properties.drawId !== featureId) return feature;
+    if (feature.id !== featureId) return feature;
 
     const geometry = updateGeometryVertex(feature.geometry, vertexIndex, ringIndex, coordinate);
     if (geometry === feature.geometry) return feature;

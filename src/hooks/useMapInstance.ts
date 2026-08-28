@@ -45,6 +45,87 @@ export function useMapInstance(
   const coordinatePickingEnabledRef =
     useRef(coordinatePickingEnabled);
 
+  const placeMarkerAtCoordinate = (
+    mapInstance: maplibregl.Map,
+    coordinate: [number, number]
+  ) => {
+    marker.current?.remove();
+    popupRoot.current?.unmount();
+    popupRoot.current = null;
+    lastClickedCoordinate.current = coordinate;
+
+    const transformed = transformFromWgs84(
+      coordinate,
+      coordinateReferenceSystemRef.current
+    );
+
+    const popupContent = document.createElement("div");
+    const popup = new maplibregl.Popup({
+      closeButton: true,
+      closeOnClick: false,
+      offset: 38,
+      maxWidth: "none",
+      className: "map-position-popup-container",
+    }).setDOMContent(popupContent);
+
+    popupRoot.current = createRoot(popupContent);
+    popupRoot.current.render(
+      createElement(MapPositionPopup, {
+        longitude: transformed[0],
+        latitude: transformed[1],
+        crs: coordinateReferenceSystemRef.current,
+      })
+    );
+
+    marker.current = new maplibregl.Marker({
+      color: "#1976d2",
+      anchor: "bottom",
+    })
+      .setLngLat(coordinate)
+      .setPopup(popup)
+      .addTo(mapInstance);
+
+    marker.current.togglePopup();
+  };
+
+  const placeMarkerAtCurrentLocation = () => {
+    const mapInstance = map.current;
+
+    if (!mapInstance || !mapLoaded) {
+      return;
+    }
+    
+    if (!navigator.geolocation) {
+      console.error("Geolocation is not supported by this browser.");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        const currentMap = map.current;
+
+        if (!currentMap || !coordinatePickingEnabledRef.current) {
+          return;
+        }
+
+        const coordinate: [number, number] = [
+          coords.longitude,
+          coords.latitude,
+        ];
+
+        placeMarkerAtCoordinate(currentMap, coordinate);
+        currentMap.flyTo({
+          center: coordinate,
+          zoom: Math.max(currentMap.getZoom(), 12),
+          essential: true,
+        });
+      },
+      error => {
+        console.error("Unable to get the current location:", error.message);
+      }
+    );
+  };
+
   useEffect(() => {
     coordinateReferenceSystemRef.current = coordinateReferenceSystem;
 
@@ -130,46 +211,12 @@ export function useMapInstance(
         return;
       }
 
-      marker.current?.remove();
-      popupRoot.current?.unmount();
-      popupRoot.current = null;
-
-      lastClickedCoordinate.current = [
+      const coordinate: [number, number] = [
         event.lngLat.lng,
         event.lngLat.lat,
       ];
 
-      const transformed = transformFromWgs84(
-        lastClickedCoordinate.current,
-        coordinateReferenceSystemRef.current
-      );
-
-      const popupContent = document.createElement("div");
-      const popup = new maplibregl.Popup({
-        closeButton: true,
-        closeOnClick: false,
-        offset: 38,
-        maxWidth: "none",
-        className: "map-position-popup-container",
-      }).setDOMContent(popupContent);
-
-      popupRoot.current = createRoot(popupContent);
-      popupRoot.current.render(
-        createElement(MapPositionPopup, {
-          longitude: transformed[0],
-          latitude: transformed[1],
-          crs: coordinateReferenceSystemRef.current,
-        })
-      );
-
-      marker.current = new maplibregl.Marker({
-        color: "#1976d2",
-      })
-        .setLngLat(event.lngLat)
-        .setPopup(popup)
-        .addTo(mapInstance);
-
-      marker.current.togglePopup();
+      placeMarkerAtCoordinate(mapInstance, coordinate);
     };
 
     mapInstance.on("click", handleMapClick);
@@ -201,5 +248,6 @@ export function useMapInstance(
     mapContainer,
     map,
     mapLoaded,
+    placeMarkerAtCurrentLocation,
   };
 }
