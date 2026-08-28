@@ -284,11 +284,11 @@ function SearchBar({ map }: SearchBarProps) {
       ref={containerRef}
       sx={{
         position: "absolute",
-        top: 20,
-        left: 20,
+        top: { xs: 12, sm: 20 },
+        left: { xs: 12, sm: 20 },
         zIndex: "var(--z-top-controls)",
-        width: { xs: "calc(100vw - 40px)", sm: 450 },
-        maxWidth: "calc(100vw - 40px)",
+        width: { xs: "calc(100% - 24px)", sm: 450 },
+        maxWidth: { xs: "calc(100% - 24px)", sm: "calc(100% - 40px)" },
       }}
     >
       <Paper

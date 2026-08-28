@@ -21,10 +21,11 @@ interface LayerPanelProps {
 
 const panelSx = {
   position: "absolute",
-  right: { xs: 16, sm: 70 },
-  top: 100,
+  right: { xs: 12, sm: 70 },
+  top: { xs: 120, sm: 100 },
   zIndex: "var(--z-overlay-panel)",
-  width: { xs: 220, sm: 250 },
+  width: { xs: "calc(100% - 24px)", sm: 250 },
+  maxWidth: { xs: "calc(100% - 24px)", sm: 250 },
   p: 1.5,
 };
 

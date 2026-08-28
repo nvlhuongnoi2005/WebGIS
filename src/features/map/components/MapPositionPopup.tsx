@@ -23,8 +23,8 @@ function MapPositionPopup({
     <Paper
       elevation={0}
       sx={{
-        width: { xs: "calc(100vw - 80px)", sm: 360 },
-        maxWidth: 360,
+        width: { xs: "calc(100vw - 32px)", sm: 360 },
+        maxWidth: { xs: "calc(100vw - 32px)", sm: 360 },
         overflow: "hidden",
         color: "text.primary",
       }}

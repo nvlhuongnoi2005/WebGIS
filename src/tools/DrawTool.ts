@@ -12,6 +12,7 @@ export type DrawCoordinate = [number, number];
 export type DrawGeometry = Point | LineString | Polygon;
 export type DrawFeatureId = string;
 export type DrawProperties = GeoJsonProperties;
+export const DRAW_FEATURE_ID_PROPERTY = "drawId";
 export type DrawFeature = Feature<DrawGeometry, DrawProperties> & {
   id: DrawFeatureId;
 };

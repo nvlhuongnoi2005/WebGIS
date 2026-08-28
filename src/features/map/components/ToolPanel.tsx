@@ -25,8 +25,8 @@ function ToolPanel({ activeTool, onSelectTool }: ToolPanelProps) {
       elevation={3}
       sx={{
         position: "absolute",
-        right: 20,
-        top: 100,
+        right: { xs: 12, sm: 20 },
+        top: { xs: 120, sm: 100 },
         zIndex: "var(--z-tool-panel)",
         p: 0.5,
       }}
@@ -63,4 +63,3 @@ function ToolPanel({ activeTool, onSelectTool }: ToolPanelProps) {
 }
 
 export default ToolPanel;
-

@@ -30,7 +30,6 @@ interface EditSession {
   initialCollection: DrawFeatureCollection;
   didMove: boolean;
 }
-
 export function useDrawTool({
   map,
   mapLoaded,
@@ -142,11 +141,13 @@ export function useDrawTool({
     if (JSON.stringify(nextDrawings) === JSON.stringify(drawingsRef.current)) return;
 
     commitDrawings(nextDrawings);
-    setSelectedFeatureId(currentId =>
-      currentId && nextDrawings.features.some(feature => feature.id === currentId)
-        ? currentId
-        : null
-    );
+    setSelectedFeatureId(currentId => {
+      if (currentId && nextDrawings.features.some(feature => feature.id === currentId)) {
+        return currentId;
+      }
+
+      return null;
+    });
     setDraftCoordinates([]);
     setEditorMode("select");
     setDrawError(null);
@@ -159,11 +160,13 @@ export function useDrawTool({
     setRedoStack(history => [...history, drawingsRef.current]);
     setUndoStack(history => history.slice(0, -1));
     setDrawingsWithRef(previous);
-    setSelectedFeatureId(currentId =>
-      currentId && previous.features.some(feature => feature.id === currentId)
-        ? currentId
-        : null
-    );
+    setSelectedFeatureId(currentId => {
+      if (currentId && previous.features.some(feature => feature.id === currentId)) {
+        return currentId;
+      }
+
+      return null;
+    });
   }, [setDrawingsWithRef, undoStack]);
 
   const redoDraw = useCallback(() => {
@@ -191,14 +194,28 @@ export function useDrawTool({
           ],
         });
         const feature = features[0];
-        const featureId = feature?.properties?.[DRAW_FEATURE_ID_PROPERTY] ?? feature?.id;
-        selectFeature(
-          typeof featureId === "string"
-            ? featureId
-            : typeof featureId === "number"
-              ? String(featureId)
-              : null
-        );
+        let featureId: string | number | undefined;
+
+        if (feature) {
+          if (feature.properties) {
+            const propertyValue = feature.properties[DRAW_FEATURE_ID_PROPERTY];
+            if (propertyValue !== null && propertyValue !== undefined) {
+              featureId = propertyValue;
+            } else {
+              featureId = feature.id;
+            }
+          } else {
+            featureId = feature.id;
+          }
+        }
+
+        if (typeof featureId === "string") {
+          selectFeature(featureId);
+        } else if (typeof featureId === "number") {
+          selectFeature(String(featureId));
+        } else {
+          selectFeature(null);
+        }
         return;
       }
 
@@ -248,10 +265,25 @@ export function useDrawTool({
       const features = mapInstance.queryRenderedFeatures([[x - 10, y - 10], [x + 10, y + 10]], {
         layers: ["drawings-vertices-layer"],
       });
-      const properties = features[0]?.properties;
-      const featureId = properties?.drawId;
-      const vertexIndex = Number(properties?.vertexIndex);
-      const ringIndex = Number(properties?.ringIndex ?? 0);
+      const firstFeature = features[0];
+      let featureId: unknown;
+      let vertexIndexValue: unknown;
+      let ringIndexValue: unknown = 0;
+
+      if (firstFeature) {
+        const properties = firstFeature.properties;
+        if (properties) {
+          featureId = properties.drawId;
+          vertexIndexValue = properties.vertexIndex;
+
+          if (properties.ringIndex !== null && properties.ringIndex !== undefined) {
+            ringIndexValue = properties.ringIndex;
+          }
+        }
+      }
+
+      const vertexIndex = Number(vertexIndexValue);
+      const ringIndex = Number(ringIndexValue);
 
       if (
         typeof featureId !== "string" ||
@@ -296,7 +328,7 @@ export function useDrawTool({
       const session = editSessionRef.current;
       if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
 
-      if (session?.didMove) {
+      if (session && session.didMove) {
         setUndoStack(history => [...history, session.initialCollection]);
         setRedoStack([]);
       }
@@ -394,7 +426,11 @@ function updateFeatureVertex(
     return { ...feature, geometry };
   });
 
-  return changed ? { ...collection, features } : collection;
+  if (changed) {
+    return { ...collection, features };
+  }
+
+  return collection;
 }
 
 function updateGeometryVertex(
@@ -408,20 +444,26 @@ function updateGeometryVertex(
   }
 
   if (geometry.type === "LineString") {
-    const coordinates = geometry.coordinates.map((current, index) =>
-      index === vertexIndex ? coordinate : current
-    );
+    const coordinates = geometry.coordinates.map((current, index) => {
+      if (index === vertexIndex) {
+        return coordinate;
+      }
+
+      return current;
+    });
     return { ...geometry, coordinates };
   }
 
   const coordinates = geometry.coordinates.map((ring, currentRingIndex) => {
     if (currentRingIndex !== ringIndex) return ring;
 
-    const nextRing = ring.map((current, index) =>
-      index === vertexIndex || (vertexIndex === 0 && index === ring.length - 1)
-        ? coordinate
-        : current
-    );
+    const nextRing = ring.map((current, index) => {
+      if (index === vertexIndex || (vertexIndex === 0 && index === ring.length - 1)) {
+        return coordinate;
+      }
+
+      return current;
+    });
     return nextRing;
   });
   return { ...geometry, coordinates };

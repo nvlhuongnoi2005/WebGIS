@@ -100,8 +100,8 @@ function MapView() {
         spacing={1.5}
         sx={{
           position: "absolute",
-          top: 20,
-          right: 20,
+          top: { xs: 64, sm: 20 },
+          right: { xs: 12, sm: 20 },
           zIndex: "var(--z-top-controls)",
           alignItems: "center",
         }}

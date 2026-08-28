@@ -130,11 +130,11 @@ function MeasurePanel({
 
 const panelSx = {
   position: "absolute",
-  left: { xs: 15, sm: 20 },
-  top: 100,
+  left: { xs: 12, sm: 20 },
+  top: { xs: 120, sm: 100 },
   zIndex: "var(--z-overlay-panel)",
-  width: { xs: "calc(100vw - 32px)", sm: 470 },
-  maxWidth: "calc(100vw - 32px)",
+  width: { xs: "calc(100% - 24px)", sm: 470 },
+  maxWidth: { xs: "calc(100% - 24px)", sm: "calc(100% - 40px)" },
   p: 1.5,
 };
 
