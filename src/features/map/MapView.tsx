@@ -27,7 +27,12 @@ function MapView() {
   const [activeTool, setActiveTool] = useState<MapTool>(null);
   const [coordinateReferenceSystem, setCoordinateReferenceSystem] =
     useState<CoordinateReferenceSystem>("EPSG:4326");
-  const { mapContainer, map, mapLoaded } = useMapInstance(
+  const {
+    mapContainer,
+    map,
+    mapLoaded,
+    placeMarkerAtCurrentLocation,
+  } = useMapInstance(
     coordinateReferenceSystem,
     activeTool !== "draw" && activeTool !== "measure"
   );
@@ -70,6 +75,10 @@ function MapView() {
 
       setActiveTool(null);
       return;
+    }
+
+    if (tool === "marker") {
+      placeMarkerAtCurrentLocation();
     }
 
     if (tool === "measure") measure.startMeasure();
@@ -146,7 +155,9 @@ function MapView() {
           canFinish={draw.canFinish}
           canRedo={draw.canRedo}
           canUndo={draw.canUndo}
+          geoJSON={draw.geoJSON}
           onChangeMode={draw.changeMode}
+          onApplyGeoJSON={draw.applyGeoJSON}
           onClear={draw.clearAllDrawings}
           onDelete={draw.deleteSelected}
           onFinish={draw.finishDraft}

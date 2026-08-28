@@ -48,7 +48,7 @@ export function useDrawLayers({
     setSourceData(mapInstance, DRAWINGS_SOURCE_ID, drawings);
 
     const selectedFeature = drawings.features.find(
-      feature => feature.properties.drawId === selectedFeatureId
+      feature => feature.id === selectedFeatureId
     );
     setSourceData(mapInstance, SELECTION_SOURCE_ID, {
       type: "FeatureCollection",
@@ -203,7 +203,7 @@ function createVertexCollection(
     features: coordinates.map(({ coordinate, vertexIndex, ringIndex }) => ({
       type: "Feature",
       properties: {
-        drawId: feature.properties.drawId,
+        drawId: feature.id,
         vertexIndex,
         ringIndex,
       },
