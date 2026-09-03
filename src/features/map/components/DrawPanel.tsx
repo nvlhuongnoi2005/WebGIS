@@ -267,12 +267,12 @@ function DrawPanel({
           <TextField
             fullWidth
             multiline
-            minRows={10}
+            minRows={11}
             value={jsonText}
             onChange={event => {
               setJsonDraft({ sourceJson: currentJson, text: event.target.value, error: null });
             }}
-            label={t("draw.geoJsonLabel")}
+            label=  {t("draw.geoJsonLabel")}
             placeholder={t("draw.geoJsonPlaceholder")}
             error={Boolean(jsonError)}
             helperText={jsonError ?? t("draw.geoJsonHint")}
@@ -283,7 +283,7 @@ function DrawPanel({
                   alignItems: "flex-start",
                   fontFamily: "ui-monospace, SFMono-Regular, Consolas, monospace",
                   fontSize: 12,
-                  lineHeight: 1.5,
+                  lineHeight: 1.5,  
                 },
               },
             }}
