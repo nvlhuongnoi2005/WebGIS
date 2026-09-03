@@ -3,15 +3,22 @@ import type { ChangeEvent } from "react";
 import {
   Alert,
   Button,
+  ButtonBase,
   Divider,
   Paper,
   Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableRow,
   TextField,
   ToggleButton,
   ToggleButtonGroup,
   Typography,
 } from "@mui/material";
 import {
+  ArrowLeft,
   Braces,
   Download,
   Edit3,
@@ -26,6 +33,7 @@ import { useTranslation } from "react-i18next";
 
 import {
   normalizeDrawFeatureCollection,
+  type DrawProperties,
   type DrawFeatureCollection,
   type DrawMode,
 } from "../../../tools/DrawTool";
@@ -40,8 +48,14 @@ interface DrawPanelProps {
   canRedo: boolean;
   canUndo: boolean;
   geoJSON: DrawFeatureCollection;
+  selectedFeatureId: string | null;
   onChangeMode: (mode: DrawMode) => void;
   onApplyGeoJSON: (value: DrawFeatureCollection) => void;
+  onSelectFeature: (featureId: string | null) => void;
+  onUpdateFeatureProperties: (
+    featureId: string,
+    properties: DrawFeatureCollection["features"][number]["properties"]
+  ) => void;
   onClear: () => void;
   onDelete: () => void;
   onFinish: () => void;
@@ -59,8 +73,11 @@ function DrawPanel({
   canRedo,
   canUndo,
   geoJSON,
+  selectedFeatureId,
   onChangeMode,
   onApplyGeoJSON,
+  onSelectFeature,
+  onUpdateFeatureProperties,
   onClear,
   onDelete,
   onFinish,
@@ -69,6 +86,21 @@ function DrawPanel({
 }: DrawPanelProps) {
   const { t } = useTranslation();
   const selectedMode = mode === "edit" ? "select" : mode;
+  const [panelTab, setPanelTab] = useState<"select" | "geojson">("select");
+  const selectedFeature = geoJSON.features.find(feature => feature.id === selectedFeatureId);
+  const selectedFeatureName = selectedFeature ? getFeatureNameProperty(selectedFeature) : "";
+  const selectedFeaturePropertiesSignature = selectedFeature
+    ? JSON.stringify(selectedFeature.properties)
+    : "";
+  const [nameDraft, setNameDraft] = useState({
+    featureId: null as string | null,
+    value: "",
+    sourceSignature: "",
+  });
+  const nameInput = nameDraft.featureId === selectedFeatureId &&
+      nameDraft.sourceSignature === selectedFeaturePropertiesSignature
+    ? nameDraft.value
+    : selectedFeatureName;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const currentJson = JSON.stringify(geoJSON, null, 2);
   const [jsonDraft, setJsonDraft] = useState(() => ({
@@ -111,6 +143,7 @@ function DrawPanel({
     onApplyGeoJSON(parsed);
     const formattedJson = JSON.stringify(parsed, null, 2);
     setJsonDraft({ sourceJson: formattedJson, text: formattedJson, error: null });
+    setPanelTab("select");
   };
 
   const handleFormatGeoJSON = () => {
@@ -136,6 +169,7 @@ function DrawPanel({
     onApplyGeoJSON(parsed);
     const formattedJson = JSON.stringify(parsed, null, 2);
     setJsonDraft({ sourceJson: formattedJson, text: formattedJson, error: null });
+    setPanelTab("select");
   };
 
   const handleExportGeoJSON = () => {
@@ -225,105 +259,309 @@ function DrawPanel({
 
         <Divider />
 
-        <Stack spacing={1.25}>
-          <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center" }}>
-            <Stack spacing={0.25}>
-              <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+        {panelTab === "select" ? (
+          <Stack spacing={1.25}>
+            <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center" }}>
+              <Stack spacing={0.25}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                  {t("draw.select")}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {t("draw.geoJsonFeatureCount", { count: geoJSON.features.length })}
+                </Typography>
+              </Stack>
+              <Button
+                size="small"
+                variant="outlined"
+                startIcon={<Braces size={15} />}
+                onClick={() => setPanelTab("geojson")}
+              >
                 {t("draw.geoJsonTitle")}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {t("draw.geoJsonFeatureCount", { count: geoJSON.features.length })}
-              </Typography>
+              </Button>
             </Stack>
-            <Braces size={20} aria-hidden="true" color="#1565c0" />
+
+            {geoJSON.features.length === 0 ? (
+              <Typography variant="body2" color="text.secondary">
+                {t("draw.selectHint")}
+              </Typography>
+            ) : (
+              <Stack spacing={0.75}>
+                {geoJSON.features.map((feature, index) => {
+                  const name = getFeatureName(feature, index);
+                  const hasName = name !== feature.id;
+
+                  return (
+                    <ButtonBase
+                      key={feature.id}
+                      onClick={() => {
+                        onChangeMode("select");
+                        onSelectFeature(
+                          feature.id === selectedFeatureId ? null : feature.id
+                        );
+                      }}
+                      sx={{
+                        width: "100%",
+                        p: 1,
+                        border: "1px solid",
+                        borderColor: feature.id === selectedFeatureId ? "primary.main" : "divider",
+                        borderRadius: 1.5,
+                        bgcolor: feature.id === selectedFeatureId ? "primary.50" : "background.paper",
+                        textAlign: "left",
+                        justifyContent: "flex-start",
+                        transition: "border-color 120ms ease, background-color 120ms ease",
+                        "&:hover": {
+                          borderColor: "primary.main",
+                          bgcolor: "action.hover",
+                        },
+                      }}
+                    >
+                      <Stack spacing={0.25} sx={{ minWidth: 0, width: "100%" }}>
+                        <Typography variant="body2" sx={{ fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {name}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {feature.geometry.type}{hasName ? ` · ID: ${feature.id}` : ""}
+                        </Typography>
+                      </Stack>
+                    </ButtonBase>
+                  );
+                })}
+              </Stack>
+            )}
+
+            {selectedFeatureId && selectedFeature && (
+              <Stack spacing={1}>
+                <Divider />
+                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                  {t("draw.properties")}
+                </Typography>
+
+                <TableContainer sx={{ border: "1px solid", borderColor: "divider", borderRadius: 1.5 }}>
+                  <Table size="small">
+                    <TableBody>
+                      <TableRow>
+                        <TableCell sx={{ width: "38%", color: "text.secondary" }}>
+                          {t("draw.geometryType")}
+                        </TableCell>
+                        <TableCell>{selectedFeature.geometry.type}</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell sx={{ color: "text.secondary" }}>{t("draw.featureId")}</TableCell>
+                        <TableCell sx={{ wordBreak: "break-all" }}>{selectedFeature.id}</TableCell>
+                      </TableRow>
+                      {Object.entries(getFeatureProperties(selectedFeature))
+                        .filter(([key]) => key !== "name")
+                        .map(([key, value]) => (
+                          <TableRow key={key}>
+                            <TableCell sx={{ color: "text.secondary", wordBreak: "break-word" }}>
+                              {key}
+                            </TableCell>
+                            <TableCell sx={{ wordBreak: "break-word" }}>
+                              {formatPropertyValue(value)}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+
+                <Stack direction="row" spacing={0.75} sx={{ alignItems: "flex-start" }}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label={t("draw.name")}
+                    placeholder={t("draw.namePlaceholder")}
+                    value={nameInput}
+                    onChange={event => {
+                      setNameDraft({
+                        featureId: selectedFeature.id,
+                        value: event.target.value,
+                        sourceSignature: selectedFeaturePropertiesSignature,
+                      });
+                    }}
+                  />
+                  <Button
+                    size="small"
+                    variant="contained"
+                    onClick={() => {
+                      const properties = { ...getFeatureProperties(selectedFeature) };
+                      const name = nameInput.trim();
+
+                      if (name) {
+                        properties.name = name;
+                      } else {
+                        delete properties.name;
+                      }
+
+                      onUpdateFeatureProperties(
+                        selectedFeature.id,
+                        Object.keys(properties).length > 0 ? properties : null
+                      );
+                    }}
+                    disabled={nameInput.trim() === selectedFeatureName}
+                    sx={{ minHeight: 40, flexShrink: 0 }}
+                  >
+                    {t("draw.saveProperties")}
+                  </Button>
+                </Stack>
+              </Stack>
+            )}
           </Stack>
+        ) : (
+          <Stack spacing={1.25}>
+            <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center" }}>
+              <Stack spacing={0.25}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                  {t("draw.geoJsonTitle")}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {t("draw.geoJsonFeatureCount", { count: geoJSON.features.length })}
+                </Typography>
+              </Stack>
+              <Button
+                size="small"
+                variant="text"
+                startIcon={<ArrowLeft size={15} />}
+                onClick={() => setPanelTab("select")}
+              >
+                {t("draw.select")}
+              </Button>
+            </Stack>
 
-          <Stack direction="row" spacing={0.75} sx={{ flexWrap: "wrap", rowGap: 0.75 }}>
-            <Button
-              size="small"
-              variant="outlined"
-              startIcon={<FileUp size={15} />}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              {t("draw.geoJsonImport")}
-            </Button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".geojson,.json,application/geo+json,application/json"
-              onChange={event => void handleImportGeoJSON(event)}
-              hidden
-            />
-            <Button
-              size="small"
-              variant="outlined"
-              startIcon={<Download size={15} />}
-              onClick={handleExportGeoJSON}
-            >
-              {t("draw.geoJsonExport")}
-            </Button>
-          </Stack>
+            <Stack direction="row" spacing={0.75} sx={{ flexWrap: "wrap", rowGap: 0.75 }}>
+              <Button
+                size="small"
+                variant="outlined"
+                startIcon={<FileUp size={15} />}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {t("draw.geoJsonImport")}
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".geojson,.json,application/geo+json,application/json"
+                onChange={event => void handleImportGeoJSON(event)}
+                hidden
+              />
+              <Button
+                size="small"
+                variant="outlined"
+                startIcon={<Download size={15} />}
+                onClick={handleExportGeoJSON}
+              >
+                {t("draw.geoJsonExport")}
+              </Button>
+            </Stack>
 
-          <TextField
-            fullWidth
-            multiline
-            minRows={11}
-            value={jsonText}
-            onChange={event => {
-              setJsonDraft({ sourceJson: currentJson, text: event.target.value, error: null });
-            }}
-            label=  {t("draw.geoJsonLabel")}
-            placeholder={t("draw.geoJsonPlaceholder")}
-            error={Boolean(jsonError)}
-            helperText={jsonError ?? t("draw.geoJsonHint")}
-            slotProps={{
-              htmlInput: { spellCheck: false },
-              input: {
-                sx: {
-                  alignItems: "flex-start",
-                  fontFamily: "ui-monospace, SFMono-Regular, Consolas, monospace",
-                  fontSize: 12,
-                  lineHeight: 1.5,  
-                },
-              },
-            }}
-          />
-
-          <Stack direction="row" spacing={0.75} sx={{ flexWrap: "wrap", rowGap: 0.75 }}>
-            <Button
-              size="small"
-              variant="outlined"
-              startIcon={<Braces size={15} />}
-              onClick={handleFormatGeoJSON}
-              disabled={!jsonText.trim()}
-            >
-              {t("draw.geoJsonFormat")}
-            </Button>
-            <Button
-              size="small"
-              variant="outlined"
-              startIcon={<RotateCcw size={15} />}
-              onClick={() => {
-                setJsonDraft({ sourceJson: currentJson, text: currentJson, error: null });
+            <TextField
+              fullWidth
+              multiline
+              minRows={11}
+              value={jsonText}
+              onChange={event => {
+                setJsonDraft({ sourceJson: currentJson, text: event.target.value, error: null });
               }}
-              disabled={!isJsonDirty && !jsonError}
-            >
-              {t("draw.geoJsonReset")}
-            </Button>
-            <Button
-              size="small"
-              variant="contained"
-              startIcon={<Save size={15} />}
-              onClick={handleApplyGeoJSON}
-              disabled={!isJsonDirty}
-            >
-              {t("draw.geoJsonApply")}
-            </Button>
+              label={t("draw.geoJsonLabel")}
+              placeholder={t("draw.geoJsonPlaceholder")}
+              error={Boolean(jsonError)}
+              helperText={jsonError ?? t("draw.geoJsonHint")}
+              slotProps={{
+                htmlInput: { spellCheck: false },
+                input: {
+                  sx: {
+                    alignItems: "flex-start",
+                    fontFamily: "ui-monospace, SFMono-Regular, Consolas, monospace",
+                    fontSize: 12,
+                    lineHeight: 1.5,
+                  },
+                },
+              }}
+            />
+
+            <Stack direction="row" spacing={0.75} sx={{ flexWrap: "wrap", rowGap: 0.75 }}>
+              <Button
+                size="small"
+                variant="outlined"
+                startIcon={<Braces size={15} />}
+                onClick={handleFormatGeoJSON}
+                disabled={!jsonText.trim()}
+              >
+                {t("draw.geoJsonFormat")}
+              </Button>
+              <Button
+                size="small"
+                variant="outlined"
+                startIcon={<RotateCcw size={15} />}
+                onClick={() => {
+                  setJsonDraft({ sourceJson: currentJson, text: currentJson, error: null });
+                }}
+                disabled={!isJsonDirty && !jsonError}
+              >
+                {t("draw.geoJsonReset")}
+              </Button>
+              <Button
+                size="small"
+                variant="contained"
+                startIcon={<Save size={15} />}
+                onClick={handleApplyGeoJSON}
+                disabled={!isJsonDirty}
+              >
+                {t("draw.geoJsonApply")}
+              </Button>
+            </Stack>
           </Stack>
-        </Stack>
+        )}
       </Stack>
     </Paper>
   );
+}
+
+function getFeatureName(
+  feature: DrawFeatureCollection["features"][number],
+  index: number
+): string {
+  const name = getFeatureNameProperty(feature);
+
+  if (name) return name;
+
+  return feature.id || `Feature ${index + 1}`;
+}
+
+function getFeatureNameProperty(
+  feature: DrawFeatureCollection["features"][number]
+): string {
+  const properties = getFeatureProperties(feature);
+  const name = properties.name;
+
+  if (typeof name === "string" && name.trim()) return name.trim();
+  if (typeof name === "number" && Number.isFinite(name)) return String(name);
+
+  return "";
+}
+
+function getFeatureProperties(
+  feature: DrawFeatureCollection["features"][number]
+): NonNullable<DrawProperties> {
+  return feature.properties && !Array.isArray(feature.properties)
+    ? feature.properties
+    : {};
+}
+
+function formatPropertyValue(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (value === null) return "null";
+  if (value === undefined) return "undefined";
+
+  if (typeof value === "object") {
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return String(value);
+    }
+  }
+
+  return String(value);
 }
 
 const panelSx = {

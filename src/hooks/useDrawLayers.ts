@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import type { MutableRefObject } from "react";
 import * as maplibregl from "maplibre-gl";
-import type { Feature, FeatureCollection, Geometry, Point } from "geojson";
+import type { Feature, FeatureCollection, Geometry, Point, Position } from "geojson";
 import { DRAW_FEATURE_ID_PROPERTY } from "../tools/DrawTool";
 
 import type {
@@ -10,6 +10,11 @@ import type {
   DrawFeatureId,
   DrawGeometry,
   DrawMode,
+} from "../tools/DrawTool";
+import {
+  DRAW_VERTEX_COORDINATE_PATH_PROPERTY,
+  DRAW_VERTEX_GEOMETRY_PATH_PROPERTY,
+  encodeDrawPath,
 } from "../tools/DrawTool";
 
 interface UseDrawLayersOptions {
@@ -214,12 +219,12 @@ function createVertexCollection(
 
   return {
     type: "FeatureCollection",
-    features: coordinates.map(({ coordinate, vertexIndex, ringIndex }) => ({
+    features: coordinates.map(({ coordinate, geometryPath, coordinatePath }) => ({
       type: "Feature",
       properties: {
         drawId: feature.id,
-        vertexIndex,
-        ringIndex,
+        [DRAW_VERTEX_GEOMETRY_PATH_PROPERTY]: encodeDrawPath(geometryPath),
+        [DRAW_VERTEX_COORDINATE_PATH_PROPERTY]: encodeDrawPath(coordinatePath),
       },
       geometry: { type: "Point", coordinates: coordinate },
     })),
@@ -245,25 +250,80 @@ function createDraftVertexCollection(
 }
 
 function getEditableCoordinates(geometry: DrawGeometry) {
+  return collectEditableCoordinates(geometry, []);
+}
+
+function collectEditableCoordinates(
+  geometry: DrawGeometry,
+  geometryPath: number[]
+): EditableCoordinate[] {
+  if (geometry.type === "GeometryCollection") {
+    return geometry.geometries.flatMap((child, index) =>
+      collectEditableCoordinates(child, [...geometryPath, index])
+    );
+  }
+
   if (geometry.type === "Point") {
-    return [{ coordinate: geometry.coordinates as DrawCoordinate, vertexIndex: 0, ringIndex: 0 }];
+    return [createEditableCoordinate(geometry.coordinates, geometryPath, [])];
+  }
+
+  if (geometry.type === "MultiPoint") {
+    return geometry.coordinates.map((coordinate, index) =>
+      createEditableCoordinate(coordinate, geometryPath, [index])
+    );
   }
 
   if (geometry.type === "LineString") {
-    return geometry.coordinates.map((coordinate, vertexIndex) => ({
-      coordinate: coordinate as DrawCoordinate,
-      vertexIndex,
-      ringIndex: 0,
-    }));
+    return geometry.coordinates.map((coordinate, index) =>
+      createEditableCoordinate(coordinate, geometryPath, [index])
+    );
   }
 
-  return geometry.coordinates[0]
-    .slice(0, -1)
-    .map((coordinate, vertexIndex) => ({
-      coordinate: coordinate as DrawCoordinate,
-      vertexIndex,
-      ringIndex: 0,
-    }));
+  if (geometry.type === "MultiLineString") {
+    return geometry.coordinates.flatMap((line, lineIndex) =>
+      line.map((coordinate, coordinateIndex) =>
+        createEditableCoordinate(coordinate, geometryPath, [lineIndex, coordinateIndex])
+      )
+    );
+  }
+
+  if (geometry.type === "Polygon") {
+    return geometry.coordinates.flatMap((ring, ringIndex) =>
+      ring.slice(0, -1).map((coordinate, coordinateIndex) =>
+        createEditableCoordinate(coordinate, geometryPath, [ringIndex, coordinateIndex])
+      )
+    );
+  }
+
+  return geometry.coordinates.flatMap((polygon, polygonIndex) =>
+    polygon.flatMap((ring, ringIndex) =>
+      ring.slice(0, -1).map((coordinate, coordinateIndex) =>
+        createEditableCoordinate(coordinate, geometryPath, [
+          polygonIndex,
+          ringIndex,
+          coordinateIndex,
+        ])
+      )
+    )
+  );
+}
+
+interface EditableCoordinate {
+  coordinate: DrawCoordinate;
+  geometryPath: number[];
+  coordinatePath: number[];
+}
+
+function createEditableCoordinate(
+  coordinate: Position,
+  geometryPath: number[],
+  coordinatePath: number[]
+): EditableCoordinate {
+  return {
+    coordinate: [coordinate[0], coordinate[1]],
+    geometryPath,
+    coordinatePath,
+  };
 }
 
 function setSourceData(

@@ -7,12 +7,17 @@ import {
   createPointFeature,
   createPolygonFeature,
   DRAW_FEATURE_ID_PROPERTY,
+  DRAW_VERTEX_COORDINATE_PATH_PROPERTY,
+  DRAW_VERTEX_GEOMETRY_PATH_PROPERTY,
+  decodeDrawPath,
   emptyDrawFeatureCollection,
+  replaceDrawCoordinate,
   type DrawCoordinate,
   type DrawFeatureCollection,
   type DrawFeatureId,
   type DrawGeometry,
   type DrawMode,
+  type DrawProperties,
 } from "../tools/DrawTool";
 import type { MapTool } from "../types/map";
 
@@ -25,8 +30,8 @@ interface UseDrawToolOptions {
 
 interface EditSession {
   featureId: DrawFeatureId;
-  vertexIndex: number;
-  ringIndex: number;
+  geometryPath: number[];
+  coordinatePath: number[];
   initialCollection: DrawFeatureCollection;
   didMove: boolean;
 }
@@ -70,7 +75,7 @@ export function useDrawTool({
     setDraftCoordinates([]);
     setDrawError(null);
 
-    if (nextMode === "select" || nextMode === "point" || nextMode === "line" || nextMode === "polygon") {
+    if (nextMode === "point" || nextMode === "line" || nextMode === "polygon") {
       setSelectedFeatureId(null);
     }
   }, [selectedFeatureId]);
@@ -153,6 +158,23 @@ export function useDrawTool({
     setDrawError(null);
   }, [commitDrawings]);
 
+  const updateFeatureProperties = useCallback((
+    featureId: DrawFeatureId,
+    properties: DrawProperties
+  ) => {
+    const feature = drawingsRef.current.features.find(item => item.id === featureId);
+    if (!feature || JSON.stringify(feature.properties) === JSON.stringify(properties)) {
+      return;
+    }
+
+    commitDrawings({
+      ...drawingsRef.current,
+      features: drawingsRef.current.features.map(item =>
+        item.id === featureId ? { ...item, properties } : item
+      ),
+    });
+  }, [commitDrawings]);
+
   const undoDraw = useCallback(() => {
     const previous = undoStack.at(-1);
     if (!previous) return;
@@ -176,6 +198,13 @@ export function useDrawTool({
     setUndoStack(history => [...history, drawingsRef.current]);
     setRedoStack(history => history.slice(0, -1));
     setDrawingsWithRef(next);
+    setSelectedFeatureId(currentId => {
+      if (currentId && next.features.some(feature => feature.id === currentId)) {
+        return currentId;
+      }
+
+      return null;
+    });
   }, [redoStack, setDrawingsWithRef]);
 
   useEffect(() => {
@@ -266,37 +295,27 @@ export function useDrawTool({
         layers: ["drawings-vertices-layer"],
       });
       const firstFeature = features[0];
-      let featureId: unknown;
-      let vertexIndexValue: unknown;
-      let ringIndexValue: unknown = 0;
-
-      if (firstFeature) {
-        const properties = firstFeature.properties;
-        if (properties) {
-          featureId = properties.drawId;
-          vertexIndexValue = properties.vertexIndex;
-
-          if (properties.ringIndex !== null && properties.ringIndex !== undefined) {
-            ringIndexValue = properties.ringIndex;
-          }
-        }
-      }
-
-      const vertexIndex = Number(vertexIndexValue);
-      const ringIndex = Number(ringIndexValue);
+      const properties = firstFeature?.properties;
+      const featureId = properties?.[DRAW_FEATURE_ID_PROPERTY];
+      const geometryPath = decodeDrawPath(
+        properties?.[DRAW_VERTEX_GEOMETRY_PATH_PROPERTY]
+      );
+      const coordinatePath = decodeDrawPath(
+        properties?.[DRAW_VERTEX_COORDINATE_PATH_PROPERTY]
+      );
 
       if (
         typeof featureId !== "string" ||
-        !Number.isInteger(vertexIndex) ||
-        !Number.isInteger(ringIndex)
+        !geometryPath ||
+        !coordinatePath
       ) {
         return;
       }
 
       editSessionRef.current = {
         featureId,
-        vertexIndex,
-        ringIndex,
+        geometryPath,
+        coordinatePath,
         initialCollection: drawingsRef.current,
         didMove: false,
       };
@@ -314,8 +333,8 @@ export function useDrawTool({
       const nextDrawings = updateFeatureVertex(
         drawingsRef.current,
         session.featureId,
-        session.vertexIndex,
-        session.ringIndex,
+        session.geometryPath,
+        session.coordinatePath,
         coordinate
       );
 
@@ -404,6 +423,7 @@ export function useDrawTool({
     finishDraft,
     redoDraw,
     selectFeature,
+    updateFeatureProperties,
     undoDraw,
   };
 }
@@ -411,15 +431,20 @@ export function useDrawTool({
 function updateFeatureVertex(
   collection: DrawFeatureCollection,
   featureId: DrawFeatureId,
-  vertexIndex: number,
-  ringIndex: number,
+  geometryPath: number[],
+  coordinatePath: number[],
   coordinate: DrawCoordinate
 ): DrawFeatureCollection {
   let changed = false;
   const features = collection.features.map(feature => {
     if (feature.id !== featureId) return feature;
 
-    const geometry = updateGeometryVertex(feature.geometry, vertexIndex, ringIndex, coordinate);
+    const geometry = updateGeometryVertex(
+      feature.geometry,
+      geometryPath,
+      coordinatePath,
+      coordinate
+    );
     if (geometry === feature.geometry) return feature;
 
     changed = true;
@@ -435,36 +460,114 @@ function updateFeatureVertex(
 
 function updateGeometryVertex(
   geometry: DrawGeometry,
-  vertexIndex: number,
-  ringIndex: number,
+  geometryPath: number[],
+  coordinatePath: number[],
   coordinate: DrawCoordinate
 ): DrawGeometry {
-  if (geometry.type === "Point") {
-    return { ...geometry, coordinates: coordinate };
+  if (geometryPath.length > 0) {
+    if (geometry.type !== "GeometryCollection") return geometry;
+
+    const [childIndex, ...remainingGeometryPath] = geometryPath;
+    const child = geometry.geometries[childIndex];
+    if (!child) return geometry;
+
+    const updatedChild = updateGeometryVertex(
+      child,
+      remainingGeometryPath,
+      coordinatePath,
+      coordinate
+    );
+    if (updatedChild === child) return geometry;
+
+    const geometries = geometry.geometries.slice();
+    geometries[childIndex] = updatedChild;
+    return { ...geometry, geometries };
   }
 
-  if (geometry.type === "LineString") {
-    const coordinates = geometry.coordinates.map((current, index) => {
-      if (index === vertexIndex) {
-        return coordinate;
-      }
+  if (geometry.type === "Point") {
+    if (coordinatePath.length !== 0) return geometry;
+    return {
+      ...geometry,
+      coordinates: replaceDrawCoordinate(geometry.coordinates, coordinate),
+    };
+  }
 
-      return current;
-    });
+  if (geometry.type === "MultiPoint") {
+    const [pointIndex] = coordinatePath;
+    if (coordinatePath.length !== 1 || !geometry.coordinates[pointIndex]) return geometry;
+
+    const coordinates = geometry.coordinates.slice();
+    coordinates[pointIndex] = replaceDrawCoordinate(
+      coordinates[pointIndex],
+      coordinate
+    );
     return { ...geometry, coordinates };
   }
 
-  const coordinates = geometry.coordinates.map((ring, currentRingIndex) => {
-    if (currentRingIndex !== ringIndex) return ring;
+  if (geometry.type === "LineString") {
+    const [pointIndex] = coordinatePath;
+    if (coordinatePath.length !== 1 || !geometry.coordinates[pointIndex]) return geometry;
 
-    const nextRing = ring.map((current, index) => {
-      if (index === vertexIndex || (vertexIndex === 0 && index === ring.length - 1)) {
-        return coordinate;
-      }
+    const coordinates = geometry.coordinates.slice();
+    coordinates[pointIndex] = replaceDrawCoordinate(
+      coordinates[pointIndex],
+      coordinate
+    );
+    return { ...geometry, coordinates };
+  }
 
-      return current;
-    });
-    return nextRing;
-  });
+  if (geometry.type === "MultiLineString") {
+    const [lineIndex, pointIndex] = coordinatePath;
+    const line = geometry.coordinates[lineIndex];
+    if (coordinatePath.length !== 2 || !line || !line[pointIndex]) return geometry;
+
+    const coordinates = geometry.coordinates.slice();
+    coordinates[lineIndex] = line.slice();
+    coordinates[lineIndex][pointIndex] = replaceDrawCoordinate(
+      line[pointIndex],
+      coordinate
+    );
+    return { ...geometry, coordinates };
+  }
+
+  if (geometry.type === "Polygon") {
+    const [ringIndex, pointIndex] = coordinatePath;
+    const ring = geometry.coordinates[ringIndex];
+    if (coordinatePath.length !== 2 || !ring || !ring[pointIndex]) return geometry;
+
+    const coordinates = geometry.coordinates.slice();
+    const nextRing = ring.slice();
+    nextRing[pointIndex] = replaceDrawCoordinate(ring[pointIndex], coordinate);
+    if (pointIndex === 0) {
+      nextRing[nextRing.length - 1] = replaceDrawCoordinate(
+        ring[nextRing.length - 1],
+        coordinate
+      );
+    }
+    coordinates[ringIndex] = nextRing;
+    return { ...geometry, coordinates };
+  }
+
+  if (geometry.type === "GeometryCollection") return geometry;
+
+  const [polygonIndex, ringIndex, pointIndex] = coordinatePath;
+  const polygon = geometry.coordinates[polygonIndex];
+  const ring = polygon?.[ringIndex];
+  if (coordinatePath.length !== 3 || !polygon || !ring || !ring[pointIndex]) {
+    return geometry;
+  }
+
+  const coordinates = geometry.coordinates.slice();
+  const nextPolygon = polygon.slice();
+  const nextRing = ring.slice();
+  nextRing[pointIndex] = replaceDrawCoordinate(ring[pointIndex], coordinate);
+  if (pointIndex === 0) {
+    nextRing[nextRing.length - 1] = replaceDrawCoordinate(
+      ring[nextRing.length - 1],
+      coordinate
+    );
+  }
+  nextPolygon[ringIndex] = nextRing;
+  coordinates[polygonIndex] = nextPolygon;
   return { ...geometry, coordinates };
 }

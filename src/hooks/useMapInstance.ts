@@ -17,6 +17,8 @@ import {
   type CoordinateReferenceSystem,
 } from "../tools/CoordinateTool";
 
+const INITIAL_MAP_CENTER: [number, number] = [105.8342, 21.0278];
+
 export function useMapInstance(
   coordinateReferenceSystem: CoordinateReferenceSystem,
   coordinatePickingEnabled: boolean
@@ -35,6 +37,9 @@ export function useMapInstance(
 
   const popupRoot =
     useRef<Root | null>(null);
+
+  const [hoveredCoordinate, setHoveredCoordinate] =
+    useState<[number, number]>(INITIAL_MAP_CENTER);
 
   const lastClickedCoordinate =
     useRef<[number, number] | null>(null);
@@ -149,6 +154,7 @@ export function useMapInstance(
         crs: coordinateReferenceSystem,
       })
     );
+
   }, [coordinateReferenceSystem]);
 
   useEffect(() => {
@@ -177,7 +183,7 @@ export function useMapInstance(
       new maplibregl.Map({
         container: mapContainer.current,
         style: getMapStyle("streets", "asia-full"),
-        center: [105.8342, 21.0278],
+        center: INITIAL_MAP_CENTER,
         zoom: 4,
       });
 
@@ -210,20 +216,11 @@ export function useMapInstance(
       setMapLoaded(true);
     });
 
-    const handleMapClick = (event: maplibregl.MapMouseEvent) => {
-      if (!coordinatePickingEnabledRef.current) {
-        return;
-      }
-
-      const coordinate: [number, number] = [
-        event.lngLat.lng,
-        event.lngLat.lat,
-      ];
-
-      placeMarkerAtCoordinate(mapInstance, coordinate);
+    const handleMapMouseMove = (event: maplibregl.MapMouseEvent) => {
+      setHoveredCoordinate([event.lngLat.lng, event.lngLat.lat]);
     };
 
-    mapInstance.on("click", handleMapClick);
+    mapInstance.on("mousemove", handleMapMouseMove);
 
     mapInstance.on("error", event => {
       console.error(
@@ -234,7 +231,7 @@ export function useMapInstance(
 
     return () => {
       mapInstance.off("load", applyNavigationTooltips);
-      mapInstance.off("click", handleMapClick);
+      mapInstance.off("mousemove", handleMapMouseMove);
       popupRoot.current?.unmount();
       popupRoot.current = null;
       mapInstance.remove();
@@ -252,6 +249,7 @@ export function useMapInstance(
     mapContainer,
     map,
     mapLoaded,
+    hoveredCoordinate,
     placeMarkerAtCurrentLocation,
   };
 }

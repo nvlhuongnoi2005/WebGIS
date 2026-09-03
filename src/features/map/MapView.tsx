@@ -13,14 +13,15 @@ import { useMapLanguage } from "../../hooks/useMapLanguage";
 import { useMeasureLayers } from "../../hooks/useMeasureLayers";
 import { useMeasureTool } from "../../hooks/useMeasureTool";
 import type { MapTool } from "../../types/map";
-import DrawPanel from "./components/DrawPanel";
-import CRSPanel from "./components/CRSPanel";
-import LayerPanel from "./components/LayerPanel";
-import MeasurePanel from "./components/MeasurePanel";
-import ToolPanel from "./components/ToolPanel";
 import {
+  transformFromWgs84,
   type CoordinateReferenceSystem,
 } from "../../tools/CoordinateTool";
+import DrawPanel from "./components/DrawPanel";
+import LayerPanel from "./components/LayerPanel";
+import MapPositionPopup from "./components/MapPositionPopup";
+import MeasurePanel from "./components/MeasurePanel";
+import ToolPanel from "./components/ToolPanel";
 import "./MapView.css";
 
 function MapView() {
@@ -31,6 +32,7 @@ function MapView() {
     mapContainer,
     map,
     mapLoaded,
+    hoveredCoordinate,
     placeMarkerAtCurrentLocation,
   } = useMapInstance(
     coordinateReferenceSystem,
@@ -90,9 +92,23 @@ function MapView() {
     setActiveTool(null);
   };
 
+  const hoveredDisplayCoordinate = transformFromWgs84(
+    hoveredCoordinate,
+    coordinateReferenceSystem
+  );
+
   return (
     <Box className="map-wrapper">
       <Box ref={mapContainer} className="map-container" />
+      <Box className="map-coordinate-hover-panel">
+        <MapPositionPopup
+          longitude={hoveredDisplayCoordinate[0]}
+          latitude={hoveredDisplayCoordinate[1]}
+          crs={coordinateReferenceSystem}
+          compact
+          onCrsChange={setCoordinateReferenceSystem}
+        />
+      </Box>
       <SearchBar map={map} />
       <ToolPanel activeTool={activeTool} onSelectTool={handleSelectTool} />
       <Stack
@@ -119,13 +135,6 @@ function MapView() {
           onChange={changeBaseMapStyle}
           mapDataSource={mapDataSource}
           onChangeDataSource={changeMapDataSource}
-        />
-      )}
-
-      {activeTool === "CRS" && (
-        <CRSPanel
-          value={coordinateReferenceSystem}
-          onChange={setCoordinateReferenceSystem}
         />
       )}
 
@@ -156,8 +165,11 @@ function MapView() {
           canRedo={draw.canRedo}
           canUndo={draw.canUndo}
           geoJSON={draw.geoJSON}
+          selectedFeatureId={draw.selectedFeatureId}
           onChangeMode={draw.changeMode}
           onApplyGeoJSON={draw.applyGeoJSON}
+          onSelectFeature={draw.selectFeature}
+          onUpdateFeatureProperties={draw.updateFeatureProperties}
           onClear={draw.clearAllDrawings}
           onDelete={draw.deleteSelected}
           onFinish={draw.finishDraft}
@@ -168,5 +180,4 @@ function MapView() {
     </Box>
   );
 }
-
 export default MapView;

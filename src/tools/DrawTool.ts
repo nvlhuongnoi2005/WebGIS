@@ -3,16 +3,16 @@ import type {
   FeatureCollection,
   GeoJsonProperties,
   Geometry,
-  LineString,
-  Point,
-  Polygon,
+  Position,
 } from "geojson";
 
 export type DrawCoordinate = [number, number];
-export type DrawGeometry = Point | LineString | Polygon;
+export type DrawGeometry = Geometry;
 export type DrawFeatureId = string;
 export type DrawProperties = GeoJsonProperties;
 export const DRAW_FEATURE_ID_PROPERTY = "drawId";
+export const DRAW_VERTEX_GEOMETRY_PATH_PROPERTY = "geometryPath";
+export const DRAW_VERTEX_COORDINATE_PATH_PROPERTY = "coordinatePath";
 export type DrawFeature = Feature<DrawGeometry, DrawProperties> & {
   id: DrawFeatureId;
 };
@@ -144,28 +144,100 @@ export function normalizeDrawFeatureCollection(
   return { ...value, features };
 }
 
-function isSupportedGeometry(geometry: Geometry): geometry is DrawGeometry {
-  if (geometry.type === "Point") return isCoordinate(geometry.coordinates);
+function isSupportedGeometry(value: unknown): value is DrawGeometry {
+  if (!value || typeof value !== "object") return false;
 
-  if (geometry.type === "LineString") {
-    return geometry.coordinates.length >= 2 && geometry.coordinates.every(isCoordinate);
+  const geometry = value as {
+    type?: unknown;
+    coordinates?: unknown;
+    geometries?: unknown;
+  };
+
+  switch (geometry.type) {
+    case "Point":
+      return isCoordinate(geometry.coordinates);
+    case "MultiPoint":
+      return isCoordinateArray(geometry.coordinates);
+    case "LineString":
+      return isLineStringCoordinates(geometry.coordinates);
+    case "MultiLineString":
+      return isMultiLineStringCoordinates(geometry.coordinates);
+    case "Polygon":
+      return isPolygonCoordinates(geometry.coordinates);
+    case "MultiPolygon":
+      return isMultiPolygonCoordinates(geometry.coordinates);
+    case "GeometryCollection":
+      return (
+        Array.isArray(geometry.geometries) &&
+        geometry.geometries.every(isSupportedGeometry)
+      );
+    default:
+      return false;
   }
-
-  if (geometry.type === "Polygon") {
-    return (
-      geometry.coordinates.length > 0 &&
-      geometry.coordinates.every(ring => ring.length >= 4 && ring.every(isCoordinate))
-    );
-  }
-
-  return false;
 }
 
 function isCoordinate(value: unknown): value is DrawCoordinate {
   return (
     Array.isArray(value) &&
     value.length >= 2 &&
-    typeof value[0] === "number" &&
-    typeof value[1] === "number"
+    value.every(item => typeof item === "number" && Number.isFinite(item))
   );
+}
+
+function isCoordinateArray(value: unknown): value is DrawCoordinate[] {
+  return Array.isArray(value) && value.every(isCoordinate);
+}
+
+function isLineStringCoordinates(value: unknown): value is DrawCoordinate[] {
+  return isCoordinateArray(value) && value.length >= 2;
+}
+
+function isMultiLineStringCoordinates(value: unknown): value is DrawCoordinate[][] {
+  return Array.isArray(value) && value.every(isLineStringCoordinates);
+}
+
+function isPolygonCoordinates(value: unknown): value is DrawCoordinate[][] {
+  return (
+    Array.isArray(value) &&
+    value.length > 0 &&
+    value.every(ring => isCoordinateArray(ring) && isClosedRing(ring))
+  );
+}
+
+function isMultiPolygonCoordinates(value: unknown): value is DrawCoordinate[][][] {
+  return Array.isArray(value) && value.every(isPolygonCoordinates);
+}
+
+function isClosedRing(ring: DrawCoordinate[]): boolean {
+  if (ring.length < 4) return false;
+
+  const first = ring[0];
+  const last = ring.at(-1);
+  return Boolean(
+    first &&
+      last &&
+      first[0] === last[0] &&
+      first[1] === last[1]
+  );
+}
+
+export function encodeDrawPath(path: number[]): string {
+  return path.join(".");
+}
+
+export function decodeDrawPath(value: unknown): number[] | null {
+  if (typeof value !== "string") return null;
+  if (value === "") return [];
+
+  const path = value.split(".").map(Number);
+  return path.every(index => Number.isInteger(index) && index >= 0) ? path : null;
+}
+
+export function replaceDrawCoordinate(
+  current: Position,
+  coordinate: DrawCoordinate
+): Position {
+  return current.length > 2
+    ? [coordinate[0], coordinate[1], ...current.slice(2)]
+    : coordinate;
 }
