@@ -99,6 +99,17 @@ function MapPositionPopup({
                 labelId="coordinate-panel-crs-label"
                 value={crs}
                 label=""
+                MenuProps={{
+                  anchorOrigin: {
+                    vertical: "bottom",
+                    horizontal: "left",
+                  },
+                  transformOrigin: {
+                    vertical: "bottom",
+                    horizontal: "right",
+                  },
+                  marginThreshold: 12,
+                }}
                 onChange={event => {
                   onCrsChange(event.target.value as CoordinateReferenceSystem);
                 }}

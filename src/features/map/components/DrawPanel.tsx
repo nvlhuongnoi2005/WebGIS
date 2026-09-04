@@ -3,8 +3,9 @@ import type { ChangeEvent } from "react";
 import {
   Alert,
   Button,
-  ButtonBase,
+  Box,
   Divider,
+  IconButton,
   Paper,
   Stack,
   Table,
@@ -21,6 +22,8 @@ import {
   ArrowLeft,
   Braces,
   Download,
+  Eye,
+  EyeOff,
   Edit3,
   FileUp,
   Redo2,
@@ -37,6 +40,12 @@ import {
   type DrawFeatureCollection,
   type DrawMode,
 } from "../../../tools/DrawTool";
+import {
+  formatArea,
+  formatDistance,
+  MEASURED_AREA_PROPERTY,
+  MEASURED_LENGTH_PROPERTY,
+} from "../../../tools/MeasureTool";
 
 interface DrawPanelProps {
   drawingCount: number;
@@ -48,10 +57,12 @@ interface DrawPanelProps {
   canRedo: boolean;
   canUndo: boolean;
   geoJSON: DrawFeatureCollection;
+  hiddenFeatureIds: ReadonlySet<string>;
   selectedFeatureId: string | null;
   onChangeMode: (mode: DrawMode) => void;
   onApplyGeoJSON: (value: DrawFeatureCollection) => void;
   onSelectFeature: (featureId: string | null) => void;
+  onToggleFeatureVisibility: (featureId: string) => void;
   onUpdateFeatureProperties: (
     featureId: string,
     properties: DrawFeatureCollection["features"][number]["properties"]
@@ -73,10 +84,12 @@ function DrawPanel({
   canRedo,
   canUndo,
   geoJSON,
+  hiddenFeatureIds,
   selectedFeatureId,
   onChangeMode,
   onApplyGeoJSON,
   onSelectFeature,
+  onToggleFeatureVisibility,
   onUpdateFeatureProperties,
   onClear,
   onDelete,
@@ -178,6 +191,26 @@ function DrawPanel({
     const link = document.createElement("a");
     link.href = url;
     link.download = `drawings-${new Date().toISOString().slice(0, 10)}.geojson`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleDownloadFeatureGeoJSON = (
+    feature: DrawFeatureCollection["features"][number]
+  ) => {
+    const featureCollection: DrawFeatureCollection = {
+      type: "FeatureCollection",
+      crs: geoJSON.crs,
+      features: [feature],
+    };
+    const blob = new Blob(
+      [JSON.stringify(featureCollection, null, 2)],
+      { type: "application/geo+json" }
+    );
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `feature-${sanitizeFilename(feature.id)}.geojson`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -289,11 +322,23 @@ function DrawPanel({
                 {geoJSON.features.map((feature, index) => {
                   const name = getFeatureName(feature, index);
                   const hasName = name !== feature.id;
+                  const isVisible = !hiddenFeatureIds.has(feature.id);
 
                   return (
-                    <ButtonBase
+                    <Box
+                      component="div"
+                      role="button"
+                      tabIndex={0}
                       key={feature.id}
                       onClick={() => {
+                        onChangeMode("select");
+                        onSelectFeature(
+                          feature.id === selectedFeatureId ? null : feature.id
+                        );
+                      }}
+                      onKeyDown={event => {
+                        if (event.key !== "Enter" && event.key !== " ") return;
+                        event.preventDefault();
                         onChangeMode("select");
                         onSelectFeature(
                           feature.id === selectedFeatureId ? null : feature.id
@@ -306,24 +351,53 @@ function DrawPanel({
                         borderColor: feature.id === selectedFeatureId ? "primary.main" : "divider",
                         borderRadius: 1.5,
                         bgcolor: feature.id === selectedFeatureId ? "primary.50" : "background.paper",
-                        textAlign: "left",
-                        justifyContent: "flex-start",
+                        opacity: isVisible ? 1 : 0.58,
                         transition: "border-color 120ms ease, background-color 120ms ease",
                         "&:hover": {
                           borderColor: "primary.main",
                           bgcolor: "action.hover",
                         },
+                        "&:focus-visible": {
+                          outline: "2px solid",
+                          outlineColor: "primary.main",
+                          outlineOffset: 1,
+                        },
                       }}
                     >
-                      <Stack spacing={0.25} sx={{ minWidth: 0, width: "100%" }}>
-                        <Typography variant="body2" sx={{ fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          {name}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          {feature.geometry.type}{hasName ? ` · ID: ${feature.id}` : ""}
-                        </Typography>
+                      <Stack direction="row" sx={{ minWidth: 0, width: "100%", alignItems: "center" }}>
+                        <Stack spacing={0.25} sx={{ minWidth: 0, flex: 1 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {name}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {feature.geometry.type}{hasName ? ` · ID: ${feature.id}` : ""}
+                          </Typography>
+                        </Stack>
+                        <IconButton
+                          size="small"
+                          title={t("draw.downloadFeature")}
+                          aria-label={t("draw.downloadFeature")}
+                          onClick={event => {
+                            event.stopPropagation();
+                            handleDownloadFeatureGeoJSON(feature);
+                          }}
+                        >
+                          <Download size={17} />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          color={isVisible ? "default" : "primary"}
+                          title={isVisible ? t("draw.hideFeature") : t("draw.showFeature")}
+                          aria-label={isVisible ? t("draw.hideFeature") : t("draw.showFeature")}
+                          onClick={event => {
+                            event.stopPropagation();
+                            onToggleFeatureVisibility(feature.id);
+                          }}
+                        >
+                          {isVisible ? <Eye size={17} /> : <EyeOff size={17} />}
+                        </IconButton>
                       </Stack>
-                    </ButtonBase>
+                    </Box>
                   );
                 })}
               </Stack>
@@ -340,24 +414,26 @@ function DrawPanel({
                   <Table size="small">
                     <TableBody>
                       <TableRow>
-                        <TableCell sx={{ width: "38%", color: "text.secondary" }}>
+                        <TableCell sx={{ width: "38%", color: "text.secondary" , fontWeight: 700 }}>
                           {t("draw.geometryType")}
                         </TableCell>
                         <TableCell>{selectedFeature.geometry.type}</TableCell>
                       </TableRow>
                       <TableRow>
-                        <TableCell sx={{ color: "text.secondary" }}>{t("draw.featureId")}</TableCell>
+                        <TableCell sx={{ color: "text.secondary" , fontWeight: 700 }}>
+                          {t("draw.featureId")}
+                        </TableCell>
                         <TableCell sx={{ wordBreak: "break-all" }}>{selectedFeature.id}</TableCell>
                       </TableRow>
                       {Object.entries(getFeatureProperties(selectedFeature))
                         .filter(([key]) => key !== "name")
                         .map(([key, value]) => (
                           <TableRow key={key}>
-                            <TableCell sx={{ color: "text.secondary", wordBreak: "break-word" }}>
-                              {key}
+                            <TableCell sx={{ color: "text.secondary", fontWeight: 700 }}>
+                              {getPropertyLabel(key, t)}
                             </TableCell>
                             <TableCell sx={{ wordBreak: "break-word" }}>
-                              {formatPropertyValue(value)}
+                              {formatPropertyValue(value, key)}
                             </TableCell>
                           </TableRow>
                         ))}
@@ -548,7 +624,18 @@ function getFeatureProperties(
     : {};
 }
 
-function formatPropertyValue(value: unknown): string {
+function getPropertyLabel(key: string, translate: (key: string) => string): string {
+  if (key === MEASURED_AREA_PROPERTY) return translate("draw.area");
+  if (key === MEASURED_LENGTH_PROPERTY) return translate("draw.length");
+  return key;
+}
+
+function formatPropertyValue(value: unknown, key?: string): string {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    if (key === MEASURED_AREA_PROPERTY) return formatArea(value);
+    if (key === MEASURED_LENGTH_PROPERTY) return formatDistance(value);
+  }
+
   if (typeof value === "string") return value;
   if (value === null) return "null";
   if (value === undefined) return "undefined";
@@ -562,6 +649,10 @@ function formatPropertyValue(value: unknown): string {
   }
 
   return String(value);
+}
+
+function sanitizeFilename(value: string): string {
+  return value.replace(/[^a-z0-9_-]/gi, "-") || "feature";
 }
 
 const panelSx = {

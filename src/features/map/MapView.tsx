@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Box, Stack } from "@mui/material";
 import "maplibre-gl/dist/maplibre-gl.css";
 
@@ -14,9 +14,15 @@ import { useMeasureLayers } from "../../hooks/useMeasureLayers";
 import { useMeasureTool } from "../../hooks/useMeasureTool";
 import type { MapTool } from "../../types/map";
 import {
+  DEFAULT_COORDINATE_REFERENCE_SYSTEM,
   transformFromWgs84,
   type CoordinateReferenceSystem,
 } from "../../tools/CoordinateTool";
+import {
+  getDrawGeoJSONCrs,
+  transformDrawFeatureCollection,
+  type DrawFeatureCollection,
+} from "../../tools/DrawTool";
 import DrawPanel from "./components/DrawPanel";
 import LayerPanel from "./components/LayerPanel";
 import MapPositionPopup from "./components/MapPositionPopup";
@@ -27,7 +33,7 @@ import "./MapView.css";
 function MapView() {
   const [activeTool, setActiveTool] = useState<MapTool>(null);
   const [coordinateReferenceSystem, setCoordinateReferenceSystem] =
-    useState<CoordinateReferenceSystem>("EPSG:4326");
+    useState<CoordinateReferenceSystem>(DEFAULT_COORDINATE_REFERENCE_SYSTEM);
   const {
     mapContainer,
     map,
@@ -64,6 +70,7 @@ function MapView() {
     mapLoaded,
     mapStyleVersion,
     drawings: draw.drawings,
+    hiddenFeatureIds: draw.hiddenFeatureIds,
     draftCoordinates: draw.draftCoordinates,
     selectedFeatureId: draw.selectedFeatureId,
     mode: draw.editorMode,
@@ -96,6 +103,25 @@ function MapView() {
     hoveredCoordinate,
     coordinateReferenceSystem
   );
+  const displayedGeoJSON = useMemo(
+    () => transformDrawFeatureCollection(
+      draw.geoJSON,
+      DEFAULT_COORDINATE_REFERENCE_SYSTEM,
+      coordinateReferenceSystem
+    ),
+    [coordinateReferenceSystem, draw.geoJSON]
+  );
+  const handleApplyGeoJSON = (nextGeoJSON: DrawFeatureCollection) => {
+    const sourceCrs = getDrawGeoJSONCrs(nextGeoJSON);
+    setCoordinateReferenceSystem(sourceCrs);
+    draw.applyGeoJSON(
+      transformDrawFeatureCollection(
+        nextGeoJSON,
+        sourceCrs,
+        DEFAULT_COORDINATE_REFERENCE_SYSTEM
+      )
+    );
+  };
 
   return (
     <Box className="map-wrapper">
@@ -124,10 +150,7 @@ function MapView() {
       >
         <LanguageSwitcher />
         <Profile />
-
       </Stack>
-
-     
 
       {activeTool === "layer" && (
         <LayerPanel
@@ -164,11 +187,13 @@ function MapView() {
           canFinish={draw.canFinish}
           canRedo={draw.canRedo}
           canUndo={draw.canUndo}
-          geoJSON={draw.geoJSON}
+          geoJSON={displayedGeoJSON}
+          hiddenFeatureIds={draw.hiddenFeatureIds}
           selectedFeatureId={draw.selectedFeatureId}
           onChangeMode={draw.changeMode}
-          onApplyGeoJSON={draw.applyGeoJSON}
+          onApplyGeoJSON={handleApplyGeoJSON}
           onSelectFeature={draw.selectFeature}
+          onToggleFeatureVisibility={draw.toggleFeatureVisibility}
           onUpdateFeatureProperties={draw.updateFeatureProperties}
           onClear={draw.clearAllDrawings}
           onDelete={draw.deleteSelected}

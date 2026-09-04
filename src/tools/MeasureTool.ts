@@ -1,11 +1,16 @@
 import area from "@turf/area";
 import distance from "@turf/distance";
+import type { Geometry, Position } from "geojson";
 
 export type Coordinate = [number, number];
 
 export type MeasureMode =
   | "distance"
   | "area";
+
+/** Property names used for the derived measurements stored on drawn features. */
+export const MEASURED_LENGTH_PROPERTY = "length";
+export const MEASURED_AREA_PROPERTY = "area";
 
 export function calculateDistance(
   point1: Coordinate,
@@ -77,6 +82,47 @@ export function calculateArea(
   } catch {
     return 0;
   }
+}
+
+export function calculatePolygonArea(
+  rings: Position[][]
+): number {
+  if (rings.length === 0 || rings[0].length < 3) {
+    return 0;
+  }
+
+  try {
+    return area({
+      type: "Feature",
+      properties: {},
+      geometry: {
+        type: "Polygon",
+        coordinates: rings,
+      },
+    });
+  } catch {
+    return 0;
+  }
+}
+
+export function getGeometryMeasurementProperties(
+  geometry: Geometry
+): Record<string, number> {
+  if (geometry.type === "LineString") {
+    return {
+      [MEASURED_LENGTH_PROPERTY]: calculateTotalDistance(
+        toCoordinates(geometry.coordinates)
+      ),
+    };
+  }
+
+  if (geometry.type === "Polygon") {
+    return {
+      [MEASURED_AREA_PROPERTY]: calculatePolygonArea(geometry.coordinates),
+    };
+  }
+
+  return {};
 }
 
 export function isSelfIntersectingPolygon(
@@ -163,6 +209,10 @@ export function formatArea(
   }
 
   return `${(area / 1_000_000).toFixed(2)} km²`;
+}
+
+function toCoordinates(positions: Position[]): Coordinate[] {
+  return positions.map(position => [position[0], position[1]]);
 }
 
 function areAdjacentSegments(

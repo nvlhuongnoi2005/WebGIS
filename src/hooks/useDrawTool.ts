@@ -12,6 +12,8 @@ import {
   decodeDrawPath,
   emptyDrawFeatureCollection,
   replaceDrawCoordinate,
+  syncDrawFeatureCollectionMeasurements,
+  syncDrawFeatureMeasurements,
   type DrawCoordinate,
   type DrawFeatureCollection,
   type DrawFeatureId,
@@ -45,6 +47,9 @@ export function useDrawTool({
   const [editorMode, setEditorMode] = useState<DrawMode>("select");
   const [draftCoordinates, setDraftCoordinates] = useState<DrawCoordinate[]>([]);
   const [selectedFeatureId, setSelectedFeatureId] = useState<DrawFeatureId | null>(null);
+  const [hiddenFeatureIds, setHiddenFeatureIds] = useState<Set<DrawFeatureId>>(
+    () => new Set()
+  );
   const [undoStack, setUndoStack] = useState<DrawFeatureCollection[]>([]);
   const [redoStack, setRedoStack] = useState<DrawFeatureCollection[]>([]);
   const [drawError, setDrawError] = useState<string | null>(null);
@@ -57,15 +62,42 @@ export function useDrawTool({
     setDrawings(nextDrawings);
   }, []);
 
+  const pruneHiddenFeatureIds = useCallback((nextDrawings: DrawFeatureCollection) => {
+    const featureIds = new Set(nextDrawings.features.map(feature => feature.id));
+    setHiddenFeatureIds(currentIds => {
+      const nextIds = new Set(
+        [...currentIds].filter(featureId => featureIds.has(featureId))
+      );
+      return nextIds.size === currentIds.size ? currentIds : nextIds;
+    });
+  }, []);
+
   const commitDrawings = useCallback((nextDrawings: DrawFeatureCollection) => {
     setUndoStack(history => [...history, drawingsRef.current]);
     setRedoStack([]);
+    pruneHiddenFeatureIds(nextDrawings);
     setDrawingsWithRef(nextDrawings);
-  }, [setDrawingsWithRef]);
+  }, [pruneHiddenFeatureIds, setDrawingsWithRef]);
 
   const selectFeature = useCallback((featureId: DrawFeatureId | null) => {
     setSelectedFeatureId(featureId);
     setDrawError(null);
+  }, []);
+
+  const toggleFeatureVisibility = useCallback((featureId: DrawFeatureId) => {
+    setHiddenFeatureIds(currentIds => {
+      if (!drawingsRef.current.features.some(feature => feature.id === featureId)) {
+        return currentIds;
+      }
+
+      const nextIds = new Set(currentIds);
+      if (nextIds.has(featureId)) {
+        nextIds.delete(featureId);
+      } else {
+        nextIds.add(featureId);
+      }
+      return nextIds;
+    });
   }, []);
 
   const changeMode = useCallback((nextMode: DrawMode) => {
@@ -87,7 +119,10 @@ export function useDrawTool({
         return;
       }
 
-      const feature = createLineFeature(draftCoordinates);
+      const feature = createLineFeature(
+        draftCoordinates,
+        drawingsRef.current.features.map(item => item.id)
+      );
       commitDrawings({
         ...drawingsRef.current,
         features: [...drawingsRef.current.features, feature],
@@ -105,7 +140,10 @@ export function useDrawTool({
         return;
       }
 
-      const feature = createPolygonFeature(draftCoordinates);
+      const feature = createPolygonFeature(
+        draftCoordinates,
+        drawingsRef.current.features.map(item => item.id)
+      );
       commitDrawings({
         ...drawingsRef.current,
         features: [...drawingsRef.current.features, feature],
@@ -137,20 +175,21 @@ export function useDrawTool({
     }
 
     setSelectedFeatureId(null);
+    setHiddenFeatureIds(new Set());
     setDraftCoordinates([]);
     setEditorMode("select");
     setDrawError(null);
   }, [commitDrawings]);
 
   const applyGeoJSON = useCallback((nextDrawings: DrawFeatureCollection) => {
-    if (JSON.stringify(nextDrawings) === JSON.stringify(drawingsRef.current)) return;
+    const measuredDrawings = syncDrawFeatureCollectionMeasurements(nextDrawings);
+    if (JSON.stringify(measuredDrawings) === JSON.stringify(drawingsRef.current)) return;
 
-    commitDrawings(nextDrawings);
+    commitDrawings(measuredDrawings);
     setSelectedFeatureId(currentId => {
-      if (currentId && nextDrawings.features.some(feature => feature.id === currentId)) {
+      if (currentId && measuredDrawings.features.some(feature => feature.id === currentId)) {
         return currentId;
       }
-
       return null;
     });
     setDraftCoordinates([]);
@@ -181,6 +220,7 @@ export function useDrawTool({
 
     setRedoStack(history => [...history, drawingsRef.current]);
     setUndoStack(history => history.slice(0, -1));
+    pruneHiddenFeatureIds(previous);
     setDrawingsWithRef(previous);
     setSelectedFeatureId(currentId => {
       if (currentId && previous.features.some(feature => feature.id === currentId)) {
@@ -189,7 +229,7 @@ export function useDrawTool({
 
       return null;
     });
-  }, [setDrawingsWithRef, undoStack]);
+  }, [pruneHiddenFeatureIds, setDrawingsWithRef, undoStack]);
 
   const redoDraw = useCallback(() => {
     const next = redoStack.at(-1);
@@ -197,6 +237,7 @@ export function useDrawTool({
 
     setUndoStack(history => [...history, drawingsRef.current]);
     setRedoStack(history => history.slice(0, -1));
+    pruneHiddenFeatureIds(next);
     setDrawingsWithRef(next);
     setSelectedFeatureId(currentId => {
       if (currentId && next.features.some(feature => feature.id === currentId)) {
@@ -205,7 +246,7 @@ export function useDrawTool({
 
       return null;
     });
-  }, [redoStack, setDrawingsWithRef]);
+  }, [pruneHiddenFeatureIds, redoStack, setDrawingsWithRef]);
 
   useEffect(() => {
     if (!map.current || !mapLoaded || activeTool !== "draw") return;
@@ -249,7 +290,10 @@ export function useDrawTool({
       }
 
       if (editorMode === "point") {
-        const feature = createPointFeature(coordinate);
+        const feature = createPointFeature(
+          coordinate,
+          drawingsRef.current.features.map(item => item.id)
+        );
         commitDrawings({
           ...drawingsRef.current,
           features: [...drawingsRef.current.features, feature],
@@ -407,6 +451,7 @@ export function useDrawTool({
   return {
     drawings,
     geoJSON: drawings,
+    hiddenFeatureIds,
     draftCoordinates,
     editorMode,
     selectedFeature,
@@ -423,6 +468,7 @@ export function useDrawTool({
     finishDraft,
     redoDraw,
     selectFeature,
+    toggleFeatureVisibility,
     updateFeatureProperties,
     undoDraw,
   };
@@ -448,7 +494,7 @@ function updateFeatureVertex(
     if (geometry === feature.geometry) return feature;
 
     changed = true;
-    return { ...feature, geometry };
+    return syncDrawFeatureMeasurements({ ...feature, geometry });
   });
 
   if (changed) {
