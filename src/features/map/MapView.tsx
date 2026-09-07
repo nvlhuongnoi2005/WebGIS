@@ -12,6 +12,7 @@ import { useMapInstance } from "../../hooks/useMapInstance";
 import { useMapLanguage } from "../../hooks/useMapLanguage";
 import { useMeasureLayers } from "../../hooks/useMeasureLayers";
 import { useMeasureTool } from "../../hooks/useMeasureTool";
+import { useOsmRoadsLayer } from "../../hooks/useOsmRoadsLayer";
 import type { MapTool } from "../../types/map";
 import {
   DEFAULT_COORDINATE_REFERENCE_SYSTEM,
@@ -28,10 +29,13 @@ import LayerPanel from "./components/LayerPanel";
 import MapPositionPopup from "./components/MapPositionPopup";
 import MeasurePanel from "./components/MeasurePanel";
 import ToolPanel from "./components/ToolPanel";
+import TileServerBaseMapPanel from "./components/TileServerBaseMapPanel";
 import "./MapView.css";
 
 function MapView() {
   const [activeTool, setActiveTool] = useState<MapTool>(null);
+  const [tileServerPanelOpen, setTileServerPanelOpen] = useState(false);
+  const [osmRoadsEnabled, setOsmRoadsEnabled] = useState(false);
   const [coordinateReferenceSystem, setCoordinateReferenceSystem] =
     useState<CoordinateReferenceSystem>(DEFAULT_COORDINATE_REFERENCE_SYSTEM);
   const {
@@ -49,10 +53,23 @@ function MapView() {
     changeBaseMapStyle,
     mapDataSource,
     changeMapDataSource,
+    tileServerBaseMap,
+    tileServerBaseMaps,
+    tileServerCatalogStatus,
+    tileServerCatalogError,
+    loadTileServerBaseMaps,
+    changeTileServerBaseMap,
     mapStyleVersion,
   } = useBaseMapStyle(map);
 
   useMapLanguage({ map, mapLoaded, mapStyleVersion });
+
+  const osmRoads = useOsmRoadsLayer({
+    map,
+    mapLoaded,
+    mapStyleVersion,
+    enabled: osmRoadsEnabled,
+  });
 
   const measure = useMeasureTool({ map, mapLoaded, activeTool, setActiveTool });
   const draw = useDrawTool({ map, mapLoaded, activeTool, setActiveTool });
@@ -97,6 +114,16 @@ function MapView() {
   const handleFinishMeasure = () => {
     measure.resetMeasure();
     setActiveTool(null);
+  };
+
+  const handleChangeDataSource = (dataSource: Parameters<typeof changeMapDataSource>[0]) => {
+    if (dataSource === "tile-server") {
+      setTileServerPanelOpen(true);
+    } else {
+      setTileServerPanelOpen(false);
+    }
+
+    changeMapDataSource(dataSource);
   };
 
   const hoveredDisplayCoordinate = transformFromWgs84(
@@ -157,7 +184,24 @@ function MapView() {
           baseMapStyle={baseMapStyle}
           onChange={changeBaseMapStyle}
           mapDataSource={mapDataSource}
-          onChangeDataSource={changeMapDataSource}
+          onChangeDataSource={handleChangeDataSource}
+          osmRoadsEnabled={osmRoadsEnabled}
+          osmRoadStatus={osmRoads.status}
+          osmRoadCount={osmRoads.roadCount}
+          onToggleOsmRoads={setOsmRoadsEnabled}
+          onReloadOsmRoads={osmRoads.reload}
+        />
+      )}
+
+      {tileServerPanelOpen && mapDataSource === "tile-server" && (
+        <TileServerBaseMapPanel
+          selectedBaseMap={tileServerBaseMap}
+          baseMaps={tileServerBaseMaps}
+          status={tileServerCatalogStatus}
+          error={tileServerCatalogError}
+          onReload={loadTileServerBaseMaps}
+          onSelect={changeTileServerBaseMap}
+          onClose={() => setTileServerPanelOpen(false)}
         />
       )}
 

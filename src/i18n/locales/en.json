@@ -13,6 +13,24 @@
     "CRS": "Change Coordinate Reference System"
   },
   "layers": {
+    "overlay": "Overlay",
+    "osmRoads": "OSM roads",
+    "roadsLoading": "Loading roads...",
+    "roadsLoaded": "{{count}} roads loaded",
+    "roadsZoomIn": "Zoom in to level 7 or closer.",
+    "roadsError": "Could not load roads from PostGIS.",
+    "reloadRoads": "Retry",
+    "tileServerLoading": "Loading tile server datasets...",
+    "tileServerError": "Could not load tile server datasets.",
+    "reloadTileServer": "Load datasets",
+    "select": "Select",
+    "selected": "Selected",
+    "noTileServerData": "No datasets found.",
+    "tileServerBaseMapDescription": "Choose a dataset to use as the map background.",
+    "closeBaseMapPanel": "Close tile server panel",
+    "selectBaseMapTitle": "Select a base map",
+    "selectBaseMapDescription": "Choose a dataset from the tile server to start using the map.",
+    "openBaseMapSelector": "Choose base map",
     "dataSource": "Data source",
     "baseMap": "Base map",
     "streets": "Streets",
@@ -100,6 +118,7 @@
     "signOut": "Sign out"
   },
   "data": {
-    "asia": "Asia"
+    "asia": "Asia",
+    "tileServer": "Tile server"
   }
 }

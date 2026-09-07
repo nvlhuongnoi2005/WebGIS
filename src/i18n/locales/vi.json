@@ -13,6 +13,24 @@
     "CRS": "Chuyển hệ tọa độ"
   },
   "layers": {
+    "overlay": "Lớp phủ",
+    "osmRoads": "Đường OSM",
+    "roadsLoading": "Đang tải đường...",
+    "roadsLoaded": "Đã tải {{count}} đường",
+    "roadsZoomIn": "Phóng to đến cấp 7 hoặc gần hơn.",
+    "roadsError": "Không thể tải đường từ PostGIS.",
+    "reloadRoads": "Thử lại",
+    "tileServerLoading": "Đang tải danh sách dữ liệu tile server...",
+    "tileServerError": "Không thể tải dữ liệu từ tile server.",
+    "reloadTileServer": "Tải danh sách dữ liệu",
+    "select": "Chọn",
+    "selected": "Đã chọn",
+    "noTileServerData": "Chưa tìm thấy dataset nào.",
+    "tileServerBaseMapDescription": "Chọn dataset để sử dụng làm bản đồ nền.",
+    "closeBaseMapPanel": "Đóng panel tile server",
+    "selectBaseMapTitle": "Chọn bản đồ nền",
+    "selectBaseMapDescription": "Hãy chọn một dataset từ tile server để bắt đầu sử dụng bản đồ.",
+    "openBaseMapSelector": "Chọn bản đồ nền",
     "dataSource": "Nguồn dữ liệu",
     "baseMap": "Bản đồ nền",
     "streets": "Đường phố",
@@ -100,6 +118,7 @@
     "signOut": "Đăng xuất"
   },
   "data": {
-    "asia": "Châu Á"
+    "asia": "Châu Á",
+    "tileServer": "Tile server"
   }
 }

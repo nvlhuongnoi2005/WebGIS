@@ -182,7 +182,7 @@ export function useMapInstance(
     const mapInstance =
       new maplibregl.Map({
         container: mapContainer.current,
-        style: getMapStyle("streets", "asia-full"),
+        style: getMapStyle("streets", "tile-server"),
         center: INITIAL_MAP_CENTER,
         zoom: 4,
       });
