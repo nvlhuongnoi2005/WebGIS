@@ -1,4 +1,5 @@
 export type MapTool =
+  | "route"
   | "measure"
   | "marker"
   | "layer"

@@ -105,6 +105,27 @@ export function calculatePolygonArea(
   }
 }
 
+export function calculateMultiPolygonArea(
+  polygons: Position[][][]
+): number {
+  if (polygons.length === 0 || polygons.some(polygon => polygon.length === 0)) {
+    return 0;
+  }
+
+  try {
+    return area({
+      type: "Feature",
+      properties: {},
+      geometry: {
+        type: "MultiPolygon",
+        coordinates: polygons,
+      },
+    });
+  } catch {
+    return 0;
+  }
+}
+
 export function getGeometryMeasurementProperties(
   geometry: Geometry
 ): Record<string, number> {
@@ -119,6 +140,12 @@ export function getGeometryMeasurementProperties(
   if (geometry.type === "Polygon") {
     return {
       [MEASURED_AREA_PROPERTY]: calculatePolygonArea(geometry.coordinates),
+    };
+  }
+
+  if (geometry.type === "MultiPolygon") {
+    return {
+      [MEASURED_AREA_PROPERTY]: calculateMultiPolygonArea(geometry.coordinates),
     };
   }
 

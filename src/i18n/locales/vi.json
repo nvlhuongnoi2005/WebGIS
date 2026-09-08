@@ -5,6 +5,7 @@
     "clearTitle": "Xóa tìm kiếm"
   },
   "tools": {
+    "route": "Tìm đường",
     "measure": "Đo khoảng cách / diện tích",
     "marker": "Vị trí",
     "layer": "Lớp bản đồ",
@@ -13,13 +14,6 @@
     "CRS": "Chuyển hệ tọa độ"
   },
   "layers": {
-    "overlay": "Lớp phủ",
-    "osmRoads": "Đường OSM",
-    "roadsLoading": "Đang tải đường...",
-    "roadsLoaded": "Đã tải {{count}} đường",
-    "roadsZoomIn": "Phóng to đến cấp 7 hoặc gần hơn.",
-    "roadsError": "Không thể tải đường từ PostGIS.",
-    "reloadRoads": "Thử lại",
     "tileServerLoading": "Đang tải danh sách dữ liệu tile server...",
     "tileServerError": "Không thể tải dữ liệu từ tile server.",
     "reloadTileServer": "Tải danh sách dữ liệu",

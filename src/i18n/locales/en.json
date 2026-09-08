@@ -5,6 +5,7 @@
     "clearTitle": "Clear search"
   },
   "tools": {
+    "route": "Routing",
     "measure": "Measure distance / area",
     "marker": "Marker",
     "layer": "Map layers",
@@ -13,13 +14,6 @@
     "CRS": "Change Coordinate Reference System"
   },
   "layers": {
-    "overlay": "Overlay",
-    "osmRoads": "OSM roads",
-    "roadsLoading": "Loading roads...",
-    "roadsLoaded": "{{count}} roads loaded",
-    "roadsZoomIn": "Zoom in to level 7 or closer.",
-    "roadsError": "Could not load roads from PostGIS.",
-    "reloadRoads": "Retry",
     "tileServerLoading": "Loading tile server datasets...",
     "tileServerError": "Could not load tile server datasets.",
     "reloadTileServer": "Load datasets",

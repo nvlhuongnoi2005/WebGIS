@@ -12,13 +12,14 @@ import { useMapInstance } from "../../hooks/useMapInstance";
 import { useMapLanguage } from "../../hooks/useMapLanguage";
 import { useMeasureLayers } from "../../hooks/useMeasureLayers";
 import { useMeasureTool } from "../../hooks/useMeasureTool";
-import { useOsmRoadsLayer } from "../../hooks/useOsmRoadsLayer";
+import { useRouting } from "../../hooks/useRouting";
 import type { MapTool } from "../../types/map";
 import {
   DEFAULT_COORDINATE_REFERENCE_SYSTEM,
   transformFromWgs84,
   type CoordinateReferenceSystem,
 } from "../../tools/CoordinateTool";
+import { splitTileServerDatasets } from "../../tools/MapStyleTool";
 import {
   getDrawGeoJSONCrs,
   transformDrawFeatureCollection,
@@ -30,12 +31,12 @@ import MapPositionPopup from "./components/MapPositionPopup";
 import MeasurePanel from "./components/MeasurePanel";
 import ToolPanel from "./components/ToolPanel";
 import TileServerBaseMapPanel from "./components/TileServerBaseMapPanel";
+import RoutingPanel from "./components/RoutingPanel";
 import "./MapView.css";
 
 function MapView() {
   const [activeTool, setActiveTool] = useState<MapTool>(null);
   const [tileServerPanelOpen, setTileServerPanelOpen] = useState(false);
-  const [osmRoadsEnabled, setOsmRoadsEnabled] = useState(false);
   const [coordinateReferenceSystem, setCoordinateReferenceSystem] =
     useState<CoordinateReferenceSystem>(DEFAULT_COORDINATE_REFERENCE_SYSTEM);
   const {
@@ -54,21 +55,27 @@ function MapView() {
     mapDataSource,
     changeMapDataSource,
     tileServerBaseMap,
+    tileServerOverlays,
     tileServerBaseMaps,
     tileServerCatalogStatus,
     tileServerCatalogError,
     loadTileServerBaseMaps,
     changeTileServerBaseMap,
+    toggleTileServerOverlay,
     mapStyleVersion,
   } = useBaseMapStyle(map);
+  const tileServerDatasets = useMemo(
+    () => splitTileServerDatasets(tileServerBaseMaps),
+    [tileServerBaseMaps]
+  );
 
   useMapLanguage({ map, mapLoaded, mapStyleVersion });
 
-  const osmRoads = useOsmRoadsLayer({
+  const routing = useRouting({
     map,
     mapLoaded,
     mapStyleVersion,
-    enabled: osmRoadsEnabled,
+    activeTool,
   });
 
   const measure = useMeasureTool({ map, mapLoaded, activeTool, setActiveTool });
@@ -108,6 +115,7 @@ function MapView() {
     }
 
     if (tool === "measure") measure.startMeasure();
+    if (tool === "route") routing.reset();
     setActiveTool(tool);
   };
 
@@ -185,22 +193,20 @@ function MapView() {
           onChange={changeBaseMapStyle}
           mapDataSource={mapDataSource}
           onChangeDataSource={handleChangeDataSource}
-          osmRoadsEnabled={osmRoadsEnabled}
-          osmRoadStatus={osmRoads.status}
-          osmRoadCount={osmRoads.roadCount}
-          onToggleOsmRoads={setOsmRoadsEnabled}
-          onReloadOsmRoads={osmRoads.reload}
         />
       )}
 
       {tileServerPanelOpen && mapDataSource === "tile-server" && (
         <TileServerBaseMapPanel
           selectedBaseMap={tileServerBaseMap}
-          baseMaps={tileServerBaseMaps}
+          baseMaps={tileServerDatasets.baseMaps}
+          overlays={tileServerDatasets.overlays}
+          selectedOverlayIds={tileServerOverlays.map(overlay => overlay.id)}
           status={tileServerCatalogStatus}
           error={tileServerCatalogError}
           onReload={loadTileServerBaseMaps}
           onSelect={changeTileServerBaseMap}
+          onToggleOverlay={toggleTileServerOverlay}
           onClose={() => setTileServerPanelOpen(false)}
         />
       )}
@@ -218,6 +224,21 @@ function MapView() {
           onFinish={handleFinishMeasure}
           onRedo={measure.redoMeasure}
           onUndo={measure.undoMeasure}
+        />
+      )}
+
+      {activeTool === "route" && (
+        <RoutingPanel
+          origin={routing.origin}
+          destination={routing.destination}
+          vehicle={routing.vehicle}
+          status={routing.status}
+          error={routing.error}
+          distanceKm={routing.route?.summary.distanceKm}
+          timeSeconds={routing.route?.summary.timeSeconds}
+          onVehicleChange={routing.setVehicle}
+          onCalculate={routing.calculateRoute}
+          onReset={routing.reset}
         />
       )}
 

@@ -34,6 +34,8 @@ export function useBaseMapStyle(
     useState<TileServerBaseMap[]>([]);
   const [tileServerBaseMap, setTileServerBaseMap] =
     useState<TileServerBaseMap | null>(DEFAULT_TILE_SERVER_BASE_MAP);
+  const [tileServerOverlays, setTileServerOverlays] =
+    useState<TileServerBaseMap[]>([]);
   const [tileServerCatalogStatus, setTileServerCatalogStatus] =
     useState<TileServerCatalogStatus>("idle");
   const [tileServerCatalogError, setTileServerCatalogError] =
@@ -44,7 +46,8 @@ export function useBaseMapStyle(
     (
       style: BaseMapStyle,
       dataSource: MapDataSource,
-      nextTileServerBaseMap: TileServerBaseMap | null = tileServerBaseMap
+      nextTileServerBaseMap: TileServerBaseMap | null = tileServerBaseMap,
+      nextTileServerOverlays: TileServerBaseMap[] = tileServerOverlays
     ) => {
       if (!map.current) {
         return;
@@ -62,10 +65,19 @@ export function useBaseMapStyle(
         setMapStyleVersion(version => version + 1);
       });
       mapInstance.setStyle(
-        getMapStyle(style, dataSource, apiKey, nextTileServerBaseMap ?? undefined)
+        getMapStyle(
+          style,
+          dataSource,
+          apiKey,
+          nextTileServerBaseMap ?? undefined,
+          nextTileServerOverlays
+        ),
+        // Rebuild the style so newly selected vector sources/layers are not
+        // lost by the style diff when switching from basemap-only mode.
+        { diff: false }
       );
     },
-    [map, tileServerBaseMap]
+    [map, tileServerBaseMap, tileServerOverlays]
   );
 
   const loadTileServerBaseMaps = useCallback(async () => {
@@ -108,22 +120,42 @@ export function useBaseMapStyle(
       setMapDataSource(dataSource);
 
       if (dataSource === "tile-server") {
+        changeMapStyle(baseMapStyle, "tile-server", tileServerBaseMap);
         void loadTileServerBaseMaps();
         return;
       }
 
       changeMapStyle(baseMapStyle, dataSource);
     },
-    [baseMapStyle, changeMapStyle, loadTileServerBaseMaps, mapDataSource]
+    [
+      baseMapStyle,
+      changeMapStyle,
+      loadTileServerBaseMaps,
+      mapDataSource,
+      tileServerBaseMap,
+    ]
   );
 
   const changeTileServerBaseMap = useCallback(
     (nextBaseMap: TileServerBaseMap) => {
-      changeMapStyle(baseMapStyle, "tile-server", nextBaseMap);
+      changeMapStyle(baseMapStyle, "tile-server", nextBaseMap, tileServerOverlays);
       setTileServerBaseMap(nextBaseMap);
       setMapDataSource("tile-server");
     },
-    [baseMapStyle, changeMapStyle]
+    [baseMapStyle, changeMapStyle, tileServerOverlays]
+  );
+
+  const toggleTileServerOverlay = useCallback(
+    (overlay: TileServerBaseMap) => {
+      const isSelected = tileServerOverlays.some(item => item.id === overlay.id);
+      const nextOverlays = isSelected
+        ? tileServerOverlays.filter(item => item.id !== overlay.id)
+        : [...tileServerOverlays, overlay];
+
+      setTileServerOverlays(nextOverlays);
+      changeMapStyle(baseMapStyle, "tile-server", tileServerBaseMap, nextOverlays);
+    },
+    [baseMapStyle, changeMapStyle, tileServerBaseMap, tileServerOverlays]
   );
 
   return {
@@ -132,11 +164,13 @@ export function useBaseMapStyle(
     mapDataSource,
     changeMapDataSource,
     tileServerBaseMap,
+    tileServerOverlays,
     tileServerBaseMaps,
     tileServerCatalogStatus,
     tileServerCatalogError,
     loadTileServerBaseMaps,
     changeTileServerBaseMap,
+    toggleTileServerOverlay,
     mapStyleVersion,
   };
 }
