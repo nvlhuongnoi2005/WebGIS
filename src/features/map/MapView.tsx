@@ -36,7 +36,7 @@ import "./MapView.css";
 
 function MapView() {
   const [activeTool, setActiveTool] = useState<MapTool>(null);
-  const [tileServerPanelOpen, setTileServerPanelOpen] = useState(false);
+  const [tileServerPanelMode, setTileServerPanelMode] = useState<"base-map" | "layers" | null>(null);
   const [coordinateReferenceSystem, setCoordinateReferenceSystem] =
     useState<CoordinateReferenceSystem>(DEFAULT_COORDINATE_REFERENCE_SYSTEM);
   const {
@@ -50,10 +50,6 @@ function MapView() {
     activeTool !== "draw" && activeTool !== "measure"
   );
   const {
-    baseMapStyle,
-    changeBaseMapStyle,
-    mapDataSource,
-    changeMapDataSource,
     tileServerBaseMap,
     tileServerOverlays,
     tileServerBaseMaps,
@@ -106,6 +102,10 @@ function MapView() {
         measure.resetMeasure();
       }
 
+      if (tool === "layer") {
+        setTileServerPanelMode(null);
+      }
+
       setActiveTool(null);
       return;
     }
@@ -116,6 +116,7 @@ function MapView() {
 
     if (tool === "measure") measure.startMeasure();
     if (tool === "route") routing.reset();
+    if (tool !== "layer") setTileServerPanelMode(null);
     setActiveTool(tool);
   };
 
@@ -124,14 +125,13 @@ function MapView() {
     setActiveTool(null);
   };
 
-  const handleChangeDataSource = (dataSource: Parameters<typeof changeMapDataSource>[0]) => {
-    if (dataSource === "tile-server") {
-      setTileServerPanelOpen(true);
-    } else {
-      setTileServerPanelOpen(false);
-    }
+  const openTileServerPanel = (mode: "base-map" | "layers") => {
+    setTileServerPanelMode(mode);
+    setActiveTool(null);
 
-    changeMapDataSource(dataSource);
+    if (tileServerCatalogStatus === "idle") {
+      void loadTileServerBaseMaps();
+    }
   };
 
   const hoveredDisplayCoordinate = transformFromWgs84(
@@ -189,15 +189,15 @@ function MapView() {
 
       {activeTool === "layer" && (
         <LayerPanel
-          baseMapStyle={baseMapStyle}
-          onChange={changeBaseMapStyle}
-          mapDataSource={mapDataSource}
-          onChangeDataSource={handleChangeDataSource}
+          onOpenBaseMap={() => openTileServerPanel("base-map")}
+          onOpenLayers={() => openTileServerPanel("layers")}
+          selectedOverlayCount={tileServerOverlays.length}
         />
       )}
 
-      {tileServerPanelOpen && mapDataSource === "tile-server" && (
+      {tileServerPanelMode && (
         <TileServerBaseMapPanel
+          mode={tileServerPanelMode}
           selectedBaseMap={tileServerBaseMap}
           baseMaps={tileServerDatasets.baseMaps}
           overlays={tileServerDatasets.overlays}
@@ -207,7 +207,7 @@ function MapView() {
           onReload={loadTileServerBaseMaps}
           onSelect={changeTileServerBaseMap}
           onToggleOverlay={toggleTileServerOverlay}
-          onClose={() => setTileServerPanelOpen(false)}
+          onClose={() => setTileServerPanelMode(null)}
         />
       )}
 

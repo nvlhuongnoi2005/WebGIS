@@ -137,5 +137,4 @@ const panelSx = {
   maxWidth: { xs: "calc(100% - 24px)", sm: "calc(100% - 40px)" },
   p: 1.5,
 };
-
 export default MeasurePanel;

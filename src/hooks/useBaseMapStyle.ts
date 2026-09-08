@@ -2,6 +2,7 @@ import {
   useCallback,
   useState,
 } from "react";
+import { useTranslation } from "react-i18next";
 
 import type { MutableRefObject } from "react";
 import type { Map } from "maplibre-gl";
@@ -26,6 +27,7 @@ export type TileServerCatalogStatus =
 export function useBaseMapStyle(
   map: MutableRefObject<Map | null>
 ) {
+  const { t } = useTranslation();
   const [baseMapStyle, setBaseMapStyle] =
     useState<BaseMapStyle>("streets");
   const [mapDataSource, setMapDataSource] =
@@ -89,15 +91,12 @@ export function useBaseMapStyle(
       setTileServerBaseMaps(datasets);
       setTileServerCatalogStatus("ready");
       return datasets;
-    } catch (error) {
-      const message = error instanceof Error
-        ? error.message
-        : "Không tải được danh sách tile server.";
-      setTileServerCatalogError(message);
+    } catch {
+      setTileServerCatalogError(t("layers.tileServerError"));
       setTileServerCatalogStatus("error");
       return [];
     }
-  }, []);
+  }, [t]);
 
   const changeBaseMapStyle = useCallback(
     (style: BaseMapStyle) => {

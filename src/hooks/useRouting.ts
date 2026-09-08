@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { MutableRefObject } from "react";
 import type { FeatureCollection, Point } from "geojson";
 import * as maplibregl from "maplibre-gl";
@@ -21,6 +22,7 @@ interface UseRoutingOptions {
 export type RoutingStatus = "idle" | "loading" | "success" | "error";
 
 export function useRouting({ map, mapLoaded, mapStyleVersion, activeTool }: UseRoutingOptions) {
+  const { t } = useTranslation();
   const [origin, setOrigin] = useState<MapCoordinates | null>(null);
   const [destination, setDestination] = useState<MapCoordinates | null>(null);
   const [vehicle, setVehicle] = useState<RoutingVehicle>("auto");
@@ -77,9 +79,10 @@ export function useRouting({ map, mapLoaded, mapStyleVersion, activeTool }: UseR
 
       setRoute(null);
       setStatus("error");
-      setError(requestError instanceof Error ? requestError.message : "Không thể tìm đường đi.");
+      const errorKey = requestError instanceof Error ? requestError.message : "routing.errors.unknown";
+      setError(errorKey.startsWith("routing.errors.") ? t(errorKey) : t("routing.errors.unknown"));
     }
-  }, [destination, origin, vehicle]);
+  }, [destination, origin, t, vehicle]);
 
   const changeVehicle = useCallback((nextVehicle: RoutingVehicle) => {
     requestController.current?.abort();

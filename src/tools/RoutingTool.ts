@@ -48,23 +48,12 @@ export async function fetchValhallaRoute(
   });
 
   if (!response.ok) {
-    let detail = `Valhalla trả về lỗi ${response.status}.`;
-
-    try {
-      const errorPayload = await response.json() as { error?: string; error_code?: number };
-      if (errorPayload.error) {
-        detail = errorPayload.error;
-      }
-    } catch {
-      // Keep the HTTP error when Valhalla did not return JSON.
-    }
-
-    throw new Error(detail);
+    throw new Error("routing.errors.requestFailed");
   }
 
   const payload = await response.json() as ValhallaResponse;
   if (!payload.trip?.legs?.length) {
-    throw new Error("Valhalla không tìm thấy tuyến đường phù hợp.");
+    throw new Error("routing.errors.noRoute");
   }
 
   const coordinates = payload.trip.legs.flatMap((leg, index) => {
@@ -73,7 +62,7 @@ export async function fetchValhallaRoute(
   });
 
   if (coordinates.length < 2) {
-    throw new Error("Valhalla trả về hình học tuyến đường không hợp lệ.");
+    throw new Error("routing.errors.invalidGeometry");
   }
 
   const summary = payload.trip.summary;
@@ -154,12 +143,8 @@ function decodeValue(shape: string, nextIndex: () => number): number | null {
 
 export function formatRouteDuration(seconds: number) {
   const minutes = Math.max(0, Math.round(seconds / 60));
-  const hours = Math.floor(minutes / 60);
-  const remainingMinutes = minutes % 60;
-
-  if (hours === 0) {
-    return `${remainingMinutes} phút`;
-  }
-
-  return `${hours} giờ ${remainingMinutes} phút`;
+  return {
+    hours: Math.floor(minutes / 60),
+    minutes: minutes % 60,
+  };
 }

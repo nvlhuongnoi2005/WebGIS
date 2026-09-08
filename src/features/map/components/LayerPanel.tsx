@@ -1,22 +1,11 @@
-import {
-  Paper,
-  Stack,
-  ToggleButton,
-  ToggleButtonGroup,
-  Typography,
-} from "@mui/material";
+import { Layers3, Map } from "lucide-react";
+import { Button, Paper, Stack, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
 
-import type {
-  BaseMapStyle,
-  MapDataSource,
-} from "../../../tools/MapStyleTool";
-
 interface LayerPanelProps {
-  baseMapStyle: BaseMapStyle;
-  onChange: (style: BaseMapStyle) => void;
-  mapDataSource: MapDataSource;
-  onChangeDataSource: (dataSource: MapDataSource) => void;
+  onOpenBaseMap: () => void;
+  onOpenLayers: () => void;
+  selectedOverlayCount: number;
 }
 
 const panelSx = {
@@ -30,10 +19,9 @@ const panelSx = {
 };
 
 function LayerPanel({
-  baseMapStyle,
-  onChange,
-  mapDataSource,
-  onChangeDataSource,
+  onOpenBaseMap,
+  onOpenLayers,
+  selectedOverlayCount,
 }: LayerPanelProps) {
   const { t } = useTranslation();
 
@@ -41,68 +29,27 @@ function LayerPanel({
     <Paper elevation={4} sx={panelSx}>
       <Stack spacing={1.5}>
         <Typography variant="overline" color="text.secondary" sx={{ lineHeight: 1 }}>
-          {t("layers.dataSource")}
+          {t("layers.layerControls")}
         </Typography>
-
-        <ToggleButtonGroup
-          exclusive
+        <Button
           fullWidth
-          orientation="vertical"
-          value={mapDataSource}
-          onChange={(_, value: MapDataSource | null) => {
-            if (value) onChangeDataSource(value);
-          }}
-          sx={{
-            "& .MuiToggleButton-root": {
-              justifyContent: "flex-start",
-              px: 1.5,
-              py: 0.75,
-              textTransform: "none",
-            },
-          }}
+          variant="outlined"
+          startIcon={<Map size={17} />}
+          onClick={onOpenBaseMap}
+          sx={{ justifyContent: "flex-start", textTransform: "none" }}
         >
-          <ToggleButton
-            value="tile-server"
-            onClick={() => {
-              if (mapDataSource === "tile-server") {
-                onChangeDataSource("tile-server");
-              }
-            }}
-          >
-            {t("data.tileServer")}
-          </ToggleButton>
-          <ToggleButton value="maptiler">MapTiler</ToggleButton>
-        </ToggleButtonGroup>
-
-        {mapDataSource !== "tile-server" && (
-          <>
-            <Typography variant="overline" color="text.secondary" sx={{ lineHeight: 1 }}>
-              {t("layers.baseMap")}
-            </Typography>
-          <ToggleButtonGroup
-            exclusive
-            fullWidth
-            orientation="vertical"
-            value={baseMapStyle}
-            onChange={(_, value: BaseMapStyle | null) => {
-              if (value) onChange(value);
-            }}
-            sx={{
-              "& .MuiToggleButton-root": {
-                justifyContent: "flex-start",
-                px: 1.5,
-                py: 0.75,
-                textTransform: "none",
-              },
-            }}
-          >
-            <ToggleButton value="streets">{t("layers.streets")}</ToggleButton>
-            <ToggleButton value="satellite">{t("layers.satellite")}</ToggleButton>
-            <ToggleButton value="outdoor">{t("layers.outdoor")}</ToggleButton>
-          </ToggleButtonGroup>
-          </>
-        )}
-
+          {t("layers.selectBaseMap")}
+        </Button>
+        <Button
+          fullWidth
+          variant="outlined"
+          startIcon={<Layers3 size={17} />}
+          onClick={onOpenLayers}
+          sx={{ justifyContent: "flex-start", textTransform: "none" }}
+        >
+          {t("layers.selectLayer")}
+          {selectedOverlayCount > 0 && ` (${selectedOverlayCount})`}
+        </Button>
       </Stack>
     </Paper>
   );

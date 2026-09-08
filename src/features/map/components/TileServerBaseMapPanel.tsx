@@ -18,6 +18,7 @@ import {
 } from "../../../tools/MapStyleTool";
 
 interface TileServerBaseMapPanelProps {
+  mode: "base-map" | "layers";
   selectedBaseMap: TileServerBaseMap | null;
   baseMaps: TileServerBaseMap[];
   status: "idle" | "loading" | "ready" | "error";
@@ -44,6 +45,7 @@ const panelSx = {
 };
 
 function TileServerBaseMapPanel({
+  mode,
   selectedBaseMap,
   baseMaps,
   status,
@@ -56,6 +58,7 @@ function TileServerBaseMapPanel({
   onClose,
 }: TileServerBaseMapPanelProps) {
   const { t } = useTranslation();
+  const isBaseMapMode = mode === "base-map";
 
   return (
     <Paper elevation={8} sx={panelSx}>
@@ -63,10 +66,12 @@ function TileServerBaseMapPanel({
         <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between" }}>
           <Box>
             <Typography variant="h6" sx={{ fontWeight: 700 }}>
-              {t("data.tileServer")}
+              {isBaseMapMode ? t("layers.selectBaseMap") : t("layers.selectLayer")}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              {t("layers.tileServerBaseMapDescription")}
+              {isBaseMapMode
+                ? t("layers.tileServerBaseMapDescription")
+                : t("layers.tileServerLayerDescription")}
             </Typography>
           </Box>
           <IconButton size="small" onClick={onClose} aria-label={t("layers.closeBaseMapPanel")}>
@@ -92,7 +97,7 @@ function TileServerBaseMapPanel({
           </Stack>
         )}
 
-        {status !== "loading" && baseMaps.length > 0 && (
+        {isBaseMapMode && status !== "loading" && baseMaps.length > 0 && (
           <DatasetGrid>
             {baseMaps.map(baseMap => (
               <DatasetCard
@@ -106,15 +111,15 @@ function TileServerBaseMapPanel({
           </DatasetGrid>
         )}
 
-        {status !== "loading" && (
+        {!isBaseMapMode && status !== "loading" && (
           <Stack spacing={1}>
             <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
               <Layers3 size={17} />
               <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                Overlays
+                {t("layers.overlaysTitle")}
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                (chọn nhiều)
+                {t("layers.overlaysDescription")}
               </Typography>
             </Stack>
 
@@ -125,23 +130,23 @@ function TileServerBaseMapPanel({
                     key={overlay.id}
                     dataset={overlay}
                     selected={selectedOverlayIds.includes(overlay.id)}
-                    selectedLabel="Đang hiển thị"
+                    selectedLabel={t("layers.overlayActive")}
                     onClick={() => onToggleOverlay(overlay)}
                   />
                 ))}
               </DatasetGrid>
             ) : (
               <Typography variant="body2" color="text.secondary">
-                Chưa có overlay nào được đăng ký trong tile server.
+                {t("layers.noOverlays")}
               </Typography>
             )}
           </Stack>
         )}
 
-        {status !== "loading" && baseMaps.length === 0 && status !== "error" && (
+        {status !== "loading" && (isBaseMapMode ? baseMaps.length === 0 : overlays.length === 0) && status !== "error" && (
           <Stack spacing={1} sx={{ py: 1 }}>
             <Typography variant="body2" color="text.secondary">
-              {t("layers.noTileServerData")}
+              {isBaseMapMode ? t("layers.noTileServerData") : t("layers.noOverlays")}
             </Typography>
             <Button size="small" variant="outlined" onClick={onReload} sx={{ alignSelf: "flex-start" }}>
               {t("layers.reloadTileServer")}
@@ -178,6 +183,8 @@ function DatasetCard({
   selectedLabel: string;
   onClick: () => void;
 }) {
+  const { t } = useTranslation();
+
   return (
     <ButtonBase
       onClick={onClick}
@@ -205,14 +212,16 @@ function DatasetCard({
           >
             <Stack spacing={0.5} sx={{ alignItems: "center" }}>
               <Layers3 size={28} />
-              <Typography variant="caption" sx={{ fontWeight: 700 }}>Vector overlay</Typography>
+              <Typography variant="caption" sx={{ fontWeight: 700 }}>
+                {t("layers.vectorOverlay")}
+              </Typography>
             </Stack>
           </Box>
         ) : (
           <Box
             component="img"
             src={getTileServerPreviewUrl(dataset)}
-            alt={`${dataset.label} preview`}
+            alt={t("layers.previewAlt", { name: dataset.label })}
             loading="lazy"
             sx={{
               display: "block",

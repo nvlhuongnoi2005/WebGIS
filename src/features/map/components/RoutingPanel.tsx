@@ -23,6 +23,7 @@ import {
   Search,
   Truck,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import { formatRouteDuration, type RoutingVehicle } from "../../../tools/RoutingTool";
 import type { MapCoordinates } from "../../../types/map";
@@ -41,18 +42,18 @@ interface RoutingPanelProps {
   onReset: () => void;
 }
 
-const vehicles: Array<{ value: RoutingVehicle; label: string; icon: typeof Car }> = [
-  { value: "auto", label: "Ô tô", icon: Car },
-  { value: "motorcycle", label: "Xe máy", icon: Bike },
-  { value: "bicycle", label: "Xe đạp", icon: Bike },
-  { value: "pedestrian", label: "Đi bộ", icon: Footprints },
-  { value: "bus", label: "Xe buýt", icon: Bus },
-  { value: "truck", label: "Xe tải", icon: Truck },
-  { value: "taxi", label: "Taxi", icon: Car },
+const vehicles: Array<{ value: RoutingVehicle; labelKey: string; icon: typeof Car }> = [
+  { value: "auto", labelKey: "routing.vehicles.auto", icon: Car },
+  { value: "motorcycle", labelKey: "routing.vehicles.motorcycle", icon: Bike },
+  { value: "bicycle", labelKey: "routing.vehicles.bicycle", icon: Bike },
+  { value: "pedestrian", labelKey: "routing.vehicles.pedestrian", icon: Footprints },
+  { value: "bus", labelKey: "routing.vehicles.bus", icon: Bus },
+  { value: "truck", labelKey: "routing.vehicles.truck", icon: Truck },
+  { value: "taxi", labelKey: "routing.vehicles.taxi", icon: Car },
 ];
 
-function formatCoordinate(point: MapCoordinates | null) {
-  return point ? `${point[1].toFixed(5)}, ${point[0].toFixed(5)}` : "Chưa chọn trên bản đồ";
+function formatCoordinate(point: MapCoordinates | null, notSelected: string) {
+  return point ? `${point[1].toFixed(5)}, ${point[0].toFixed(5)}` : notSelected;
 }
 
 function RoutingPanel({
@@ -67,7 +68,17 @@ function RoutingPanel({
   onCalculate,
   onReset,
 }: RoutingPanelProps) {
+  const { t } = useTranslation();
   const canCalculate = Boolean(origin && destination) && status !== "loading";
+  const notSelected = t("routing.notSelected");
+  const duration = typeof timeSeconds === "number"
+    ? formatRouteDuration(timeSeconds)
+    : null;
+  const durationLabel = duration
+    ? duration.hours > 0
+      ? t("routing.durationHoursMinutes", duration)
+      : t("routing.durationMinutes", { count: duration.minutes })
+    : null;
 
   return (
     <Paper elevation={4} sx={panelSx}>
@@ -78,23 +89,23 @@ function RoutingPanel({
               <RouteIcon size={18} />
             </Box>
             <Box>
-              <Typography variant="subtitle1" sx={{ fontWeight: 700, lineHeight: 1.2 }}>Tìm đường</Typography>
-              <Typography variant="caption" color="text.secondary">Chọn A và B trên bản đồ</Typography>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700, lineHeight: 1.2 }}>{t("routing.title")}</Typography>
+              <Typography variant="caption" color="text.secondary">{t("routing.description")}</Typography>
             </Box>
           </Stack>
-          <IconButton size="small" onClick={onReset} title="Đặt lại điểm A và B" aria-label="Đặt lại điểm A và B">
+          <IconButton size="small" onClick={onReset} title={t("routing.resetPoints")} aria-label={t("routing.resetPoints")}>
             <RotateCcw size={17} />
           </IconButton>
         </Stack>
 
         <Stack spacing={0.75}>
-          <PointRow color="#16a34a" label="A · Điểm xuất phát" value={formatCoordinate(origin)} />
-          <PointRow color="#dc2626" label="B · Điểm đến" value={formatCoordinate(destination)} />
+          <PointRow color="#16a34a" label={`A · ${t("routing.origin")}`} value={formatCoordinate(origin, notSelected)} selected={Boolean(origin)} />
+          <PointRow color="#dc2626" label={`B · ${t("routing.destination")}`} value={formatCoordinate(destination, notSelected)} selected={Boolean(destination)} />
         </Stack>
 
         <Divider />
         <Typography variant="caption" sx={{ fontWeight: 700, color: "text.secondary", textTransform: "uppercase", letterSpacing: 0.5 }}>
-          Phương tiện
+          {t("routing.vehicle")}
         </Typography>
         <ToggleButtonGroup
           exclusive
@@ -104,10 +115,10 @@ function RoutingPanel({
           onChange={(_, value: RoutingVehicle | null) => value && onVehicleChange(value)}
           sx={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 0.5, "& .MuiToggleButtonGroup-grouped": { border: "1px solid", borderColor: "divider", borderRadius: "8px !important", m: 0 } }}
         >
-          {vehicles.map(({ value, label, icon: Icon }) => (
+          {vehicles.map(({ value, labelKey, icon: Icon }) => (
             <ToggleButton key={value} value={value} sx={{ minWidth: 0, minHeight: 44, px: 0.25, flexDirection: "column", gap: 0.25, textTransform: "none" }}>
               <Icon size={17} />
-              <Typography variant="caption" sx={{ fontSize: 10.5, lineHeight: 1 }}>{label}</Typography>
+              <Typography variant="caption" sx={{ fontSize: 10.5, lineHeight: 1 }}>{t(labelKey)}</Typography>
             </ToggleButton>
           ))}
         </ToggleButtonGroup>
@@ -119,9 +130,9 @@ function RoutingPanel({
             <CheckCircle2 size={20} color="#15803d" />
             <Box>
               <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                {formatRouteDuration(timeSeconds)} · {distanceKm.toFixed(1)} km
+                {durationLabel} · {distanceKm.toFixed(1)} {t("routing.distanceUnit")}
               </Typography>
-              <Typography variant="caption" color="text.secondary">Tuyến đường phù hợp với phương tiện đã chọn</Typography>
+              <Typography variant="caption" color="text.secondary">{t("routing.routeSuitable")}</Typography>
             </Box>
           </Stack>
         )}
@@ -133,13 +144,13 @@ function RoutingPanel({
           disabled={!canCalculate}
           onClick={onCalculate}
         >
-          {status === "loading" ? "Đang tìm đường…" : "Tìm đường"}
+          {status === "loading" ? t("routing.loading") : t("routing.findRoute")}
         </Button>
 
         {(!origin || !destination) && (
           <Stack direction="row" spacing={0.75} sx={{ color: "text.secondary", alignItems: "center" }}>
             <LocateFixed size={15} />
-            <Typography variant="caption">{origin ? "Nhấp tiếp để chọn điểm B" : "Nhấp bản đồ để chọn điểm A"}</Typography>
+            <Typography variant="caption">{origin ? t("routing.chooseDestination") : t("routing.chooseOrigin")}</Typography>
           </Stack>
         )}
       </Stack>
@@ -147,13 +158,13 @@ function RoutingPanel({
   );
 }
 
-function PointRow({ color, label, value }: { color: string; label: string; value: string }) {
+function PointRow({ color, label, value, selected }: { color: string; label: string; value: string; selected: boolean }) {
   return (
     <Stack direction="row" spacing={1} sx={{ minWidth: 0, alignItems: "center" }}>
       <Box sx={{ width: 10, height: 10, flexShrink: 0, borderRadius: "50%", bgcolor: color, border: "2px solid white", boxShadow: `0 0 0 1px ${color}` }} />
       <Box sx={{ minWidth: 0 }}>
         <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>{label}</Typography>
-        <Typography variant="body2" noWrap sx={{ color: value === "Chưa chọn trên bản đồ" ? "text.disabled" : "text.primary" }}>{value}</Typography>
+        <Typography variant="body2" noWrap sx={{ color: selected ? "text.primary" : "text.disabled" }}>{value}</Typography>
       </Box>
     </Stack>
   );

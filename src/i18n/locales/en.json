@@ -26,7 +26,17 @@
     "selectBaseMapDescription": "Choose a dataset from the tile server to start using the map.",
     "openBaseMapSelector": "Choose base map",
     "dataSource": "Data source",
+    "layerControls": "Map layer controls",
+    "selectBaseMap": "Choose base map",
+    "selectLayer": "Choose layers",
+    "tileServerLayerDescription": "Choose overlays to display on top of the base map.",
     "baseMap": "Base map",
+    "overlaysTitle": "Overlays",
+    "overlaysDescription": "(select multiple)",
+    "overlayActive": "Visible",
+    "noOverlays": "No overlays are registered in the tile server.",
+    "vectorOverlay": "Vector overlay",
+    "previewAlt": "Preview of {{name}}",
     "streets": "Streets",
     "satellite": "Satellite",
     "outdoor": "Outdoor"
@@ -36,6 +46,38 @@
     "label": "Coordinates",
     "longitude": "Longitude",
     "latitude": "Latitude"
+  },
+  "routing": {
+    "title": "Routing",
+    "description": "Choose points A and B on the map",
+    "resetPoints": "Reset points A and B",
+    "origin": "Starting point",
+    "destination": "Destination",
+    "notSelected": "Not selected on the map",
+    "vehicle": "Vehicle",
+    "findRoute": "Find route",
+    "loading": "Finding route…",
+    "chooseOrigin": "Click the map to choose point A",
+    "chooseDestination": "Click again to choose point B",
+    "routeSuitable": "Route suitable for the selected vehicle",
+    "distanceUnit": "km",
+    "durationMinutes": "{{count}} min",
+    "durationHoursMinutes": "{{hours}} hr {{minutes}} min",
+    "vehicles": {
+      "auto": "Car",
+      "motorcycle": "Motorcycle",
+      "bicycle": "Bicycle",
+      "pedestrian": "Walking",
+      "bus": "Bus",
+      "truck": "Truck",
+      "taxi": "Taxi"
+    },
+    "errors": {
+      "requestFailed": "Could not connect to Valhalla.",
+      "noRoute": "Valhalla could not find a suitable route.",
+      "invalidGeometry": "Valhalla returned invalid route geometry.",
+      "unknown": "Could not find a route."
+    }
   },
   "crs": {
     "title": "Coordinate system",
