@@ -26,6 +26,7 @@ import {
 import { useTranslation } from "react-i18next";
 
 import { formatRouteDuration, type RoutingVehicle } from "../../../tools/RoutingTool";
+import { formatDmsCoordinates } from "../../../tools/CoordinateTool";
 import type { MapCoordinates } from "../../../types/map";
 import type { RoutingStatus } from "../../../hooks/useRouting";
 
@@ -53,7 +54,7 @@ const vehicles: Array<{ value: RoutingVehicle; labelKey: string; icon: typeof Ca
 ];
 
 function formatCoordinate(point: MapCoordinates | null, notSelected: string) {
-  return point ? `${point[1].toFixed(5)}, ${point[0].toFixed(5)}` : notSelected;
+  return point ? formatDmsCoordinates(point[0], point[1]) : notSelected;
 }
 
 function RoutingPanel({

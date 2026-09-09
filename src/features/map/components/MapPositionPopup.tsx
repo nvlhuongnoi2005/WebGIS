@@ -12,8 +12,12 @@ import {
 import { MapPin } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import type { CoordinateReferenceSystem } from "../../../tools/CoordinateTool";
-import { COORDINATE_SYSTEMS } from "../../../tools/CoordinateTool";
+import {
+  COORDINATE_SYSTEMS,
+  formatDmsCoordinates,
+  isGeographicCoordinateReferenceSystem,
+  type CoordinateReferenceSystem,
+} from "../../../tools/CoordinateTool";
 
 interface MapPositionPopupProps {
   longitude: number;
@@ -32,7 +36,9 @@ function MapPositionPopup({
 }: MapPositionPopupProps) {
   const { t } = useTranslation();
   const precision = crs === "EPSG:4326" ? 6 : 3;
-  const coordinates = `[${longitude.toFixed(precision)}, ${latitude.toFixed(precision)}]`;
+  const coordinates = isGeographicCoordinateReferenceSystem(crs)
+    ? formatDmsCoordinates(longitude, latitude)
+    : `[${longitude.toFixed(precision)}, ${latitude.toFixed(precision)}]`;
 
   if (compact) {
     return (

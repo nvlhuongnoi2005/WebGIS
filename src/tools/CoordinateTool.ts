@@ -68,6 +68,48 @@ export type Coordinate = [x: number, y: number];
 export const DEFAULT_COORDINATE_REFERENCE_SYSTEM: CoordinateReferenceSystem =
   "EPSG:4326";
 
+const GEOGRAPHIC_COORDINATE_REFERENCE_SYSTEMS: CoordinateReferenceSystem[] = [
+  "EPSG:4326",
+  "EPSG:4756",
+];
+
+export function isGeographicCoordinateReferenceSystem(
+  crs: CoordinateReferenceSystem
+): boolean {
+  return GEOGRAPHIC_COORDINATE_REFERENCE_SYSTEMS.includes(crs);
+}
+
+/** Formats longitude/latitude using the degrees-minutes-seconds style used by Google Maps. */
+export function formatDmsCoordinates(longitude: number, latitude: number): string {
+  return `${formatDms(latitude, "N", "S")} ${formatDms(longitude, "E", "W")}`;
+}
+
+function formatDms(
+  value: number,
+  positiveDirection: string,
+  negativeDirection: string
+): string {
+  const absoluteValue = Math.abs(value);
+  let degrees = Math.floor(absoluteValue);
+  const minutesValue = (absoluteValue - degrees) * 60;
+  let minutes = Math.floor(minutesValue);
+  let seconds = Number(((minutesValue - minutes) * 60).toFixed(1));
+
+  if (seconds >= 60) {
+    seconds = 0;
+    minutes += 1;
+  }
+
+  if (minutes >= 60) {
+    minutes = 0;
+    degrees += 1;
+  }
+
+  return `${degrees}°${String(minutes).padStart(2, "0")}'${seconds
+    .toFixed(1)
+    .padStart(4, "0")}\"${value < 0 ? negativeDirection : positiveDirection}`;
+}
+
 /**
  * Converts supported CRS input formats to the single format used by the app:
  * `EPSG:<code>`.
