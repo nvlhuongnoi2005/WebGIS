@@ -17,7 +17,7 @@ import {
   formatDmsCoordinates,
   isGeographicCoordinateReferenceSystem,
   type CoordinateReferenceSystem,
-} from "../../../tools/CoordinateTool";
+} from "../../../tools/coordinate/CoordinateTool";
 
 interface MapPositionPopupProps {
   longitude: number;

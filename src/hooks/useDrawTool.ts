@@ -20,7 +20,7 @@ import {
   type DrawGeometry,
   type DrawMode,
   type DrawProperties,
-} from "../tools/DrawTool";
+} from "../tools/draw/DrawTool";
 import type { MapTool } from "../types/map";
 
 interface UseDrawToolOptions {

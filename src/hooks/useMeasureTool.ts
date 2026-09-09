@@ -17,12 +17,12 @@ import type {
 
 import {
   isSelfIntersectingPolygon,
-} from "../tools/MeasureTool";
+} from "../tools/measure/MeasureTool";
 
 import type {
   Coordinate,
   MeasureMode,
-} from "../tools/MeasureTool";
+} from "../tools/measure/MeasureTool";
 
 import type {
   MapTool,

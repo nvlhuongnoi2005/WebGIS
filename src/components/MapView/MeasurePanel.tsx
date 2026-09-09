@@ -4,12 +4,12 @@ import {
   calculateTotalDistance,
   formatArea,
   formatDistance,
-} from "../../tools/MeasureTool";
+} from "../../tools/measure/MeasureTool";
 
 import type {
   Coordinate,
   MeasureMode,
-} from "../../tools/MeasureTool";
+} from "../../tools/measure/MeasureTool";
 
 interface MeasurePanelProps {
   error: string | null;

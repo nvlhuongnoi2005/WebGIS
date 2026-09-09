@@ -1,6 +1,6 @@
 import type { Feature, LineString } from "geojson";
 
-import type { MapCoordinates } from "../types/map";
+import type { MapCoordinates } from "../../types/map";
 
 export type RoutingVehicle =
   | "auto"

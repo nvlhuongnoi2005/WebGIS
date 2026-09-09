@@ -7,14 +7,14 @@ import {
   DRAW_VERTEX_COORDINATE_PATH_PROPERTY,
   DRAW_VERTEX_GEOMETRY_PATH_PROPERTY,
   encodeDrawPath,
-} from "../tools/DrawTool";
+} from "../tools/draw/DrawTool";
 import type {
   DrawCoordinate,
   DrawFeatureCollection,
   DrawFeatureId,
   DrawGeometry,
   DrawMode,
-} from "../tools/DrawTool";
+} from "../tools/draw/DrawTool";
 
 interface UseDrawLayersOptions {
   map: MutableRefObject<maplibregl.Map | null>;

@@ -107,7 +107,7 @@ function formatDms(
 
   return `${degrees}°${String(minutes).padStart(2, "0")}'${seconds
     .toFixed(1)
-    .padStart(4, "0")}\"${value < 0 ? negativeDirection : positiveDirection}`;
+    .padStart(4, "0")}"${value < 0 ? negativeDirection : positiveDirection}`;
 }
 
 /**

@@ -25,8 +25,8 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import { formatRouteDuration, type RoutingVehicle } from "../../../tools/RoutingTool";
-import { formatDmsCoordinates } from "../../../tools/CoordinateTool";
+import { formatRouteDuration, type RoutingVehicle } from "../../../tools/routing/RoutingTool";
+import { formatDmsCoordinates } from "../../../tools/coordinate/CoordinateTool";
 import type { MapCoordinates } from "../../../types/map";
 import type { RoutingStatus } from "../../../hooks/useRouting";
 

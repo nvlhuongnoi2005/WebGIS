@@ -18,7 +18,7 @@ export default defineConfig(({ mode }) => {
     server: {
       proxy: {
         "/api/valhalla": {
-          target: env.VITE_VALHALLA_URL || "http://localhost:8002",
+          target: env.VITE_VALHALLA_URL,
           changeOrigin: true,
           rewrite: path => path.replace(/^\/api\/valhalla/, ""),
         },

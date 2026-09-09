@@ -10,12 +10,12 @@ import {
   normalizeCoordinateReferenceSystem,
   transformCoordinate,
   type CoordinateReferenceSystem,
-} from "./CoordinateTool";
+} from "../coordinate/CoordinateTool";
 import {
   getGeometryMeasurementProperties,
   MEASURED_AREA_PROPERTY,
   MEASURED_LENGTH_PROPERTY,
-} from "./MeasureTool";
+} from "../measure/MeasureTool";
 
 export type DrawCoordinate = [number, number];
 export type DrawGeometry = Geometry;

@@ -12,7 +12,7 @@ import { useTranslation } from "react-i18next";
 import {
   COORDINATE_SYSTEMS,
   type CoordinateReferenceSystem,
-} from "../../../tools/CoordinateTool";
+} from "../../../tools/coordinate/CoordinateTool";
 
 interface CRSPanelProps {
   value: CoordinateReferenceSystem;

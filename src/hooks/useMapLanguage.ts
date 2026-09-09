@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import type { MutableRefObject } from "react";
 import type { Map } from "maplibre-gl";
 import { useTranslation } from "react-i18next";
-import { setMapLanguage } from "../tools/MapLanguageTool";
+import { setMapLanguage } from "../tools/map/MapLanguageTool";
 
 interface UseMapLanguageOptions {
   map: MutableRefObject<Map | null>;

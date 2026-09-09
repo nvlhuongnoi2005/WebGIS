@@ -19,12 +19,12 @@ import type {
 import {
   calculateDistance,
   formatDistance,
-} from "../tools/MeasureTool";
+} from "../tools/measure/MeasureTool";
 
 import type {
   Coordinate,
   MeasureMode,
-} from "../tools/MeasureTool";
+} from "../tools/measure/MeasureTool";
 
 interface UseMeasureLayersOptions {
   map: MutableRefObject<maplibregl.Map | null>;

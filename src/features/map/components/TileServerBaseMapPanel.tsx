@@ -15,7 +15,7 @@ import { useTranslation } from "react-i18next";
 import {
   getTileServerPreviewUrl,
   type TileServerBaseMap,
-} from "../../../tools/MapStyleTool";
+} from "../../../tools/map/MapStyleTool";
 
 interface TileServerBaseMapPanelProps {
   mode: "base-map" | "layers";

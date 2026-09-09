@@ -10,12 +10,12 @@ import * as maplibregl from "maplibre-gl";
 
 import {
   getMapStyle,
-} from "../tools/MapStyleTool";
+} from "../tools/map/MapStyleTool";
 import MapPositionPopup from "../features/map/components/MapPositionPopup";
 import {
   transformFromWgs84,
   type CoordinateReferenceSystem,
-} from "../tools/CoordinateTool";
+} from "../tools/coordinate/CoordinateTool";
 
 const INITIAL_MAP_CENTER: [number, number] = [105.8342, 21.0278];
 

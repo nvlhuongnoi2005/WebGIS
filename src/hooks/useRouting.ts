@@ -9,7 +9,7 @@ import {
   fetchValhallaRoute,
   type RouteResult,
   type RoutingVehicle,
-} from "../tools/RoutingTool";
+} from "../tools/routing/RoutingTool";
 import type { MapCoordinates, MapTool } from "../types/map";
 
 interface UseRoutingOptions {

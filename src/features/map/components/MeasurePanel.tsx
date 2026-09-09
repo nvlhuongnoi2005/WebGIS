@@ -18,7 +18,7 @@ import {
   formatDistance,
   type Coordinate,
   type MeasureMode,
-} from "../../../tools/MeasureTool";
+} from "../../../tools/measure/MeasureTool";
 
 interface MeasurePanelProps {
   error: string | null;

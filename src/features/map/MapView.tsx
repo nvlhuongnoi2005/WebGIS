@@ -18,13 +18,13 @@ import {
   DEFAULT_COORDINATE_REFERENCE_SYSTEM,
   transformFromWgs84,
   type CoordinateReferenceSystem,
-} from "../../tools/CoordinateTool";
-import { splitTileServerDatasets } from "../../tools/MapStyleTool";
+} from "../../tools/coordinate/CoordinateTool";
+import { splitTileServerDatasets } from "../../tools/map/MapStyleTool";
 import {
   getDrawGeoJSONCrs,
   transformDrawFeatureCollection,
   type DrawFeatureCollection,
-} from "../../tools/DrawTool";
+} from "../../tools/draw/DrawTool";
 import DrawPanel from "./components/DrawPanel";
 import LayerPanel from "./components/LayerPanel";
 import MapPositionPopup from "./components/MapPositionPopup";

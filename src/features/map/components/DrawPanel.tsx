@@ -39,13 +39,13 @@ import {
   type DrawProperties,
   type DrawFeatureCollection,
   type DrawMode,
-} from "../../../tools/DrawTool";
+} from "../../../tools/draw/DrawTool";
 import {
   formatArea,
   formatDistance,
   MEASURED_AREA_PROPERTY,
   MEASURED_LENGTH_PROPERTY,
-} from "../../../tools/MeasureTool";
+} from "../../../tools/measure/MeasureTool";
 
 interface DrawPanelProps {
   drawingCount: number;

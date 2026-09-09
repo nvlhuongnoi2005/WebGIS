@@ -11,10 +11,10 @@ import {
   DEFAULT_TILE_SERVER_BASE_MAP,
   fetchTileServerBaseMaps,
   getMapStyle,
-} from "../tools/MapStyleTool";
+} from "../tools/map/MapStyleTool";
 import type {
   TileServerBaseMap,
-} from "../tools/MapStyleTool";
+} from "../tools/map/MapStyleTool";
 
 export type TileServerCatalogStatus =
   | "idle"
