@@ -44,6 +44,21 @@ export interface GeocodingFeature {
   bbox?: [number, number, number, number];
 }
 
+interface NominatimResult {
+  place_id: number;
+  osm_type?: string;
+  osm_id?: number;
+  lat: string;
+  lon: string;
+  display_name: string;
+  name?: string;
+  boundingbox?: [string, string, string, string];
+}
+
+const NOMINATIM_URL = (
+  import.meta.env.VITE_NOMINATIM_URL || "http://localhost:8083"
+).replace(/\/$/, "");
+
 interface SearchBarProps {
   map: MutableRefObject<maplibregl.Map | null>;
 }
@@ -134,17 +149,8 @@ function SearchBar({ map }: SearchBarProps) {
   const fetchGeocoding = async (
     searchQuery: string
   ): Promise<GeocodingFeature[]> => {
-    const apiKey = import.meta.env.VITE_MAPTILER_API_KEY;
-
-    if (!apiKey || !searchQuery.trim()) {
+    if (!searchQuery.trim()) {
       return [];
-    }
-
-    let proximityParam = "";
-
-    if (map.current) {
-      const center = map.current.getCenter();
-      proximityParam = `&proximity=${center.lng},${center.lat}`;
     }
 
     const activeLang = (
@@ -156,7 +162,14 @@ function SearchBar({ map }: SearchBarProps) {
       : "en,vi";
 
     try {
-      const url = `https://api.maptiler.com/geocoding/${encodeURIComponent(searchQuery.trim())}.json?key=${apiKey}&language=${activeLang}${proximityParam}`;
+      const params = new URLSearchParams({
+        q: searchQuery.trim(),
+        format: "jsonv2",
+        addressdetails: "1",
+        limit: "8",
+        "accept-language": activeLang,
+      });
+      const url = `${NOMINATIM_URL}/search?${params.toString()}`;
 
       const response = await fetch(url);
 
@@ -166,9 +179,26 @@ function SearchBar({ map }: SearchBarProps) {
         );
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as NominatimResult[];
 
-      return (data.features as GeocodingFeature[]) || [];
+      return data.map(result => {
+        const longitude = Number(result.lon);
+        const latitude = Number(result.lat);
+        const bbox = result.boundingbox?.map(Number);
+
+        return {
+          id: `${result.osm_type || "place"}-${result.osm_id || result.place_id}`,
+          type: "Feature",
+          place_name: result.display_name,
+          text: result.name || result.display_name,
+          center: [longitude, latitude],
+          geometry: {
+            type: "Point",
+            coordinates: [longitude, latitude],
+          },
+          bbox: bbox && [bbox[2], bbox[0], bbox[3], bbox[1]],
+        };
+      });
     } catch (error) {
       console.error("Geocoding fetch error:", error);
 

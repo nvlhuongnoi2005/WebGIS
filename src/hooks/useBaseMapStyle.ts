@@ -14,7 +14,6 @@ import {
 } from "../tools/MapStyleTool";
 import type {
   BaseMapStyle,
-  MapDataSource,
   TileServerBaseMap,
 } from "../tools/MapStyleTool";
 
@@ -30,8 +29,6 @@ export function useBaseMapStyle(
   const { t } = useTranslation();
   const [baseMapStyle, setBaseMapStyle] =
     useState<BaseMapStyle>("streets");
-  const [mapDataSource, setMapDataSource] =
-    useState<MapDataSource>("tile-server");
   const [tileServerBaseMaps, setTileServerBaseMaps] =
     useState<TileServerBaseMap[]>([]);
   const [tileServerBaseMap, setTileServerBaseMap] =
@@ -47,18 +44,10 @@ export function useBaseMapStyle(
   const changeMapStyle = useCallback(
     (
       style: BaseMapStyle,
-      dataSource: MapDataSource,
       nextTileServerBaseMap: TileServerBaseMap | null = tileServerBaseMap,
       nextTileServerOverlays: TileServerBaseMap[] = tileServerOverlays
     ) => {
       if (!map.current) {
-        return;
-      }
-
-      const apiKey = import.meta.env.VITE_MAPTILER_API_KEY;
-
-      if (dataSource === "maptiler" && !apiKey) {
-        console.error("VITE_MAPTILER_API_KEY is missing");
         return;
       }
 
@@ -69,8 +58,6 @@ export function useBaseMapStyle(
       mapInstance.setStyle(
         getMapStyle(
           style,
-          dataSource,
-          apiKey,
           nextTileServerBaseMap ?? undefined,
           nextTileServerOverlays
         ),
@@ -104,42 +91,16 @@ export function useBaseMapStyle(
         return;
       }
 
-      changeMapStyle(style, mapDataSource);
+      changeMapStyle(style);
       setBaseMapStyle(style);
     },
-    [baseMapStyle, changeMapStyle, map, mapDataSource]
-  );
-
-  const changeMapDataSource = useCallback(
-    (dataSource: MapDataSource) => {
-      if (dataSource === mapDataSource && dataSource !== "tile-server") {
-        return;
-      }
-
-      setMapDataSource(dataSource);
-
-      if (dataSource === "tile-server") {
-        changeMapStyle(baseMapStyle, "tile-server", tileServerBaseMap);
-        void loadTileServerBaseMaps();
-        return;
-      }
-
-      changeMapStyle(baseMapStyle, dataSource);
-    },
-    [
-      baseMapStyle,
-      changeMapStyle,
-      loadTileServerBaseMaps,
-      mapDataSource,
-      tileServerBaseMap,
-    ]
+    [baseMapStyle, changeMapStyle, map]
   );
 
   const changeTileServerBaseMap = useCallback(
     (nextBaseMap: TileServerBaseMap) => {
-      changeMapStyle(baseMapStyle, "tile-server", nextBaseMap, tileServerOverlays);
+      changeMapStyle(baseMapStyle, nextBaseMap, tileServerOverlays);
       setTileServerBaseMap(nextBaseMap);
-      setMapDataSource("tile-server");
     },
     [baseMapStyle, changeMapStyle, tileServerOverlays]
   );
@@ -152,7 +113,7 @@ export function useBaseMapStyle(
         : [...tileServerOverlays, overlay];
 
       setTileServerOverlays(nextOverlays);
-      changeMapStyle(baseMapStyle, "tile-server", tileServerBaseMap, nextOverlays);
+      changeMapStyle(baseMapStyle, tileServerBaseMap, nextOverlays);
     },
     [baseMapStyle, changeMapStyle, tileServerBaseMap, tileServerOverlays]
   );
@@ -160,8 +121,6 @@ export function useBaseMapStyle(
   return {
     baseMapStyle,
     changeBaseMapStyle,
-    mapDataSource,
-    changeMapDataSource,
     tileServerBaseMap,
     tileServerOverlays,
     tileServerBaseMaps,
