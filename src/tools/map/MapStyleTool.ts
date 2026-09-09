@@ -19,12 +19,12 @@ export const DEFAULT_TILE_SERVER_BASE_MAP: TileServerBaseMap = {
   kind: "raster",
 };
 
-const TILE_SERVER_URL = (
+const TILE_SERVER_URL = "/api/tiles";
+const TILE_SERVER_CATALOG_URL = "/api/tile-catalog";
+
+const TILE_SERVER_BACKEND_URL = (
   import.meta.env.VITE_TILE_SERVER_URL || "http://localhost:8080"
 ).replace(/\/$/, "");
-
-export const TILE_SERVER_CATALOG_URL =
-  import.meta.env.VITE_TILE_SERVER_CATALOG_URL || TILE_SERVER_URL;
 
 export function getEmptyMapStyle(): StyleSpecification {
   return {
@@ -221,9 +221,25 @@ export async function fetchTileServerBaseMaps(
 }
 
 function resolveTileServerTileUrl(tilePath: string) {
-  return tilePath.startsWith("http")
-    ? tilePath
-    : `${TILE_SERVER_URL}${tilePath.startsWith("/") ? "" : "/"}${tilePath}`;
+  if (tilePath.startsWith("http")) {
+    try {
+      const url = new URL(tilePath);
+      const backendUrl = new URL(TILE_SERVER_BACKEND_URL);
+
+      if (url.origin === backendUrl.origin) {
+        // Do not use URL.pathname here: it encodes MapLibre's {z}/{x}/{y}
+        // template placeholders as %7Bz%7D/%7Bx%7D/%7By%7D.
+        const backendPath = tilePath.slice(backendUrl.origin.length);
+        return `${TILE_SERVER_URL}${backendPath.startsWith("/") ? "" : "/"}${backendPath}`;
+      }
+    } catch {
+      // Keep the original URL when it cannot be parsed.
+    }
+
+    return tilePath;
+  }
+
+  return `${TILE_SERVER_URL}${tilePath.startsWith("/") ? "" : "/"}${tilePath}`;
 }
 
 export function getTileServerPreviewUrl(baseMap: TileServerBaseMap) {

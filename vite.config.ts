@@ -17,10 +17,28 @@ export default defineConfig(({ mode }) => {
 
     server: {
       proxy: {
+        "/api/nominatim": {
+          target: env.VITE_NOMINATIM_URL || "http://localhost:8083",
+          changeOrigin: true,
+          rewrite: path => path.replace(/^\/api\/nominatim/, ""),
+        },
         "/api/valhalla": {
-          target: env.VITE_VALHALLA_URL,
+          target: env.VITE_VALHALLA_URL || "http://localhost:8002",
           changeOrigin: true,
           rewrite: path => path.replace(/^\/api\/valhalla/, ""),
+        },
+        "/api/tile-catalog": {
+          target:
+            env.VITE_TILE_SERVER_CATALOG_URL ||
+            env.VITE_TILE_SERVER_URL ||
+            "http://localhost:8080",
+          changeOrigin: true,
+          rewrite: path => path.replace(/^\/api\/tile-catalog/, ""),
+        },
+        "/api/tiles": {
+          target: env.VITE_TILE_SERVER_URL || "http://localhost:8080",
+          changeOrigin: true,
+          rewrite: path => path.replace(/^\/api\/tiles/, ""),
         },
       },
     },

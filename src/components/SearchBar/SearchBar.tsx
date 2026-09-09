@@ -55,9 +55,7 @@ interface NominatimResult {
   boundingbox?: [string, string, string, string];
 }
 
-const NOMINATIM_URL = (
-  import.meta.env.VITE_NOMINATIM_URL || "http://localhost:8083"
-).replace(/\/$/, "");
+const NOMINATIM_URL = "/api/nominatim";
 const SEARCH_DEBOUNCE_MS = 150;
 
 interface SearchBarProps {

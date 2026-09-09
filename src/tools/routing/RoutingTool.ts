@@ -22,9 +22,7 @@ export interface RouteResult {
   summary: RouteSummary;
 }
 
-const VALHALLA_URL = (
-  import.meta.env.VITE_VALHALLA_URL || "/api/valhalla"
-).replace(/\/$/, "");
+const VALHALLA_URL = "/api/valhalla";
 
 export async function fetchValhallaRoute(
   origin: MapCoordinates,
