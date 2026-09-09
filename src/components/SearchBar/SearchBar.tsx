@@ -58,6 +58,7 @@ interface NominatimResult {
 const NOMINATIM_URL = (
   import.meta.env.VITE_NOMINATIM_URL || "http://localhost:8083"
 ).replace(/\/$/, "");
+const SEARCH_DEBOUNCE_MS = 150;
 
 interface SearchBarProps {
   map: MutableRefObject<maplibregl.Map | null>;
@@ -73,6 +74,8 @@ function SearchBar({ map }: SearchBarProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const searchMarkerRef = useRef<maplibregl.Marker | null>(null);
   const debounceTimerRef = useRef<number | null>(null);
+  const requestControllerRef = useRef<AbortController | null>(null);
+  const searchCacheRef = useRef<Map<string, GeocodingFeature[]>>(new Map());
 
   const clearMarker = () => {
     if (searchMarkerRef.current) {
@@ -149,7 +152,9 @@ function SearchBar({ map }: SearchBarProps) {
   const fetchGeocoding = async (
     searchQuery: string
   ): Promise<GeocodingFeature[]> => {
-    if (!searchQuery.trim()) {
+    const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
+
+    if (!normalizedQuery) {
       return [];
     }
 
@@ -160,18 +165,28 @@ function SearchBar({ map }: SearchBarProps) {
     ).startsWith("vi")
       ? "vi,en"
       : "en,vi";
+    const cacheKey = `${activeLang}:${normalizedQuery}`;
+    const cachedResults = searchCacheRef.current.get(cacheKey);
+
+    if (cachedResults) {
+      return cachedResults;
+    }
+
+    requestControllerRef.current?.abort();
+    const controller = new AbortController();
+    requestControllerRef.current = controller;
 
     try {
       const params = new URLSearchParams({
         q: searchQuery.trim(),
         format: "jsonv2",
         addressdetails: "1",
-        limit: "8",
+        limit: "6",
         "accept-language": activeLang,
       });
       const url = `${NOMINATIM_URL}/search?${params.toString()}`;
 
-      const response = await fetch(url);
+      const response = await fetch(url, { signal: controller.signal });
 
       if (!response.ok) {
         throw new Error(
@@ -181,29 +196,53 @@ function SearchBar({ map }: SearchBarProps) {
 
       const data = (await response.json()) as NominatimResult[];
 
-      return data.map(result => {
+      const results = data.map(result => {
         const longitude = Number(result.lon);
         const latitude = Number(result.lat);
-        const bbox = result.boundingbox?.map(Number);
+        const coordinates: [number, number] = [longitude, latitude];
+        const bbox: [number, number, number, number] | undefined =
+          result.boundingbox && [
+            Number(result.boundingbox[2]),
+            Number(result.boundingbox[0]),
+            Number(result.boundingbox[3]),
+            Number(result.boundingbox[1]),
+          ];
 
         return {
           id: `${result.osm_type || "place"}-${result.osm_id || result.place_id}`,
           type: "Feature",
           place_name: result.display_name,
           text: result.name || result.display_name,
-          center: [longitude, latitude],
+          center: coordinates,
           geometry: {
             type: "Point",
-            coordinates: [longitude, latitude],
+            coordinates,
           },
-          bbox: bbox && [bbox[2], bbox[0], bbox[3], bbox[1]],
+          bbox,
         };
       });
+
+      searchCacheRef.current.set(cacheKey, results);
+
+      return results;
     } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        return [];
+      }
+
       console.error("Geocoding fetch error:", error);
 
       return [];
+    } finally {
+      if (requestControllerRef.current === controller) {
+        requestControllerRef.current = null;
+      }
     }
+  };
+
+  const cancelPendingSearch = () => {
+    requestControllerRef.current?.abort();
+    requestControllerRef.current = null;
   };
 
   const handleInputChange = (
@@ -211,6 +250,7 @@ function SearchBar({ map }: SearchBarProps) {
   ) => {
     const value = event.target.value;
     setQuery(value);
+    cancelPendingSearch();
 
     if (debounceTimerRef.current) {
       window.clearTimeout(debounceTimerRef.current);
@@ -231,7 +271,7 @@ function SearchBar({ map }: SearchBarProps) {
       setSuggestions(results);
       setIsOpen(results.length > 0);
       setIsLoading(false);
-    }, 280);
+    }, SEARCH_DEBOUNCE_MS);
   };
 
   const handleSearchSubmit = async (event?: FormEvent) => {
@@ -297,6 +337,8 @@ function SearchBar({ map }: SearchBarProps) {
       if (debounceTimerRef.current) {
         window.clearTimeout(debounceTimerRef.current);
       }
+
+      cancelPendingSearch();
     };
   }, []);
 

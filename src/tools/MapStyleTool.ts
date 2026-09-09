@@ -1,14 +1,5 @@
 import type { StyleSpecification } from "maplibre-gl";
 
-export type BaseMapStyle =
-  | "streets"
-  | "satellite"
-  | "outdoor";
-
-export type MapDataSource =
-  | "maptiler"
-  | "tile-server";
-
 export interface TileServerBaseMap {
   id: string;
   label: string;
@@ -26,12 +17,6 @@ export const DEFAULT_TILE_SERVER_BASE_MAP: TileServerBaseMap = {
   maxzoom: 7,
   tileSize: 256,
   kind: "raster",
-};
-
-const MAP_STYLE_IDS: Record<BaseMapStyle, string> = {
-  streets: "streets-v4",
-  satellite: "satellite-v4",
-  outdoor: "outdoor-v4",
 };
 
 const TILE_SERVER_URL = (
@@ -521,16 +506,9 @@ function textLayer(
 }
 
 export function getMapStyle(
-  style: BaseMapStyle,
-  dataSource: MapDataSource,
-  apiKey?: string,
   tileServerBaseMap?: TileServerBaseMap,
   tileServerOverlays: TileServerBaseMap[] = []
 ): StyleSpecification | string {
-  if (dataSource === "maptiler") {
-    return `https://api.maptiler.com/maps/${MAP_STYLE_IDS[style]}/style.json?key=${apiKey}`;
-  }
-
   return getTileServerMapStyle(
     tileServerBaseMap ?? DEFAULT_TILE_SERVER_BASE_MAP,
     tileServerOverlays

@@ -13,7 +13,6 @@ import {
   getMapStyle,
 } from "../tools/MapStyleTool";
 import type {
-  BaseMapStyle,
   TileServerBaseMap,
 } from "../tools/MapStyleTool";
 
@@ -27,8 +26,6 @@ export function useBaseMapStyle(
   map: MutableRefObject<Map | null>
 ) {
   const { t } = useTranslation();
-  const [baseMapStyle, setBaseMapStyle] =
-    useState<BaseMapStyle>("streets");
   const [tileServerBaseMaps, setTileServerBaseMaps] =
     useState<TileServerBaseMap[]>([]);
   const [tileServerBaseMap, setTileServerBaseMap] =
@@ -43,7 +40,6 @@ export function useBaseMapStyle(
 
   const changeMapStyle = useCallback(
     (
-      style: BaseMapStyle,
       nextTileServerBaseMap: TileServerBaseMap | null = tileServerBaseMap,
       nextTileServerOverlays: TileServerBaseMap[] = tileServerOverlays
     ) => {
@@ -57,7 +53,6 @@ export function useBaseMapStyle(
       });
       mapInstance.setStyle(
         getMapStyle(
-          style,
           nextTileServerBaseMap ?? undefined,
           nextTileServerOverlays
         ),
@@ -85,24 +80,12 @@ export function useBaseMapStyle(
     }
   }, [t]);
 
-  const changeBaseMapStyle = useCallback(
-    (style: BaseMapStyle) => {
-      if (!map.current || style === baseMapStyle) {
-        return;
-      }
-
-      changeMapStyle(style);
-      setBaseMapStyle(style);
-    },
-    [baseMapStyle, changeMapStyle, map]
-  );
-
   const changeTileServerBaseMap = useCallback(
     (nextBaseMap: TileServerBaseMap) => {
-      changeMapStyle(baseMapStyle, nextBaseMap, tileServerOverlays);
+      changeMapStyle(nextBaseMap, tileServerOverlays);
       setTileServerBaseMap(nextBaseMap);
     },
-    [baseMapStyle, changeMapStyle, tileServerOverlays]
+    [changeMapStyle, tileServerOverlays]
   );
 
   const toggleTileServerOverlay = useCallback(
@@ -113,14 +96,12 @@ export function useBaseMapStyle(
         : [...tileServerOverlays, overlay];
 
       setTileServerOverlays(nextOverlays);
-      changeMapStyle(baseMapStyle, tileServerBaseMap, nextOverlays);
+      changeMapStyle(tileServerBaseMap, nextOverlays);
     },
-    [baseMapStyle, changeMapStyle, tileServerBaseMap, tileServerOverlays]
+    [changeMapStyle, tileServerBaseMap, tileServerOverlays]
   );
 
   return {
-    baseMapStyle,
-    changeBaseMapStyle,
     tileServerBaseMap,
     tileServerOverlays,
     tileServerBaseMaps,
