@@ -3,26 +3,30 @@ import { useTranslation } from "react-i18next";
 import type { MutableRefObject } from "react";
 import type { FeatureCollection, Point } from "geojson";
 import * as maplibregl from "maplibre-gl";
-import type { Map, MapMouseEvent } from "maplibre-gl";
+import type { Map } from "maplibre-gl";
 
 import {
   fetchValhallaRoute,
   type RouteResult,
   type RoutingVehicle,
 } from "../tools/routing/RoutingTool";
-import type { MapCoordinates, MapTool } from "../types/map";
+import type { MapCoordinates } from "../types/map";
 
 interface UseRoutingOptions {
   map: MutableRefObject<Map | null>;
   mapLoaded: boolean;
   mapStyleVersion: number;
-  activeTool: MapTool;
 }
 
 export type RoutingStatus = "idle" | "loading" | "success" | "error";
 
-export function useRouting({ map, mapLoaded, mapStyleVersion, activeTool }: UseRoutingOptions) {
-  const { t } = useTranslation();
+export function useRouting({ map, mapLoaded, mapStyleVersion }: UseRoutingOptions) {
+  const { t, i18n } = useTranslation();
+  const valhallaLanguage = (i18n.resolvedLanguage || i18n.language || "en")
+    .toLowerCase()
+    .startsWith("vi")
+    ? "vi-VN"
+    : "en-US";
   const [origin, setOrigin] = useState<MapCoordinates | null>(null);
   const [destination, setDestination] = useState<MapCoordinates | null>(null);
   const [vehicle, setVehicle] = useState<RoutingVehicle>("auto");
@@ -40,19 +44,20 @@ export function useRouting({ map, mapLoaded, mapStyleVersion, activeTool }: UseR
     setError(null);
   }, []);
 
-  const setPoint = useCallback((point: MapCoordinates) => {
-    setError(null);
-    setStatus("idle");
+  const setRoutingOrigin = useCallback((point: MapCoordinates | null) => {
+    requestController.current?.abort();
+    setOrigin(point);
     setRoute(null);
+    setStatus("idle");
+    setError(null);
+  }, []);
 
-    setOrigin(currentOrigin => {
-      if (!currentOrigin) {
-        return point;
-      }
-
-      setDestination(currentDestination => currentDestination ?? point);
-      return currentOrigin;
-    });
+  const setRoutingDestination = useCallback((point: MapCoordinates | null) => {
+    requestController.current?.abort();
+    setDestination(point);
+    setRoute(null);
+    setStatus("idle");
+    setError(null);
   }, []);
 
   const calculateRoute = useCallback(async () => {
@@ -67,7 +72,13 @@ export function useRouting({ map, mapLoaded, mapStyleVersion, activeTool }: UseR
     setError(null);
 
     try {
-      const result = await fetchValhallaRoute(origin, destination, vehicle, controller.signal);
+      const result = await fetchValhallaRoute(
+        origin,
+        destination,
+        vehicle,
+        controller.signal,
+        valhallaLanguage
+      );
       if (!controller.signal.aborted) {
         setRoute(result);
         setStatus("success");
@@ -82,7 +93,7 @@ export function useRouting({ map, mapLoaded, mapStyleVersion, activeTool }: UseR
       const errorKey = requestError instanceof Error ? requestError.message : "routing.errors.unknown";
       setError(errorKey.startsWith("routing.errors.") ? t(errorKey) : t("routing.errors.unknown"));
     }
-  }, [destination, origin, t, vehicle]);
+  }, [destination, origin, t, valhallaLanguage, vehicle]);
 
   const changeVehicle = useCallback((nextVehicle: RoutingVehicle) => {
     requestController.current?.abort();
@@ -101,46 +112,18 @@ export function useRouting({ map, mapLoaded, mapStyleVersion, activeTool }: UseR
     updateRoutingSources(map.current, origin, destination, route);
   }, [destination, map, mapLoaded, mapStyleVersion, origin, route]);
 
-  useEffect(() => {
-    if (!map.current || !mapLoaded) {
-      return;
-    }
-
-    const mapInstance = map.current;
-    const canvas = mapInstance.getCanvas();
-
-    if (activeTool !== "route") {
-      canvas.style.cursor = "";
-      return;
-    }
-
-    canvas.style.cursor = "crosshair";
-    const handleMapClick = (event: MapMouseEvent) => {
-      if (origin && destination) {
-        return;
-      }
-
-      setPoint([event.lngLat.lng, event.lngLat.lat]);
-    };
-
-    mapInstance.on("click", handleMapClick);
-    return () => {
-      canvas.style.cursor = "";
-      mapInstance.off("click", handleMapClick);
-    };
-  }, [activeTool, destination, map, mapLoaded, origin, setPoint]);
-
   useEffect(() => () => requestController.current?.abort(), []);
 
   return {
     origin,
     destination,
+    setOrigin: setRoutingOrigin,
+    setDestination: setRoutingDestination,
     vehicle,
     route,
     status,
     error,
     setVehicle: changeVehicle,
-    setPoint,
     calculateRoute,
     reset,
   };

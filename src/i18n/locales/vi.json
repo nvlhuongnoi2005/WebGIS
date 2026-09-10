@@ -2,7 +2,9 @@
   "search": {
     "placeholder": "Nhập địa điểm cần tìm...",
     "button": "Tìm kiếm",
-    "clearTitle": "Xóa tìm kiếm"
+    "clearTitle": "Xóa tìm kiếm",
+    "coordinates": "Tọa độ",
+    "directions": "Chỉ đường đến đây"
   },
   "tools": {
     "route": "Tìm đường",
@@ -49,7 +51,7 @@
   },
   "routing": {
     "title": "Tìm đường",
-    "description": "Chọn A và B trên bản đồ",
+    "description": "Tìm kiếm điểm A và B",
     "resetPoints": "Đặt lại điểm A và B",
     "origin": "Điểm xuất phát",
     "destination": "Điểm đến",
@@ -57,9 +59,12 @@
     "vehicle": "Phương tiện",
     "findRoute": "Tìm đường",
     "loading": "Đang tìm đường…",
-    "chooseOrigin": "Nhấp bản đồ để chọn điểm A",
-    "chooseDestination": "Nhấp tiếp để chọn điểm B",
+    "originSearchPlaceholder": "Tìm điểm xuất phát...",
+    "destinationSearchPlaceholder": "Tìm điểm đến...",
+    "chooseOrigin": "Tìm kiếm để chọn điểm A",
+    "chooseDestination": "Tìm kiếm để chọn điểm B",
     "routeSuitable": "Tuyến đường phù hợp với phương tiện đã chọn",
+    "instructions": "Hướng dẫn đi",
     "distanceUnit": "km",
     "durationMinutes": "{{count}} phút",
     "durationHoursMinutes": "{{hours}} giờ {{minutes}} phút",

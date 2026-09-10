@@ -71,11 +71,25 @@ function MapView() {
     map,
     mapLoaded,
     mapStyleVersion,
-    activeTool,
   });
+
+  const handleSearchDirections = (coordinates: [number, number]) => {
+    routing.setDestination(coordinates);
+    setTileServerPanelMode(null);
+    setActiveTool("route");
+  };
 
   const measure = useMeasureTool({ map, mapLoaded, activeTool, setActiveTool });
   const draw = useDrawTool({ map, mapLoaded, activeTool, setActiveTool });
+
+  const handleSearch = () => {
+    if (activeTool === "measure") {
+      measure.resetMeasure();
+    }
+
+    setTileServerPanelMode(null);
+    setActiveTool(null);
+  };
 
   useMeasureLayers({
     map,
@@ -170,7 +184,12 @@ function MapView() {
           onCrsChange={setCoordinateReferenceSystem}
         />
       </Box>
-      <SearchBar map={map} />
+      <SearchBar
+        activeTool={activeTool}
+        map={map}
+        onDirections={handleSearchDirections}
+        onSearch={handleSearch}
+      />
       <ToolPanel activeTool={activeTool} onSelectTool={handleSelectTool} />
       <Stack
         direction="row"
@@ -236,6 +255,9 @@ function MapView() {
           error={routing.error}
           distanceKm={routing.route?.summary.distanceKm}
           timeSeconds={routing.route?.summary.timeSeconds}
+          instructions={routing.route?.instructions}
+          onOriginChange={routing.setOrigin}
+          onDestinationChange={routing.setDestination}
           onVehicleChange={routing.setVehicle}
           onCalculate={routing.calculateRoute}
           onReset={routing.reset}

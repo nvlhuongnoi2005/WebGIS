@@ -17,9 +17,19 @@ export interface RouteSummary {
   timeSeconds: number;
 }
 
+export interface RouteInstruction {
+  instruction: string;
+  distanceKm: number;
+  timeSeconds: number;
+  type: number | null;
+  beginShapeIndex: number | null;
+  endShapeIndex: number | null;
+}
+
 export interface RouteResult {
   geometry: Feature<LineString>;
   summary: RouteSummary;
+  instructions: RouteInstruction[];
 }
 
 const VALHALLA_URL = "/api/valhalla";
@@ -28,7 +38,8 @@ export async function fetchValhallaRoute(
   origin: MapCoordinates,
   destination: MapCoordinates,
   costing: RoutingVehicle,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  language = "en-US"
 ): Promise<RouteResult> {
   const response = await fetch(`${VALHALLA_URL}/route`, {
     method: "POST",
@@ -41,6 +52,8 @@ export async function fetchValhallaRoute(
       ],
       costing,
       units: "kilometers",
+      language,
+      directions_type: "instructions",
       shape_format: "polyline6",
     }),
   });
@@ -64,6 +77,24 @@ export async function fetchValhallaRoute(
   }
 
   const summary = payload.trip.summary;
+  const instructions = payload.trip.legs.flatMap(leg =>
+    (leg.maneuvers ?? [])
+      .map(maneuver => ({
+        instruction: maneuver.instruction?.trim() || "",
+        distanceKm: Number(maneuver.length ?? 0),
+        timeSeconds: Number(maneuver.time ?? 0),
+        type: typeof maneuver.type === "number" ? maneuver.type : null,
+        beginShapeIndex:
+          typeof maneuver.begin_shape_index === "number"
+            ? maneuver.begin_shape_index
+            : null,
+        endShapeIndex:
+          typeof maneuver.end_shape_index === "number"
+            ? maneuver.end_shape_index
+            : null,
+      }))
+      .filter(maneuver => maneuver.instruction.length > 0)
+  );
 
   return {
     geometry: {
@@ -75,14 +106,27 @@ export async function fetchValhallaRoute(
       distanceKm: Number(summary?.length ?? 0),
       timeSeconds: Number(summary?.time ?? 0),
     },
+    instructions,
   };
 }
 
 interface ValhallaResponse {
   trip?: {
     summary?: { length?: number; time?: number };
-    legs?: Array<{ shape?: string | { coordinates?: number[][] } }>;
+    legs?: Array<{
+      shape?: string | { coordinates?: number[][] };
+      maneuvers?: ValhallaManeuver[];
+    }>;
   };
+}
+
+interface ValhallaManeuver {
+  type?: number;
+  instruction?: string;
+  length?: number;
+  time?: number;
+  begin_shape_index?: number;
+  end_shape_index?: number;
 }
 
 function decodeShape(shape: string | { coordinates?: number[][] } | undefined): MapCoordinates[] {

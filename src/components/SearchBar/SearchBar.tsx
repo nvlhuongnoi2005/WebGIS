@@ -23,49 +23,41 @@ import {
   ListItemIcon,
   ListItemText,
   Paper,
+  Stack,
+  Typography,
 } from "@mui/material";
 import {
   MapPin,
+  Navigation,
   Search,
   X,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { formatDmsCoordinates } from "../../tools/coordinate/CoordinateTool";
+import {
+  fetchGeocoding as fetchGeocodingResults,
+  getGeocodingLanguage,
+} from "../../tools/geocoding/GeocodingTool";
+import type { GeocodingFeature } from "../../tools/geocoding/GeocodingTool";
+import type { MapTool } from "../../types/map";
 
-export interface GeocodingFeature {
-  id: string;
-  type: string;
-  place_name: string;
-  text: string;
-  center: [number, number];
-  geometry: {
-    type: string;
-    coordinates: [number, number];
-  };
-  bbox?: [number, number, number, number];
-}
+export type { GeocodingFeature } from "../../tools/geocoding/GeocodingTool";
 
-interface NominatimResult {
-  place_id: number;
-  osm_type?: string;
-  osm_id?: number;
-  lat: string;
-  lon: string;
-  display_name: string;
-  name?: string;
-  boundingbox?: [string, string, string, string];
-}
-
-const NOMINATIM_URL = "/api/nominatim";
 const SEARCH_DEBOUNCE_MS = 150;
 
 interface SearchBarProps {
+  activeTool: MapTool;
   map: MutableRefObject<maplibregl.Map | null>;
+  onDirections: (coordinates: [number, number]) => void;
+  onSearch: () => void;
 }
 
-function SearchBar({ map }: SearchBarProps) {
+function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) {
   const { t, i18n } = useTranslation();
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<GeocodingFeature[]>([]);
+  const [selectedFeature, setSelectedFeature] =
+    useState<GeocodingFeature | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -82,8 +74,16 @@ function SearchBar({ map }: SearchBarProps) {
     }
   };
 
-  const selectLocation = (feature: GeocodingFeature) => {
+  const selectLocation = (
+    feature: GeocodingFeature,
+    closeActiveTool = true
+  ) => {
+    if (closeActiveTool) {
+      onSearch();
+    }
+
     setQuery(feature.place_name);
+    setSelectedFeature(feature);
     setIsOpen(false);
 
     if (!map.current) {
@@ -156,13 +156,9 @@ function SearchBar({ map }: SearchBarProps) {
       return [];
     }
 
-    const activeLang = (
-      i18n.resolvedLanguage ||
-      i18n.language ||
-      "vi"
-    ).startsWith("vi")
-      ? "vi,en"
-      : "en,vi";
+    const activeLang = getGeocodingLanguage(
+      i18n.resolvedLanguage || i18n.language
+    );
     const cacheKey = `${activeLang}:${normalizedQuery}`;
     const cachedResults = searchCacheRef.current.get(cacheKey);
 
@@ -175,50 +171,11 @@ function SearchBar({ map }: SearchBarProps) {
     requestControllerRef.current = controller;
 
     try {
-      const params = new URLSearchParams({
-        q: searchQuery.trim(),
-        format: "jsonv2",
-        addressdetails: "1",
-        limit: "6",
-        "accept-language": activeLang,
-      });
-      const url = `${NOMINATIM_URL}/search?${params.toString()}`;
-
-      const response = await fetch(url, { signal: controller.signal });
-
-      if (!response.ok) {
-        throw new Error(
-          `Geocoding failed with status: ${response.status}`
-        );
-      }
-
-      const data = (await response.json()) as NominatimResult[];
-
-      const results = data.map(result => {
-        const longitude = Number(result.lon);
-        const latitude = Number(result.lat);
-        const coordinates: [number, number] = [longitude, latitude];
-        const bbox: [number, number, number, number] | undefined =
-          result.boundingbox && [
-            Number(result.boundingbox[2]),
-            Number(result.boundingbox[0]),
-            Number(result.boundingbox[3]),
-            Number(result.boundingbox[1]),
-          ];
-
-        return {
-          id: `${result.osm_type || "place"}-${result.osm_id || result.place_id}`,
-          type: "Feature",
-          place_name: result.display_name,
-          text: result.name || result.display_name,
-          center: coordinates,
-          geometry: {
-            type: "Point",
-            coordinates,
-          },
-          bbox,
-        };
-      });
+      const results = await fetchGeocodingResults(
+        searchQuery,
+        activeLang,
+        controller.signal
+      );
 
       searchCacheRef.current.set(cacheKey, results);
 
@@ -248,6 +205,7 @@ function SearchBar({ map }: SearchBarProps) {
   ) => {
     const value = event.target.value;
     setQuery(value);
+    setSelectedFeature(null);
     cancelPendingSearch();
 
     if (debounceTimerRef.current) {
@@ -277,12 +235,14 @@ function SearchBar({ map }: SearchBarProps) {
       event.preventDefault();
     }
 
+    onSearch();
+
     if (!query.trim()) {
       return;
     }
 
     if (suggestions.length > 0) {
-      selectLocation(suggestions[0]);
+      selectLocation(suggestions[0], false);
 
       return;
     }
@@ -292,7 +252,7 @@ function SearchBar({ map }: SearchBarProps) {
     setIsLoading(false);
 
     if (results.length > 0) {
-      selectLocation(results[0]);
+      selectLocation(results[0], false);
     } else {
       setSuggestions([]);
       setIsOpen(false);
@@ -302,8 +262,18 @@ function SearchBar({ map }: SearchBarProps) {
   const handleClear = () => {
     setQuery("");
     setSuggestions([]);
+    setSelectedFeature(null);
     setIsOpen(false);
     clearMarker();
+  };
+
+  const handleDirections = () => {
+    if (!selectedFeature) {
+      return;
+    }
+
+    onDirections(selectedFeature.center);
+    setSelectedFeature(null);
   };
 
   const handleKeyDown = (
@@ -416,6 +386,38 @@ function SearchBar({ map }: SearchBarProps) {
           {t("search.button")}
         </Button>
       </Paper>
+
+      {selectedFeature && activeTool !== "route" && (
+        <Paper elevation={4} sx={{ mt: 0.75, p: 1.5, borderRadius: 3 }}>
+          <Stack spacing={1}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+              {selectedFeature.text || selectedFeature.place_name}
+            </Typography>
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ lineHeight: 1.35 }}
+            >
+              {selectedFeature.place_name}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {t("search.coordinates")}: {formatDmsCoordinates(
+                selectedFeature.center[0],
+                selectedFeature.center[1]
+              )}
+            </Typography>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<Navigation size={15} />}
+              onClick={handleDirections}
+              sx={{ alignSelf: "flex-start", textTransform: "none" }}
+            >
+              {t("search.directions")}
+            </Button>
+          </Stack>
+        </Paper>
+      )}
 
       {isOpen && suggestions.length > 0 && (
         <Paper elevation={5} sx={{ mt: 0.75, maxHeight: 280, overflowY: "auto", borderRadius: 3 }}>

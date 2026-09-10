@@ -1,3 +1,7 @@
+import { useEffect, useRef, useState } from "react";
+
+import type { ChangeEvent } from "react";
+
 import {
   Alert,
   Box,
@@ -5,8 +9,14 @@ import {
   CircularProgress,
   Divider,
   IconButton,
+  InputAdornment,
+  List,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
   Paper,
   Stack,
+  TextField,
   ToggleButton,
   ToggleButtonGroup,
   Typography,
@@ -18,14 +28,25 @@ import {
   CheckCircle2,
   Footprints,
   LocateFixed,
+  MapPin,
   RotateCcw,
   Route as RouteIcon,
   Search,
   Truck,
+  X,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import { formatRouteDuration, type RoutingVehicle } from "../../../tools/routing/RoutingTool";
+import {
+  fetchGeocoding,
+  getGeocodingLanguage,
+} from "../../../tools/geocoding/GeocodingTool";
+import type { GeocodingFeature } from "../../../tools/geocoding/GeocodingTool";
+import {
+  formatRouteDuration,
+  type RouteInstruction,
+  type RoutingVehicle,
+} from "../../../tools/routing/RoutingTool";
 import { formatDmsCoordinates } from "../../../tools/coordinate/CoordinateTool";
 import type { MapCoordinates } from "../../../types/map";
 import type { RoutingStatus } from "../../../hooks/useRouting";
@@ -38,6 +59,9 @@ interface RoutingPanelProps {
   error: string | null;
   distanceKm?: number;
   timeSeconds?: number;
+  instructions?: RouteInstruction[];
+  onOriginChange: (point: MapCoordinates | null) => void;
+  onDestinationChange: (point: MapCoordinates | null) => void;
   onVehicleChange: (vehicle: RoutingVehicle) => void;
   onCalculate: () => void;
   onReset: () => void;
@@ -65,13 +89,15 @@ function RoutingPanel({
   error,
   distanceKm,
   timeSeconds,
+  instructions = [],
+  onOriginChange,
+  onDestinationChange,
   onVehicleChange,
   onCalculate,
   onReset,
 }: RoutingPanelProps) {
   const { t } = useTranslation();
   const canCalculate = Boolean(origin && destination) && status !== "loading";
-  const notSelected = t("routing.notSelected");
   const duration = typeof timeSeconds === "number"
     ? formatRouteDuration(timeSeconds)
     : null;
@@ -99,9 +125,19 @@ function RoutingPanel({
           </IconButton>
         </Stack>
 
-        <Stack spacing={0.75}>
-          <PointRow color="#16a34a" label={`A · ${t("routing.origin")}`} value={formatCoordinate(origin, notSelected)} selected={Boolean(origin)} />
-          <PointRow color="#dc2626" label={`B · ${t("routing.destination")}`} value={formatCoordinate(destination, notSelected)} selected={Boolean(destination)} />
+        <Stack spacing={1}>
+          <LocationSearchField
+            label={`A · ${t("routing.origin")}`}
+            placeholder={t("routing.originSearchPlaceholder")}
+            value={origin}
+            onChange={onOriginChange}
+          />
+          <LocationSearchField
+            label={`B · ${t("routing.destination")}`}
+            placeholder={t("routing.destinationSearchPlaceholder")}
+            value={destination}
+            onChange={onDestinationChange}
+          />
         </Stack>
 
         <Divider />
@@ -138,6 +174,58 @@ function RoutingPanel({
           </Stack>
         )}
 
+        {status === "success" && instructions.length > 0 && (
+          <Box>
+            <Divider sx={{ mb: 1 }} />
+            <Typography
+              variant="caption"
+              sx={{
+                display: "block",
+                mb: 0.75,
+                fontWeight: 700,
+                color: "text.secondary",
+                textTransform: "uppercase",
+                letterSpacing: 0.5,
+              }}
+            >
+              {t("routing.instructions")}
+            </Typography>
+            <Stack
+              spacing={0.75}
+              sx={{ maxHeight: 280, overflowY: "auto", pr: 0.5 }}
+            >
+              {instructions.map((step, index) => (
+                <Stack
+                  key={`${step.beginShapeIndex ?? "step"}-${index}`}
+                  direction="row"
+                  spacing={1}
+                  sx={{ alignItems: "flex-start" }}
+                >
+                  <Box
+                    sx={{
+                      display: "grid",
+                      placeItems: "center",
+                      flexShrink: 0,
+                      width: 22,
+                      height: 22,
+                      borderRadius: "50%",
+                      bgcolor: "primary.50",
+                      color: "primary.main",
+                      fontSize: 12,
+                      fontWeight: 700,
+                    }}
+                  >
+                    {index + 1}
+                  </Box>
+                  <Typography variant="body2" sx={{ minWidth: 0, lineHeight: 1.4 }}>
+                    {step.instruction}
+                  </Typography>
+                </Stack>
+              ))}
+            </Stack>
+          </Box>
+        )}
+
         <Button
           fullWidth
           variant="contained"
@@ -159,15 +247,218 @@ function RoutingPanel({
   );
 }
 
-function PointRow({ color, label, value, selected }: { color: string; label: string; value: string; selected: boolean }) {
+interface LocationSearchFieldProps {
+  label: string;
+  placeholder: string;
+  value: MapCoordinates | null;
+  onChange: (point: MapCoordinates | null) => void;
+}
+
+function LocationSearchField({
+  label,
+  placeholder,
+  value,
+  onChange,
+}: LocationSearchFieldProps) {
+  const { i18n } = useTranslation();
+  const [query, setQuery] = useState("");
+  const [suggestions, setSuggestions] = useState<GeocodingFeature[]>([]);
+  const [isOpen, setIsOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const debounceTimerRef = useRef<number | null>(null);
+  const requestControllerRef = useRef<AbortController | null>(null);
+  const searchCacheRef = useRef<Map<string, GeocodingFeature[]>>(new Map());
+
+  const activeLanguage = getGeocodingLanguage(
+    i18n.resolvedLanguage || i18n.language
+  );
+  const displayValue = value
+    ? query || formatCoordinate(value, "")
+    : query;
+
+  const cancelPendingSearch = () => {
+    requestControllerRef.current?.abort();
+    requestControllerRef.current = null;
+  };
+
+  const searchLocations = async (searchQuery: string) => {
+    const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
+    const cacheKey = `${activeLanguage}:${normalizedQuery}`;
+    const cachedResults = searchCacheRef.current.get(cacheKey);
+
+    if (cachedResults) {
+      return cachedResults;
+    }
+
+    requestControllerRef.current?.abort();
+    const controller = new AbortController();
+    requestControllerRef.current = controller;
+
+    try {
+      const results = await fetchGeocoding(
+        searchQuery,
+        activeLanguage,
+        controller.signal
+      );
+      searchCacheRef.current.set(cacheKey, results);
+      return results;
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        return [];
+      }
+
+      console.error("Geocoding fetch error:", error);
+      return [];
+    } finally {
+      if (requestControllerRef.current === controller) {
+        requestControllerRef.current = null;
+      }
+    }
+  };
+
+  const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const nextQuery = event.target.value;
+    setQuery(nextQuery);
+    cancelPendingSearch();
+
+    if (debounceTimerRef.current) {
+      window.clearTimeout(debounceTimerRef.current);
+    }
+
+    if (nextQuery.trim().length < 2) {
+      setSuggestions([]);
+      setIsOpen(false);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    debounceTimerRef.current = window.setTimeout(async () => {
+      const results = await searchLocations(nextQuery);
+      setSuggestions(results);
+      setIsOpen(results.length > 0);
+      setIsLoading(false);
+    }, 150);
+  };
+
+  const handleSelect = (feature: GeocodingFeature) => {
+    setQuery(feature.place_name);
+    setSuggestions([]);
+    setIsOpen(false);
+    onChange(feature.center);
+  };
+
+  const handleClear = () => {
+    setQuery("");
+    setSuggestions([]);
+    setIsOpen(false);
+    setIsLoading(false);
+    cancelPendingSearch();
+    onChange(null);
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      if (debounceTimerRef.current) {
+        window.clearTimeout(debounceTimerRef.current);
+      }
+      cancelPendingSearch();
+    };
+  }, []);
+
   return (
-    <Stack direction="row" spacing={1} sx={{ minWidth: 0, alignItems: "center" }}>
-      <Box sx={{ width: 10, height: 10, flexShrink: 0, borderRadius: "50%", bgcolor: color, border: "2px solid white", boxShadow: `0 0 0 1px ${color}` }} />
-      <Box sx={{ minWidth: 0 }}>
-        <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>{label}</Typography>
-        <Typography variant="body2" noWrap sx={{ color: selected ? "text.primary" : "text.disabled" }}>{value}</Typography>
-      </Box>
-    </Stack>
+    <Box ref={containerRef} sx={{ position: "relative" }}>
+      <TextField
+        fullWidth
+        size="small"
+        label={label}
+        placeholder={placeholder}
+        value={displayValue}
+        onChange={handleInputChange}
+        onFocus={() => suggestions.length > 0 && setIsOpen(true)}
+        onKeyDown={event => {
+          if (event.key === "Escape") {
+            setIsOpen(false);
+          } else if (event.key === "Enter" && suggestions.length > 0) {
+            event.preventDefault();
+            handleSelect(suggestions[0]);
+          }
+        }}
+        autoComplete="off"
+        spellCheck={false}
+        helperText={value ? formatCoordinate(value, "") : undefined}
+        slotProps={{
+          input: {
+            startAdornment: (
+              <InputAdornment position="start">
+                <MapPin size={16} />
+              </InputAdornment>
+            ),
+            endAdornment: isLoading ? (
+              <InputAdornment position="end">
+                <CircularProgress size={16} />
+              </InputAdornment>
+            ) : displayValue ? (
+              <InputAdornment position="end">
+                <IconButton
+                  size="small"
+                  onClick={handleClear}
+                  aria-label={`${label}: clear`}
+                >
+                  <X size={15} />
+                </IconButton>
+              </InputAdornment>
+            ) : undefined,
+          },
+        }}
+      />
+
+      {isOpen && suggestions.length > 0 && (
+        <Paper
+          elevation={5}
+          sx={{
+            position: "absolute",
+            top: "calc(100% + 4px)",
+            left: 0,
+            right: 0,
+            zIndex: 3,
+            maxHeight: 260,
+            overflowY: "auto",
+          }}
+        >
+          <List disablePadding>
+            {suggestions.map(feature => (
+              <ListItemButton key={feature.id} onClick={() => handleSelect(feature)}>
+                <ListItemIcon sx={{ minWidth: 32, color: "error.main" }}>
+                  <MapPin size={16} />
+                </ListItemIcon>
+                <ListItemText
+                  primary={feature.text || feature.place_name}
+                  secondary={feature.place_name}
+                  slotProps={{
+                    primary: { noWrap: true, sx: { fontSize: 13.5, fontWeight: 600 } },
+                    secondary: { noWrap: true, sx: { fontSize: 12 } },
+                  }}
+                />
+              </ListItemButton>
+            ))}
+          </List>
+        </Paper>
+      )}
+    </Box>
   );
 }
 

@@ -60,7 +60,7 @@ type TileServerCatalogItem = {
 };
 
 const TILE_SERVER_OVERLAY_IDS = new Set(
-  (import.meta.env.VITE_TILE_SERVER_OVERLAY_IDS || "vietnam_osm")
+  (import.meta.env.VITE_TILE_SERVER_OVERLAY_IDS)
     .split(",")
     .map((id: string) => id.trim())
     .filter(Boolean)

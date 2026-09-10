@@ -2,7 +2,9 @@
   "search": {
     "placeholder": "Search for a location...",
     "button": "Search",
-    "clearTitle": "Clear search"
+    "clearTitle": "Clear search",
+    "coordinates": "Coordinates",
+    "directions": "Directions to here"
   },
   "tools": {
     "route": "Routing",
@@ -49,7 +51,7 @@
   },
   "routing": {
     "title": "Routing",
-    "description": "Choose points A and B on the map",
+    "description": "Search for points A and B",
     "resetPoints": "Reset points A and B",
     "origin": "Starting point",
     "destination": "Destination",
@@ -57,9 +59,12 @@
     "vehicle": "Vehicle",
     "findRoute": "Find route",
     "loading": "Finding route…",
-    "chooseOrigin": "Click the map to choose point A",
-    "chooseDestination": "Click again to choose point B",
+    "originSearchPlaceholder": "Search for the starting point...",
+    "destinationSearchPlaceholder": "Search for the destination...",
+    "chooseOrigin": "Search to choose point A",
+    "chooseDestination": "Search to choose point B",
     "routeSuitable": "Route suitable for the selected vehicle",
+    "instructions": "Directions",
     "distanceUnit": "km",
     "durationMinutes": "{{count}} min",
     "durationHoursMinutes": "{{hours}} hr {{minutes}} min",
