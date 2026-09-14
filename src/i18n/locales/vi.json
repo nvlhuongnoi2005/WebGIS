@@ -105,6 +105,8 @@
     "redoTitle": "Làm lại (Ctrl/Cmd + Shift + Z)"
   },
   "draw": {
+    "multiPoint": "Đa điểm",
+    "errorMultiPointPoints": "Đa điểm cần ít nhất một điểm.",
     "savedFeatures": "Số hình đã lưu",
     "select": "Chọn",
     "point": "Điểm",

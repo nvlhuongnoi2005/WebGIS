@@ -32,7 +32,10 @@ export interface RouteResult {
   instructions: RouteInstruction[];
 }
 
-const VALHALLA_URL = "/api/valhalla";
+const configuredValhallaUrl = import.meta.env.VITE_VALHALLA_URL
+  ?.trim()
+  .replace(/\/$/, "");
+const VALHALLA_URL = configuredValhallaUrl || "/api/valhalla";
 
 export async function fetchValhallaRoute(
   origin: MapCoordinates,
@@ -41,22 +44,32 @@ export async function fetchValhallaRoute(
   signal?: AbortSignal,
   language = "en-US"
 ): Promise<RouteResult> {
-  const response = await fetch(`${VALHALLA_URL}/route`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    signal,
-    body: JSON.stringify({
-      locations: [
-        { lat: origin[1], lon: origin[0] },
-        { lat: destination[1], lon: destination[0] },
-      ],
-      costing,
-      units: "kilometers",
-      language,
-      directions_type: "instructions",
-      shape_format: "polyline6",
-    }),
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(`${VALHALLA_URL}/route`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      signal,
+      body: JSON.stringify({
+        locations: [
+          { lat: origin[1], lon: origin[0] },
+          { lat: destination[1], lon: destination[0] },
+        ],
+        costing,
+        units: "kilometers",
+        language,
+        directions_type: "instructions",
+        shape_format: "polyline6",
+      }),
+    }); 
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw error;
+    }
+
+    throw new Error("routing.errors.requestFailed", { cause: error });
+  }
 
   if (!response.ok) {
     throw new Error("routing.errors.requestFailed");

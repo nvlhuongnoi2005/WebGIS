@@ -106,10 +106,24 @@ function RoutingPanel({
       ? t("routing.durationHoursMinutes", duration)
       : t("routing.durationMinutes", { count: duration.minutes })
     : null;
+  const isRouteResult = status === "success";
+  const isRouteSearchActive = status === "loading" || isRouteResult;
 
   return (
-    <Paper elevation={4} sx={panelSx}>
-      <Stack spacing={1.5}>
+    <Paper
+      elevation={4}
+      sx={{
+        ...panelSx,
+        ...(isRouteResult ? routeResultPanelSx : {}),
+      }}
+    >
+      <Stack
+        spacing={1.5}
+        sx={{
+          minHeight: 0,
+          ...(isRouteResult ? { height: "100%", overflowY: "auto", pr: 0.25 } : {}),
+        }}
+      >
           <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between" }}>
             <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
             <Box sx={{ display: "grid", placeItems: "center", width: 32, height: 32, borderRadius: 2, bgcolor: "primary.50", color: "primary.main" }}>
@@ -141,21 +155,52 @@ function RoutingPanel({
         </Stack>
 
         <Divider />
-        <Typography variant="caption" sx={{ fontWeight: 700, color: "text.secondary", textTransform: "uppercase", letterSpacing: 0.5 }}>
-          {t("routing.vehicle")}
-        </Typography>
+        {!isRouteSearchActive && (
+          <Typography variant="caption" sx={{ fontWeight: 700, color: "text.secondary", textTransform: "uppercase", letterSpacing: 0.5 }}>
+            {t("routing.vehicle")}
+          </Typography>
+        )}
         <ToggleButtonGroup
           exclusive
           fullWidth
           size="small"
           value={vehicle}
           onChange={(_, value: RoutingVehicle | null) => value && onVehicleChange(value)}
-          sx={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 0.5, "& .MuiToggleButtonGroup-grouped": { border: "1px solid", borderColor: "divider", borderRadius: "8px !important", m: 0 } }}
+          sx={{
+            display: "grid",
+            gridTemplateColumns: isRouteSearchActive
+              ? "repeat(7, minmax(0, 1fr))"
+              : "repeat(4, minmax(0, 1fr))",
+            gap: 0.5,
+            "& .MuiToggleButtonGroup-grouped": {
+              border: "1px solid",
+              borderColor: "divider",
+              borderRadius: "8px !important",
+              m: 0,
+            },
+          }}
         >
           {vehicles.map(({ value, labelKey, icon: Icon }) => (
-            <ToggleButton key={value} value={value} sx={{ minWidth: 0, minHeight: 44, px: 0.25, flexDirection: "column", gap: 0.25, textTransform: "none" }}>
-              <Icon size={17} />
-              <Typography variant="caption" sx={{ fontSize: 10.5, lineHeight: 1 }}>{t(labelKey)}</Typography>
+            <ToggleButton
+              key={value}
+              value={value}
+              title={t(labelKey)}
+              aria-label={t(labelKey)}
+              sx={{
+                minWidth: 0,
+                minHeight: isRouteSearchActive ? 40 : 44,
+                px: 0.25,
+                flexDirection: "column",
+                gap: 0.25,
+                textTransform: "none",
+              }}
+            >
+              <Icon size={isRouteSearchActive ? 18 : 17} />
+              {!isRouteSearchActive && (
+                <Typography variant="caption" sx={{ fontSize: 10.5, lineHeight: 1 }}>
+                  {t(labelKey)}
+                </Typography>
+              )}
             </ToggleButton>
           ))}
         </ToggleButtonGroup>
@@ -192,7 +237,13 @@ function RoutingPanel({
             </Typography>
             <Stack
               spacing={0.75}
-              sx={{ maxHeight: 280, overflowY: "auto", pr: 0.5 }}
+              sx={{
+                minHeight: 0,
+                flex: isRouteResult ? 1 : undefined,
+                maxHeight: isRouteResult ? undefined : 280,
+                overflowY: "auto",
+                pr: 0.5,
+              }}
             >
               {instructions.map((step, index) => (
                 <Stack
@@ -231,7 +282,7 @@ function RoutingPanel({
           variant="contained"
           startIcon={status === "loading" ? <CircularProgress size={16} color="inherit" /> : <Search size={17} />}
           disabled={!canCalculate}
-          onClick={onCalculate}
+          onClick={() => onCalculate()}
         >
           {status === "loading" ? t("routing.loading") : t("routing.findRoute")}
         </Button>
@@ -470,6 +521,15 @@ const panelSx = {
   width: { xs: "calc(100% - 24px)", sm: 390 },
   maxWidth: { xs: "calc(100% - 24px)", sm: "calc(100% - 40px)" },
   p: 1.5,
+};
+
+const routeResultPanelSx = {
+  width: { xs: "calc(100% - 24px)", sm: 520 },
+  maxWidth: { xs: "calc(100% - 24px)", sm: "calc(100% - 40px)" },
+  height: { xs: "calc(100% - 132px)", sm: "calc(100% - 120px)" },
+  maxHeight: { xs: "calc(100% - 132px)", sm: "calc(100% - 120px)" },
+  p: { xs: 1.5, sm: 2 },
+  overflow: "hidden",
 };
 
 export default RoutingPanel;

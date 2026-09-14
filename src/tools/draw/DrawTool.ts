@@ -42,7 +42,13 @@ export type DrawFeatureCollection = Omit<
   features: DrawFeature[];
   crs: DrawGeoJSONCrs;
 };
-export type DrawMode = "select" | "point" | "line" | "polygon" | "edit";
+export type DrawMode =
+  | "select"
+  | "point"
+  | "multipoint"
+  | "line"
+  | "polygon"
+  | "edit";
 
 export function emptyDrawFeatureCollection(): DrawFeatureCollection {
   return {
@@ -59,6 +65,16 @@ export function createPointFeature(
   return createFeature({
     type: "Point",
     coordinates: coordinate,
+  }, existingIds);
+}
+
+export function createMultiPointFeature(
+  coordinates: DrawCoordinate[],
+  existingIds: Iterable<DrawFeatureId> = []
+): DrawFeature {
+  return createFeature({
+    type: "MultiPoint",
+    coordinates,
   }, existingIds);
 }
 
@@ -157,6 +173,7 @@ function createDrawId(
 
 function getDrawIdPrefix(geometry: DrawGeometry): string {
   if (geometry.type === "Point") return "P";
+  if (geometry.type === "MultiPoint") return "MP";
   if (geometry.type === "LineString") return "L";
   if (geometry.type === "Polygon") return "PG";
   return "F";

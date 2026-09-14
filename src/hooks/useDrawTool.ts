@@ -4,6 +4,7 @@ import type { Map, MapMouseEvent } from "maplibre-gl";
 
 import {
   createLineFeature,
+  createMultiPointFeature,
   createPointFeature,
   createPolygonFeature,
   DRAW_FEATURE_ID_PROPERTY,
@@ -107,12 +108,38 @@ export function useDrawTool({
     setDraftCoordinates([]);
     setDrawError(null);
 
-    if (nextMode === "point" || nextMode === "line" || nextMode === "polygon") {
+    if (
+      nextMode === "point" ||
+      nextMode === "multipoint" ||
+      nextMode === "line" ||
+      nextMode === "polygon"
+    ) {
       setSelectedFeatureId(null);
     }
   }, [selectedFeatureId]);
 
   const finishDraft = useCallback(() => {
+    if (editorMode === "multipoint") {
+      if (draftCoordinates.length < 1) {
+        setDrawError("draw.errorMultiPointPoints");
+        return;
+      }
+
+      const feature = createMultiPointFeature(
+        draftCoordinates,
+        drawingsRef.current.features.map(item => item.id)
+      );
+      commitDrawings({
+        ...drawingsRef.current,
+        features: [...drawingsRef.current.features, feature],
+      });
+      setSelectedFeatureId(feature.id);
+      setDraftCoordinates([]);
+      setEditorMode("select");
+      setDrawError(null);
+      return;
+    }
+
     if (editorMode === "line") {
       if (draftCoordinates.length < 2) {
         setDrawError("draw.errorLinePoints");
@@ -152,7 +179,9 @@ export function useDrawTool({
       setDraftCoordinates([]);
       setEditorMode("select");
       setDrawError(null);
+      return;
     }
+
   }, [commitDrawings, draftCoordinates, editorMode]);
 
   const deleteSelected = useCallback(() => {
@@ -303,7 +332,11 @@ export function useDrawTool({
         return;
       }
 
-      if (editorMode === "line" || editorMode === "polygon") {
+      if (
+        editorMode === "multipoint" ||
+        editorMode === "line" ||
+        editorMode === "polygon"
+      ) {
         setDraftCoordinates(points => [...points, coordinate]);
         setDrawError(null);
       }
@@ -459,7 +492,9 @@ export function useDrawTool({
     drawError,
     canUndo: undoStack.length > 0,
     canRedo: redoStack.length > 0,
-    canFinish: (editorMode === "line" && draftCoordinates.length >= 2) ||
+    canFinish:
+      (editorMode === "multipoint" && draftCoordinates.length >= 1) ||
+      (editorMode === "line" && draftCoordinates.length >= 2) ||
       (editorMode === "polygon" && draftCoordinates.length >= 3),
     changeMode,
     applyGeoJSON,

@@ -34,6 +34,7 @@ export function useRouting({ map, mapLoaded, mapStyleVersion }: UseRoutingOption
   const [status, setStatus] = useState<RoutingStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const requestController = useRef<AbortController | null>(null);
+  const lastRequestedLanguage = useRef<string | null>(null);
 
   const reset = useCallback(() => {
     requestController.current?.abort();
@@ -60,7 +61,7 @@ export function useRouting({ map, mapLoaded, mapStyleVersion }: UseRoutingOption
     setError(null);
   }, []);
 
-  const calculateRoute = useCallback(async () => {
+  const requestRoute = useCallback(async (requestedVehicle: RoutingVehicle) => {
     if (!origin || !destination) {
       return;
     }
@@ -68,6 +69,7 @@ export function useRouting({ map, mapLoaded, mapStyleVersion }: UseRoutingOption
     requestController.current?.abort();
     const controller = new AbortController();
     requestController.current = controller;
+    lastRequestedLanguage.current = valhallaLanguage;
     setStatus("loading");
     setError(null);
 
@@ -75,7 +77,7 @@ export function useRouting({ map, mapLoaded, mapStyleVersion }: UseRoutingOption
       const result = await fetchValhallaRoute(
         origin,
         destination,
-        vehicle,
+        requestedVehicle,
         controller.signal,
         valhallaLanguage
       );
@@ -93,15 +95,42 @@ export function useRouting({ map, mapLoaded, mapStyleVersion }: UseRoutingOption
       const errorKey = requestError instanceof Error ? requestError.message : "routing.errors.unknown";
       setError(errorKey.startsWith("routing.errors.") ? t(errorKey) : t("routing.errors.unknown"));
     }
-  }, [destination, origin, t, valhallaLanguage, vehicle]);
+  }, [destination, origin, t, valhallaLanguage]);
+
+  const calculateRoute = useCallback(
+    () => requestRoute(vehicle),
+    [requestRoute, vehicle]
+  );
 
   const changeVehicle = useCallback((nextVehicle: RoutingVehicle) => {
+    const shouldRecalculate = Boolean(origin && destination) &&
+      (status === "success" || status === "loading");
+
     requestController.current?.abort();
     setVehicle(nextVehicle);
+
+    if (shouldRecalculate) {
+      void requestRoute(nextVehicle);
+      return;
+    }
+
     setRoute(null);
     setStatus("idle");
     setError(null);
-  }, []);
+  }, [destination, origin, requestRoute, status]);
+
+  useEffect(() => {
+    if (
+      status !== "success" ||
+      !origin ||
+      !destination ||
+      lastRequestedLanguage.current === valhallaLanguage
+    ) {
+      return;
+    }
+
+    void calculateRoute();
+  }, [calculateRoute, destination, origin, status, valhallaLanguage]);
 
   useEffect(() => {
     if (!map.current || !mapLoaded) {

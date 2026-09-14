@@ -238,6 +238,7 @@ function DrawPanel({
         >
           <ToggleButton value="select">{t("draw.select")}</ToggleButton>
           <ToggleButton value="point">{t("draw.point")}</ToggleButton>
+          <ToggleButton value="multipoint">{t("draw.multiPoint")}</ToggleButton>
           <ToggleButton value="line">{t("draw.line")}</ToggleButton>
           <ToggleButton value="polygon">{t("draw.polygon")}</ToggleButton>
         </ToggleButtonGroup>
@@ -263,7 +264,7 @@ function DrawPanel({
               {t("draw.done")}
             </Button>
           )}
-          {(mode === "line" || mode === "polygon") && (
+          {(mode === "multipoint" || mode === "line" || mode === "polygon") && (
             <Button size="small" variant="contained" startIcon={<Save size={15} />} onClick={onFinish} disabled={!canFinish}>
               {t("draw.save")}
             </Button>

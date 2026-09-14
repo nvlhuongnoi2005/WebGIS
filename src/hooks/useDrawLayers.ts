@@ -204,12 +204,23 @@ function addLineLayer(
   opacity: number,
   dasharray?: [number, number]
 ) {
-  if (map.getLayer(id)) return;
+  const geometryFilter: maplibregl.FilterSpecification = [
+    "in",
+    "$type",
+    "LineString",
+    "Polygon",
+  ];
+
+  if (map.getLayer(id)) {
+    map.setFilter(id, geometryFilter);
+    return;
+  }
 
   map.addLayer({
     id,
     type: "line",
     source,
+    filter: geometryFilter,
     layout: { "line-cap": "round", "line-join": "round" },
     paint: {
       "line-color": color,
@@ -246,7 +257,13 @@ function createDraftCollection(
 
   const features: Feature<DrawGeometry>[] = [];
 
-  if (coordinates.length >= 2) {
+  if (mode === "multipoint") {
+    features.push({
+      type: "Feature",
+      properties: {},
+      geometry: { type: "MultiPoint", coordinates },
+    });
+  } else if (coordinates.length >= 2) {
     features.push({
       type: "Feature",
       properties: {},
