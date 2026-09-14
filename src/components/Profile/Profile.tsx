@@ -10,14 +10,18 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
-import { User } from "./profileData";
+import { useAuth } from "../../features/auth";
+import ProfileDialog from "./ProfileDialog";
 import ProfilePanel from "./ProfilePanel";
 
 export default function Profile() {
   const { t } = useTranslation();
+  const { logout, updateAvatar, updateContactDetails, user } = useAuth();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [avatarUrl, setAvatarUrl] = useState(User.imageUrl);
+  const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
   const isOpen = Boolean(anchorEl);
+
+  if (!user) return null;
 
   function handleProfileClick(event: MouseEvent<HTMLButtonElement>) {
     setAnchorEl(event.currentTarget);
@@ -61,8 +65,8 @@ export default function Profile() {
           }}
         >
           <Avatar
-            src={avatarUrl}
-            alt={User.name}
+            src={user.avatarUrl}
+            alt={user.name}
             sx={{
               width: "100%",
               height: "100%",
@@ -88,15 +92,23 @@ export default function Profile() {
       >
         <Box sx={{ p: 2, minWidth: 240}}>
           <ProfilePanel
-            userName={User.name}
-            avatarUrl={avatarUrl}
-            onAvatarChange={setAvatarUrl}
+            userName={user.name}
+            avatarUrl={user.avatarUrl ?? ""}
+            onAvatarChange={updateAvatar}
             onClose={handleClosePanel}
-            onViewProfile={handleClosePanel}
-            onSignOut={handleClosePanel}
+            onViewProfile={() => setIsProfileDialogOpen(true)}
+            onSignOut={logout}
           />
         </Box>
       </Popover>
+      {isProfileDialogOpen && (
+        <ProfileDialog
+          open
+          user={user}
+          onClose={() => setIsProfileDialogOpen(false)}
+          onSave={updateContactDetails}
+        />
+      )}
     </>
   );
 }
