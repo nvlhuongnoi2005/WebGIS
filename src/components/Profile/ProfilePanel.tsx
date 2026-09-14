@@ -5,6 +5,7 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
+import { Building2, Camera, LogOut, Mail, UserRound } from "lucide-react";
 import {
   type ChangeEvent,
   useRef,
@@ -12,6 +13,8 @@ import {
 import { useTranslation } from "react-i18next";
 interface ProfilePanelProps {
   userName: string;
+  userEmail: string;
+  organization?: string;
   avatarUrl: string;
   onAvatarChange: (avatarUrl: string) => void;
   onClose: () => void;
@@ -21,6 +24,8 @@ interface ProfilePanelProps {
 
 export default function ProfilePanel({
   userName,
+  userEmail,
+  organization,
   avatarUrl,
   onAvatarChange,
   onClose,
@@ -65,29 +70,57 @@ export default function ProfilePanel({
   }
 
   return (
-    <Stack spacing={1.5} sx={{ width: 280 }}>
+    <Stack spacing={1} sx={{ width: 300 }}>
       <Stack
-        spacing={1}
+        spacing={1.25}
         sx={{
-          pt: 0.5,
+          p: 1.5,
           alignItems: "center",
           justifyContent: "center",
+          borderRadius: 3,
+          border: "1px solid",
+          borderColor: "primary.light",
+          bgcolor: "primary.light",
         }}
       >
         <Avatar
           src={avatarUrl}
           alt={userName}
           sx={{
-            width: 50,
-            height: 50,
-            border: "3px solid #e2e8f0",
+            width: 60,
+            height: 60,
+            border: "3px solid #ffffff",
+            boxShadow: "0 4px 12px rgb(11 87 208 / 20%)",
           }}
         />
 
+        <Typography
+          variant="subtitle1"
+          color="text.primary"
+          sx={{ maxWidth: "100%", fontWeight: 750, textAlign: "center" }}
+          noWrap
+        >
+          {userName}
+        </Typography>
+        <Stack spacing={0.5} sx={{ width: "100%" }}>
+          <Stack direction="row" spacing={0.75} sx={{ minWidth: 0, alignItems: "center", color: "text.secondary" }}>
+            <Mail size={15} />
+            <Typography variant="caption" noWrap>{userEmail}</Typography>
+          </Stack>
+          {organization && (
+            <Stack direction="row" spacing={0.75} sx={{ minWidth: 0, alignItems: "center", color: "text.secondary" }}>
+              <Building2 size={15} />
+              <Typography variant="caption" noWrap>{organization}</Typography>
+            </Stack>
+          )}
+        </Stack>
+
         <Button
-          variant="outlined"
+          variant="text"
           size="small"
+          startIcon={<Camera size={15} />}
           onClick={handleOpenFilePicker}
+          sx={{ minHeight: 32 }}
         >
           {t("profile.uploadAvatar")}
         </Button>
@@ -99,20 +132,13 @@ export default function ProfilePanel({
           hidden
           onChange={handleAvatarUpload}
         />
-
-        <Typography
-          variant="subtitle1"
-          color="text.primary"
-          sx={{ fontWeight: 700 }}
-        >
-          {userName}
-        </Typography>
       </Stack>
 
-      <Divider />
+      <Divider sx={{ my: 0.5 }} />
 
       <Button
         variant="contained"
+        startIcon={<UserRound size={17} />}
         onClick={handleViewProfile}
         fullWidth
       >
@@ -122,6 +148,7 @@ export default function ProfilePanel({
       <Button
         variant="text"
         color="error"
+        startIcon={<LogOut size={17} />}
         onClick={handleSignOut}
         fullWidth
       >

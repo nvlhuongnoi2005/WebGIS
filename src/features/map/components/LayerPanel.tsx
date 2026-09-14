@@ -26,11 +26,29 @@ function LayerPanel({
   const { t } = useTranslation();
 
   return (
-    <Paper elevation={4} sx={panelSx}>
+    <Paper className="map-floating-panel" elevation={4} sx={panelSx}>
       <Stack spacing={1.5}>
-        <Typography variant="overline" color="text.secondary" sx={{ lineHeight: 1 }}>
-          {t("layers.layerControls")}
-        </Typography>
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+          <Stack
+            sx={{
+              width: 34,
+              height: 34,
+              alignItems: "center",
+              justifyContent: "center",
+              borderRadius: 2.5,
+              bgcolor: "primary.light",
+              color: "primary.main",
+            }}
+          >
+            <Layers3 size={18} />
+          </Stack>
+          <Stack spacing={0}>
+            <Typography variant="subtitle2">{t("tools.layer")}</Typography>
+            <Typography variant="caption" color="text.secondary">
+              {t("layers.layerControls")}
+            </Typography>
+          </Stack>
+        </Stack>
         <Button
           fullWidth
           variant="outlined"

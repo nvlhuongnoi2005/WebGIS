@@ -172,6 +172,10 @@
     "phoneRequired": "Enter your phone number.",
     "phoneInvalid": "Enter a valid phone number."
   },
+  "accessibility": {
+    "skipToContent": "Skip to main content",
+    "mapTools": "Map tools"
+  },
   "auth": {
     "brand": "VGIS",
     "subtitle": "GIS mapping tool",

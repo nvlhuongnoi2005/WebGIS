@@ -17,6 +17,56 @@
   min-height: 0;
 }
 
+/* Shared visual language for controls that sit above the map. */
+.map-floating-panel,
+.map-search-surface,
+.map-coordinate-card,
+.map-tool-rail {
+  border: 1px solid rgb(220 227 239 / 96%) !important;
+  background: rgb(255 255 255 / 96%) !important;
+  box-shadow: 0 16px 36px rgb(20 45 82 / 16%) !important;
+  backdrop-filter: blur(14px);
+}
+
+.map-floating-panel {
+  border-radius: 18px !important;
+}
+
+.map-floating-panel .MuiToggleButtonGroup-root {
+  padding: 4px;
+  border: 1px solid #dce3ef;
+  border-radius: 12px;
+  background: #f5f8fd;
+}
+
+.map-floating-panel .MuiToggleButton-root {
+  min-height: 36px;
+  border: 0 !important;
+  border-radius: 8px !important;
+}
+
+.map-floating-panel .MuiToggleButton-root.Mui-selected,
+.map-floating-panel .MuiToggleButton-root.Mui-selected:hover {
+  color: #073b87;
+  background: #dce9ff;
+}
+
+.map-floating-panel .MuiDivider-root {
+  border-color: #e2e8f2;
+}
+
+.map-search-surface {
+  border-radius: 16px !important;
+}
+
+.map-tool-rail {
+  border-radius: 16px !important;
+}
+
+.map-coordinate-card {
+  border-radius: 14px !important;
+}
+
 .search-popup-container {
   padding: 2px 4px;
   color: #1e293b;
@@ -61,6 +111,17 @@
   width: 250px;
   max-width: calc(100% - 70px);
   z-index: var(--z-overlay-panel);
+}
+
+@media (max-width: 599px) {
+  .map-coordinate-hover-panel {
+    right: 8px;
+    bottom: 8px;
+  }
+
+  .map-floating-panel {
+    border-radius: 16px !important;
+  }
 }
 
 .search-popup-container strong {

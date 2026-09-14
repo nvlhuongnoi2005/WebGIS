@@ -111,6 +111,7 @@ function RoutingPanel({
 
   return (
     <Paper
+      className="map-floating-panel"
       elevation={4}
       sx={{
         ...panelSx,
@@ -126,7 +127,7 @@ function RoutingPanel({
       >
           <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between" }}>
             <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-            <Box sx={{ display: "grid", placeItems: "center", width: 32, height: 32, borderRadius: 2, bgcolor: "primary.50", color: "primary.main" }}>
+            <Box sx={{ display: "grid", placeItems: "center", width: 32, height: 32, borderRadius: 2, bgcolor: "primary.light", color: "primary.main" }}>
               <RouteIcon size={18} />
             </Box>
             <Box>
@@ -260,7 +261,7 @@ function RoutingPanel({
                       width: 22,
                       height: 22,
                       borderRadius: "50%",
-                      bgcolor: "primary.50",
+                      bgcolor: "primary.light",
                       color: "primary.main",
                       fontSize: 12,
                       fontWeight: 700,

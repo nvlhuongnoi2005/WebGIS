@@ -43,20 +43,15 @@ export default function Profile() {
             width: 45,
             height: 45,
             p: 0,
-            borderRadius: "50%",
+            borderRadius: 3,
             border: "2px solid #ffffff",
             backgroundColor: "#ffffff",
-            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
+            boxShadow: "0 8px 20px rgb(20 45 82 / 16%)",
             overflow: "hidden",
             boxSizing: "border-box",
-            transition: "transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease",
             "&:hover": {
-              transform: "scale(1.1)",
-              boxShadow: "0 4px 14px rgba(0, 0, 0, 0.28)",
+              boxShadow: "0 10px 24px rgb(20 45 82 / 20%)",
               backgroundColor: "#ffffff",
-            },
-            "&:active": {
-              transform: "scale(0.94)",
             },
             "&:focus-visible": {
               outline: "2px solid #1565c0",
@@ -70,7 +65,7 @@ export default function Profile() {
             sx={{
               width: "100%",
               height: "100%",
-              border: "3px solid #e2e8f0",
+              border: "3px solid #dce9ff",
               objectFit: "cover",
             }}
           />
@@ -89,10 +84,22 @@ export default function Profile() {
           vertical: "top",
           horizontal: "right",
         }}
+        slotProps={{
+          paper: {
+            sx: {
+              border: "1px solid",
+              borderColor: "divider",
+              borderRadius: 4,
+              boxShadow: "0 18px 42px rgb(20 45 82 / 20%)",
+            },
+          },
+        }}
       >
-        <Box sx={{ p: 2, minWidth: 240}}>
+        <Box sx={{ p: 1, minWidth: 300 }}>
           <ProfilePanel
             userName={user.name}
+            userEmail={user.email}
+            organization={user.organization}
             avatarUrl={user.avatarUrl ?? ""}
             onAvatarChange={updateAvatar}
             onClose={handleClosePanel}

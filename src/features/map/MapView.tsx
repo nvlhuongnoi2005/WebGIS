@@ -173,7 +173,7 @@ function MapView() {
   };
 
   return (
-    <Box className="map-wrapper">
+    <Box component="main" id="main-content" className="map-wrapper">
       <Box ref={mapContainer} className="map-container" />
       <Box className="map-coordinate-hover-panel">
         <MapPositionPopup

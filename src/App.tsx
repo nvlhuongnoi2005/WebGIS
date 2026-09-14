@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { AuthProvider, LoginPage, useAuth } from "./features/auth";
 import { MapView } from "./features/map";
 
@@ -12,6 +13,7 @@ function App() {
 
 function AppRoutes() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [pathname, setPathname] = useState(getPathname);
 
   useEffect(() => {
@@ -27,17 +29,25 @@ function AppRoutes() {
     }
   };
 
+  let content: React.ReactNode;
   if (pathname === "/login") {
-    if (user) return <Redirect to="/map" navigate={navigate} />;
-    return <LoginPage onAuthenticated={() => navigate("/map", true)} />;
+    content = user
+      ? <Redirect to="/map" navigate={navigate} />
+      : <LoginPage onAuthenticated={() => navigate("/map", true)} />;
+  } else if (pathname === "/map") {
+    content = user
+      ? <MapView />
+      : <Redirect to="/login" navigate={navigate} />;
+  } else {
+    content = <Redirect to={user ? "/map" : "/login"} navigate={navigate} />;
   }
 
-  if (pathname === "/map") {
-    if (!user) return <Redirect to="/login" navigate={navigate} />;
-    return <MapView />;
-  }
-
-  return <Redirect to={user ? "/map" : "/login"} navigate={navigate} />;
+  return (
+    <>
+      <a className="skip-link" href="#main-content">{t("accessibility.skipToContent")}</a>
+      {content}
+    </>
+  );
 }
 
 interface RedirectProps {

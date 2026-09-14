@@ -154,6 +154,10 @@
     "switchToEn": "Chuyển sang Tiếng Anh",
     "switchToVi": "Chuyển sang Tiếng Việt"
   },
+  "accessibility": {
+    "skipToContent": "Chuyển đến nội dung chính",
+    "mapTools": "Công cụ bản đồ"
+  },
   "auth": {
     "forgotPassword": "Quên mật khẩu?",
     "resetPasswordTitle": "Đặt lại mật khẩu",

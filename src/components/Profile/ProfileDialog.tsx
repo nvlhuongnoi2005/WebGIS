@@ -67,14 +67,26 @@ export default function ProfileDialog({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullWidth
+      maxWidth="sm"
+      slotProps={{ paper: { sx: { overflow: "hidden" } } }}
+    >
       <Box component="form" onSubmit={handleSubmit} noValidate>
-        <DialogTitle>{t("profile.accountTitle")}</DialogTitle>
-        <DialogContent>
-          <Stack spacing={2.25} sx={{ pt: 0.5 }}>
-            <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
-              <Avatar src={user.avatarUrl} alt={user.name} sx={{ width: 48, height: 48 }} />
-              <Box>
+        <DialogTitle sx={{ px: 3, pt: 2.5, pb: 2.25, bgcolor: "primary.light", borderBottom: "1px solid", borderColor: "divider" }}>
+          {t("profile.accountTitle")}
+        </DialogTitle>
+        <DialogContent sx={{ pt: 2.5 }}>
+          <Stack spacing={2.25}>
+            <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", p: 1.5, borderRadius: 3, bgcolor: "action.hover" }}>
+              <Avatar
+                src={user.avatarUrl}
+                alt={user.name}
+                sx={{ width: 56, height: 56, border: "3px solid #ffffff", boxShadow: "0 4px 12px rgb(11 87 208 / 20%)" }}
+              />
+              <Box sx={{ minWidth: 0 }}>
                 <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>{user.name}</Typography>
                 <Typography variant="body2" color="text.secondary">{user.organization ?? "—"}</Typography>
               </Box>

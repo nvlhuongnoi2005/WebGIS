@@ -24,23 +24,19 @@ export function LanguageSwitcher() {
         onClick={toggleLanguage}
         aria-label={t("tools.language")}
         sx={{
-          minWidth: 64,
-          height: 38,
+          minWidth: 72,
+          height: 44,
           px: 1.125,
           gap: 0.75,
-          borderRadius: 19,
+          borderRadius: 16,
           border: "2px solid #ffffff",
           backgroundColor: "#ffffff",
-          boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
+          boxShadow: "0 8px 20px rgb(20 45 82 / 16%)",
           overflow: "hidden",
           boxSizing: "border-box",
-          transition: "transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease",
           "&:hover": {
-            transform: "scale(1.1)",
-            boxShadow: "0 4px 14px rgba(0, 0, 0, 0.28)",
-          },
-          "&:active": {
-            transform: "scale(0.94)",
+            backgroundColor: "#f8faff",
+            boxShadow: "0 10px 24px rgb(20 45 82 / 20%)",
           },
           "&:focus-visible": {
             outline: "2px solid #1565c0",

@@ -26,6 +26,7 @@ import {
   EyeOff,
   Edit3,
   FileUp,
+  Pen,
   Redo2,
   RotateCcw,
   Save,
@@ -216,11 +217,29 @@ function DrawPanel({
   };
 
   return (
-    <Paper elevation={4} sx={panelSx}>
+    <Paper className="map-floating-panel" elevation={4} sx={panelSx}>
       <Stack spacing={1.25}>
         <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center" }}>
-          <Typography variant="body2" color="text.secondary">{t("draw.savedFeatures")}</Typography>
-          <Typography variant="h6" color="primary.main" sx={{ fontWeight: 700 }}>{drawingCount}</Typography>
+          <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+            <Stack
+              sx={{
+                width: 34,
+                height: 34,
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: 2.5,
+                bgcolor: "primary.light",
+                color: "primary.main",
+              }}
+            >
+              <Pen size={18} />
+            </Stack>
+            <Stack spacing={0}>
+              <Typography variant="subtitle2">{t("tools.draw")}</Typography>
+              <Typography variant="caption" color="text.secondary">{t("draw.savedFeatures")}</Typography>
+            </Stack>
+          </Stack>
+          <Typography variant="h6" color="primary.main" sx={{ fontWeight: 750 }}>{drawingCount}</Typography>
         </Stack>
 
         <ToggleButtonGroup

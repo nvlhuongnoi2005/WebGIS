@@ -332,18 +332,18 @@ function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) 
       }}
     >
       <Paper
+        className="map-search-surface"
         component="form"
         onSubmit={handleSearchSubmit}
         elevation={3}
         sx={{
           display: "flex",
           alignItems: "center",
-          minHeight: 42,
+          minHeight: 48,
           px: 1,
-          borderRadius: 21,
+          borderRadius: 16,
           border: "1px solid",
           borderColor: "divider",
-          transition: "border-color 0.2s, box-shadow 0.2s",
           "&:focus-within": {
             borderColor: "primary.main",
             boxShadow: theme => `0 3px 12px ${theme.palette.primary.main}40`,
@@ -359,6 +359,7 @@ function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) 
           placeholder={t("search.placeholder")}
           autoComplete="off"
           spellCheck={false}
+          inputProps={{ "aria-label": t("search.placeholder") }}
           sx={{ flex: 1, ml: 1, minWidth: 0, fontSize: 14 }}
         />
 
@@ -370,6 +371,7 @@ function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) 
             size="small"
             onClick={handleClear}
             title={t("search.clearTitle")}
+            aria-label={t("search.clearTitle")}
             sx={{ mr: 0.5 }}
           >
             <X size={15} />
@@ -381,14 +383,14 @@ function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) 
           variant="contained"
           size="small"
           disabled={isLoading}
-          sx={{ minWidth: 82, borderRadius: 16 }}
+          sx={{ minWidth: 86, minHeight: 36, borderRadius: 2.5 }}
         >
           {t("search.button")}
         </Button>
       </Paper>
 
       {selectedFeature && activeTool !== "route" && (
-        <Paper elevation={4} sx={{ mt: 0.75, p: 1.5, borderRadius: 3 }}>
+        <Paper className="map-floating-panel" elevation={4} sx={{ mt: 0.75, p: 1.5 }}>
           <Stack spacing={1}>
             <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
               {selectedFeature.text || selectedFeature.place_name}
@@ -420,7 +422,7 @@ function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) 
       )}
 
       {isOpen && suggestions.length > 0 && (
-        <Paper elevation={5} sx={{ mt: 0.75, maxHeight: 280, overflowY: "auto", borderRadius: 3 }}>
+        <Paper className="map-floating-panel" elevation={5} sx={{ mt: 0.75, maxHeight: 280, overflowY: "auto" }}>
           <List disablePadding>
             {suggestions.map(feature => (
               <ListItemButton key={feature.id} onClick={() => selectLocation(feature)}>

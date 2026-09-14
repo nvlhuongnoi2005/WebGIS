@@ -61,7 +61,7 @@ function TileServerBaseMapPanel({
   const isBaseMapMode = mode === "base-map";
 
   return (
-    <Paper elevation={8} sx={panelSx}>
+    <Paper className="map-floating-panel" elevation={8} sx={panelSx}>
       <Stack spacing={1.5}>
         <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between" }}>
           <Box>
@@ -206,7 +206,7 @@ function DatasetCard({
               width: "100%",
               height: { xs: 150, sm: 170 },
               color: selected ? "primary.main" : "#64748b",
-              bgcolor: selected ? "primary.50" : "grey.100",
+              bgcolor: selected ? "primary.light" : "grey.100",
               backgroundImage: "linear-gradient(135deg, transparent 45%, rgba(25, 118, 210, 0.16) 46%, transparent 48%), linear-gradient(45deg, transparent 45%, rgba(229, 57, 53, 0.18) 46%, transparent 48%)",
             }}
           >

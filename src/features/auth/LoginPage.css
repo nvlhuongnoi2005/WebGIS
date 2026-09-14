@@ -383,3 +383,11 @@
   .auth-card { border-radius: 0 !important; }
   .auth-form { padding: 28px 22px; }
 }
+
+@media (max-height: 700px) and (min-width: 761px) {
+  .auth-page {
+    align-items: start;
+    overflow-y: auto;
+    padding-block: 24px;
+  }
+}

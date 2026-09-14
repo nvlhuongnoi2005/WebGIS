@@ -25,3 +25,25 @@ body,
 body {
   overflow: hidden;
 }
+
+:focus-visible {
+  outline: 3px solid #0b57d0;
+  outline-offset: 3px;
+}
+
+.skip-link {
+  position: fixed;
+  z-index: 9999;
+  top: 12px;
+  left: 12px;
+  padding: 10px 14px;
+  color: #ffffff;
+  border-radius: 10px;
+  background: #073b87;
+  box-shadow: 0 4px 12px rgb(7 59 135 / 32%);
+  transform: translateY(-160%);
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
+}

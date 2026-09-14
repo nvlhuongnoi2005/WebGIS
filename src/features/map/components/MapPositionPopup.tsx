@@ -43,6 +43,7 @@ function MapPositionPopup({
   if (compact) {
     return (
       <Paper
+        className="map-coordinate-card"
         elevation={0}
         sx={{
           px: 1.5,
@@ -172,7 +173,7 @@ function MapPositionPopup({
             height: 32,
             placeItems: "center",
             borderRadius: "50%",
-            bgcolor: "primary.50",
+            bgcolor: "primary.light",
             color: "primary.main",
           }}
         >

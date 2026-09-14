@@ -22,13 +22,20 @@ function ToolPanel({ activeTool, onSelectTool }: ToolPanelProps) {
 
   return (
     <Paper
+      className="map-tool-rail"
+      component="nav"
+      aria-label={t("accessibility.mapTools")}
       elevation={3}
       sx={{
         position: "absolute",
         right: { xs: 12, sm: 20 },
         top: { xs: 120, sm: 100 },
         zIndex: "var(--z-tool-panel)",
-        p: 0.5,
+        p: 0.75,
+        border: "1px solid",
+        borderColor: "divider",
+        borderRadius: 2.5,
+        bgcolor: "rgba(255, 255, 255, 0.94)",
       }}
     >
       <Stack spacing={0.5}>
@@ -45,11 +52,11 @@ function ToolPanel({ activeTool, onSelectTool }: ToolPanelProps) {
                 aria-label={translatedLabel}
                 aria-pressed={isActive}
                 sx={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 1.5,
-                  bgcolor: isActive ? "primary.50" : "transparent",
-                  "&:hover": { bgcolor: isActive ? "primary.100" : "action.hover" },
+                  width: 44,
+                  height: 44,
+                  borderRadius: 2,
+                  bgcolor: isActive ? "primary.light" : "transparent",
+                  "&:hover": { bgcolor: isActive ? "primary.light" : "action.hover" },
                 }}
               >
                 <Icon size={18} />

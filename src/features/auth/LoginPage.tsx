@@ -117,7 +117,7 @@ export default function LoginPage({ onAuthenticated }: LoginPageProps) {
   };
 
   return (
-    <Box className="auth-page">
+    <Box component="main" id="main-content" className="auth-page">
       <Box className="auth-orb auth-orb--one" aria-hidden />
       <Box className="auth-orb auth-orb--two" aria-hidden />
       <Container maxWidth="md" disableGutters className="auth-shell">

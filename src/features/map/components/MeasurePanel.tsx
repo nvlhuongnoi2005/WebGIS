@@ -8,7 +8,7 @@ import {
   ToggleButtonGroup,
   Typography,
 } from "@mui/material";
-import { Check, Redo2, Trash2, Undo2 } from "lucide-react";
+import { Check, Redo2, Ruler, Trash2, Undo2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -58,8 +58,24 @@ function MeasurePanel({
     : formatArea(area);
 
   return (
-    <Paper elevation={4} sx={panelSx}>
+    <Paper className="map-floating-panel" elevation={4} sx={panelSx}>
       <Stack spacing={1.5}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+          <Stack
+            sx={{
+              width: 34,
+              height: 34,
+              alignItems: "center",
+              justifyContent: "center",
+              borderRadius: 2.5,
+              bgcolor: "primary.light",
+              color: "primary.main",
+            }}
+          >
+            <Ruler size={18} />
+          </Stack>
+          <Typography variant="subtitle2">{t("tools.measure")}</Typography>
+        </Stack>
         <ToggleButtonGroup
           exclusive
           fullWidth
@@ -88,7 +104,7 @@ function MeasurePanel({
 
         <Divider />
 
-        <Stack direction="row" spacing={0.75}>
+        <Stack direction="row" spacing={0.75} sx={{ flexWrap: "wrap", rowGap: 0.75 }}>
           <Button
             size="small"
             variant="outlined"
