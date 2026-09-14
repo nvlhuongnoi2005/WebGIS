@@ -391,3 +391,64 @@
     padding-block: 24px;
   }
 }
+
+html[data-color-mode="dark"] .auth-page {
+  background:
+    radial-gradient(circle at 15% 18%, rgb(25 75 112 / 40%), transparent 26%),
+    radial-gradient(circle at 88% 82%, rgb(43 79 139 / 35%), transparent 31%),
+    linear-gradient(145deg, #101418 0%, #151b22 48%, #111923 100%);
+}
+
+html[data-color-mode="dark"] .auth-page::before {
+  opacity: 0.18;
+}
+
+html[data-color-mode="dark"] .auth-card {
+  border-color: #3d4754;
+  box-shadow: 0 28px 70px rgb(0 0 0 / 46%) !important;
+}
+
+html[data-color-mode="dark"] .auth-form {
+  background: rgb(24 29 35 / 96%);
+}
+
+html[data-color-mode="dark"] .auth-tabs {
+  border-color: #3d4754;
+  background: #202a36;
+}
+
+html[data-color-mode="dark"] .auth-tabs .MuiTabs-indicator {
+  background: #303b49;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 36%);
+}
+
+html[data-color-mode="dark"] .auth-tabs .MuiTab-root {
+  color: #bdc7d5;
+}
+
+html[data-color-mode="dark"] .auth-tabs .Mui-selected {
+  color: #d8e6ff !important;
+}
+
+html[data-color-mode="dark"] .auth-form__fields .MuiOutlinedInput-root,
+html[data-color-mode="dark"] .auth-form__fields .MuiOutlinedInput-root:hover,
+html[data-color-mode="dark"] .auth-form__fields .MuiOutlinedInput-root.Mui-focused {
+  background: #20262e;
+}
+
+html[data-high-contrast="true"] .auth-page {
+  background: #000000;
+}
+
+html[data-high-contrast="true"] .auth-card,
+html[data-high-contrast="true"] .auth-form {
+  border: 2px solid currentColor;
+  box-shadow: none !important;
+}
+
+html[data-text-size="large"] .auth-page {
+  height: 100%;
+  align-items: start;
+  overflow-y: auto;
+  padding-block: 24px;
+}

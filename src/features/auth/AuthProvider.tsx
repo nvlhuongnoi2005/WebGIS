@@ -111,18 +111,21 @@ export function AuthProvider({ children }: PropsWithChildren) {
     return { ok: true };
   }, [user]);
 
-  const updateAvatar = useCallback((avatarUrl: string) => {
-    setUser(currentUser => {
-      if (!currentUser) return null;
+  const updateAvatar = useCallback((avatarUrl: string): AuthResult => {
+    if (!user) return { ok: false, code: "invalidCredentials" };
 
-      const nextUser = { ...currentUser, avatarUrl };
-      saveSession(nextUser);
+    const nextUser = { ...user, avatarUrl };
+    try {
       saveAccounts(readAccounts().map(account =>
         account.id === nextUser.id ? { ...account, avatarUrl } : account
       ));
-      return nextUser;
-    });
-  }, []);
+      saveSession(nextUser);
+      setUser(nextUser);
+      return { ok: true };
+    } catch {
+      return { ok: false, code: "storageFailed" };
+    }
+  }, [user]);
 
   const value = useMemo<AuthContextValue>(() => ({
     user,

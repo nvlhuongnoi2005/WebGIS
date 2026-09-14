@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { AccessibilitySettingsButton } from "./features/accessibility";
 import { AuthProvider, LoginPage, useAuth } from "./features/auth";
 import { MapView } from "./features/map";
 
@@ -46,6 +47,7 @@ function AppRoutes() {
     <>
       <a className="skip-link" href="#main-content">{t("accessibility.skipToContent")}</a>
       {content}
+      {pathname === "/login" && !user && <AccessibilitySettingsButton />}
     </>
   );
 }

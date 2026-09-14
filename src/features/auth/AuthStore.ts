@@ -23,7 +23,7 @@ export type AuthResult =
   | { ok: true }
   | {
     ok: false;
-    code: "emailInUse" | "invalidCredentials" | "accountNotFound";
+    code: "emailInUse" | "invalidCredentials" | "accountNotFound" | "storageFailed";
   };
 
 export interface AuthContextValue {
@@ -33,7 +33,7 @@ export interface AuthContextValue {
   resetPassword: (email: string, password: string) => Promise<AuthResult>;
   logout: () => void;
   updateContactDetails: (email: string, phone: string) => AuthResult;
-  updateAvatar: (avatarUrl: string) => void;
+  updateAvatar: (avatarUrl: string) => AuthResult;
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null);

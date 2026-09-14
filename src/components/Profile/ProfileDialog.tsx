@@ -84,7 +84,7 @@ export default function ProfileDialog({
               <Avatar
                 src={user.avatarUrl}
                 alt={user.name}
-                sx={{ width: 56, height: 56, border: "3px solid #ffffff", boxShadow: "0 4px 12px rgb(11 87 208 / 20%)" }}
+                sx={{ width: 56, height: 56, border: "3px solid", borderColor: "background.paper", boxShadow: "0 4px 12px rgb(11 87 208 / 20%)" }}
               />
               <Box sx={{ minWidth: 0 }}>
                 <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>{user.name}</Typography>

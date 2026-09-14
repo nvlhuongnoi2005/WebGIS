@@ -1,9 +1,4 @@
 import {
-  CssBaseline,
-  ThemeProvider,
-} from "@mui/material";
-
-import {
   StrictMode,
 } from "react";
 
@@ -15,7 +10,7 @@ import "./index.css";
 import "./i18n";
 
 import App from "./App.tsx";
-import theme from "./theme";
+import { AccessibilityProvider } from "./features/accessibility";
 
 
 createRoot(
@@ -24,11 +19,9 @@ createRoot(
 
   <StrictMode>
 
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-
+    <AccessibilityProvider>
       <App />
-    </ThemeProvider>
+    </AccessibilityProvider>
 
   </StrictMode>
 

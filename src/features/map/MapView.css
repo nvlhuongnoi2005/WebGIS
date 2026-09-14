@@ -8,6 +8,47 @@
   min-width: 0;
   min-height: 0;
   overflow: hidden;
+  --map-surface: rgb(255 255 255 / 96%);
+  --map-surface-border: rgb(220 227 239 / 96%);
+  --map-shadow: 0 16px 36px rgb(20 45 82 / 16%);
+  --map-subtle-surface: #f5f8fd;
+  --map-selected-surface: #dce9ff;
+  --map-selected-text: #073b87;
+  --map-divider: #e2e8f2;
+  --map-popup-text: #1e293b;
+  --map-popup-secondary: #64748b;
+  --map-popup-border: #b9d5fb;
+  --map-popup-hover: #eef4fb;
+}
+
+html[data-color-mode="dark"] .map-wrapper {
+  --map-surface: rgb(24 29 35 / 96%);
+  --map-surface-border: rgb(86 101 120 / 94%);
+  --map-shadow: 0 16px 36px rgb(0 0 0 / 42%);
+  --map-subtle-surface: #202a36;
+  --map-selected-surface: #304d78;
+  --map-selected-text: #e3edff;
+  --map-divider: #3d4754;
+  --map-popup-text: #e3e9f2;
+  --map-popup-secondary: #bdc7d5;
+  --map-popup-border: #526c93;
+  --map-popup-hover: #25303d;
+}
+
+html[data-high-contrast="true"] .map-wrapper {
+  --map-surface: var(--map-contrast-surface, #ffffff);
+  --map-surface-border: currentColor;
+  --map-shadow: none;
+  --map-subtle-surface: transparent;
+  --map-selected-surface: #dbe9ff;
+  --map-selected-text: #001f4d;
+  --map-divider: currentColor;
+}
+
+html[data-high-contrast="true"][data-color-mode="dark"] .map-wrapper {
+  --map-contrast-surface: #000000;
+  --map-selected-surface: #343434;
+  --map-selected-text: #ffffff;
 }
 
 .map-container {
@@ -22,9 +63,9 @@
 .map-search-surface,
 .map-coordinate-card,
 .map-tool-rail {
-  border: 1px solid rgb(220 227 239 / 96%) !important;
-  background: rgb(255 255 255 / 96%) !important;
-  box-shadow: 0 16px 36px rgb(20 45 82 / 16%) !important;
+  border: 1px solid var(--map-surface-border) !important;
+  background: var(--map-surface) !important;
+  box-shadow: var(--map-shadow) !important;
   backdrop-filter: blur(14px);
 }
 
@@ -34,9 +75,9 @@
 
 .map-floating-panel .MuiToggleButtonGroup-root {
   padding: 4px;
-  border: 1px solid #dce3ef;
+  border: 1px solid var(--map-surface-border);
   border-radius: 12px;
-  background: #f5f8fd;
+  background: var(--map-subtle-surface);
 }
 
 .map-floating-panel .MuiToggleButton-root {
@@ -47,16 +88,20 @@
 
 .map-floating-panel .MuiToggleButton-root.Mui-selected,
 .map-floating-panel .MuiToggleButton-root.Mui-selected:hover {
-  color: #073b87;
-  background: #dce9ff;
+  color: var(--map-selected-text);
+  background: var(--map-selected-surface);
 }
 
 .map-floating-panel .MuiDivider-root {
-  border-color: #e2e8f2;
+  border-color: var(--map-divider);
 }
 
 .map-search-surface {
   border-radius: 16px !important;
+}
+
+.map-search-surface:focus-within {
+  box-shadow: 0 0 0 3px var(--map-selected-surface), var(--map-shadow) !important;
 }
 
 .map-tool-rail {
@@ -69,7 +114,7 @@
 
 .search-popup-container {
   padding: 2px 4px;
-  color: #1e293b;
+  color: var(--map-popup-text);
   font-family: system-ui, -apple-system, sans-serif;
 }
 
@@ -79,9 +124,9 @@
 
 .map-position-popup-container .maplibregl-popup-content {
   padding: 0;
-  border: 1px solid #b9d5fb;
+  border: 1px solid var(--map-popup-border);
   border-radius: 14px;
-  box-shadow: 0 8px 20px rgb(15 23 42 / 15%);
+  box-shadow: var(--map-shadow);
 }
 
 .map-position-popup-container .maplibregl-popup-close-button {
@@ -90,18 +135,18 @@
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  color: #64748b;
+  color: var(--map-popup-secondary);
   font-size: 22px;
   line-height: 26px;
 }
 
 .map-position-popup-container .maplibregl-popup-close-button:hover {
-  background: #eef4fb;
-  color: #1e293b;
+  background: var(--map-popup-hover);
+  color: var(--map-popup-text);
 }
 
 .map-position-popup-container .maplibregl-popup-tip {
-  border-top-color: #ffffff;
+  border-top-color: var(--map-surface);
 }
 
 .map-coordinate-hover-panel {
@@ -127,12 +172,12 @@
 .search-popup-container strong {
   display: block;
   margin-bottom: 2px;
-  color: #0f172a;
+  color: var(--map-popup-text);
   font-size: 14px;
 }
 
 .search-popup-desc {
-  color: #64748b;
+  color: var(--map-popup-secondary);
   font-size: 12px;
   line-height: 1.35;
 }

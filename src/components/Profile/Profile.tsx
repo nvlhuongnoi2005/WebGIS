@@ -10,6 +10,7 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { AccessibilitySettingsDialog } from "../../features/accessibility";
 import { useAuth } from "../../features/auth";
 import ProfileDialog from "./ProfileDialog";
 import ProfilePanel from "./ProfilePanel";
@@ -19,6 +20,7 @@ export default function Profile() {
   const { logout, updateAvatar, updateContactDetails, user } = useAuth();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
+  const [isAccessibilityDialogOpen, setIsAccessibilityDialogOpen] = useState(false);
   const isOpen = Boolean(anchorEl);
 
   if (!user) return null;
@@ -44,14 +46,15 @@ export default function Profile() {
             height: 45,
             p: 0,
             borderRadius: 3,
-            border: "2px solid #ffffff",
-            backgroundColor: "#ffffff",
+            border: "2px solid",
+            borderColor: "background.paper",
+            backgroundColor: "background.paper",
             boxShadow: "0 8px 20px rgb(20 45 82 / 16%)",
             overflow: "hidden",
             boxSizing: "border-box",
             "&:hover": {
               boxShadow: "0 10px 24px rgb(20 45 82 / 20%)",
-              backgroundColor: "#ffffff",
+              backgroundColor: "background.paper",
             },
             "&:focus-visible": {
               outline: "2px solid #1565c0",
@@ -65,7 +68,8 @@ export default function Profile() {
             sx={{
               width: "100%",
               height: "100%",
-              border: "3px solid #dce9ff",
+              border: "3px solid",
+              borderColor: "primary.light",
               objectFit: "cover",
             }}
           />
@@ -104,6 +108,7 @@ export default function Profile() {
             onAvatarChange={updateAvatar}
             onClose={handleClosePanel}
             onViewProfile={() => setIsProfileDialogOpen(true)}
+            onOpenAccessibility={() => setIsAccessibilityDialogOpen(true)}
             onSignOut={logout}
           />
         </Box>
@@ -116,6 +121,10 @@ export default function Profile() {
           onSave={updateContactDetails}
         />
       )}
+      <AccessibilitySettingsDialog
+        open={isAccessibilityDialogOpen}
+        onClose={() => setIsAccessibilityDialogOpen(false)}
+      />
     </>
   );
 }

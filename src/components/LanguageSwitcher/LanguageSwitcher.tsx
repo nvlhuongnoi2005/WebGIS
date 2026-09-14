@@ -29,13 +29,14 @@ export function LanguageSwitcher() {
           px: 1.125,
           gap: 0.75,
           borderRadius: 16,
-          border: "2px solid #ffffff",
-          backgroundColor: "#ffffff",
+          border: "2px solid",
+          borderColor: "background.paper",
+          backgroundColor: "background.paper",
           boxShadow: "0 8px 20px rgb(20 45 82 / 16%)",
           overflow: "hidden",
           boxSizing: "border-box",
           "&:hover": {
-            backgroundColor: "#f8faff",
+            backgroundColor: "action.hover",
             boxShadow: "0 10px 24px rgb(20 45 82 / 20%)",
           },
           "&:focus-visible": {
@@ -69,7 +70,7 @@ export function LanguageSwitcher() {
         <Typography
           component="span"
           sx={{
-            color: "#1f2937",
+            color: "text.primary",
             fontSize: 13,
             fontWeight: 700,
             lineHeight: 1,

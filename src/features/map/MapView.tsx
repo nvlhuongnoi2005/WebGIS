@@ -5,6 +5,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import LanguageSwitcher from "../../components/LanguageSwitcher/LanguageSwitcher";
 import Profile from "../../components/Profile/Profile";
 import SearchBar from "../../components/SearchBar/SearchBar";
+import { ThemeModeSwitcher } from "../accessibility";
 import { useBaseMapStyle } from "../../hooks/useBaseMapStyle";
 import { useDrawLayers } from "../../hooks/useDrawLayers";
 import { useDrawTool } from "../../hooks/useDrawTool";
@@ -202,6 +203,7 @@ function MapView() {
           alignItems: "center",
         }}
       >
+        <ThemeModeSwitcher />
         <LanguageSwitcher />
         <Profile />
       </Stack>

@@ -350,7 +350,7 @@ function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) 
           },
         }}
       >
-        <Search size={18} color="#757575" />
+        <Search size={18} />
         <InputBase
           value={query}
           onChange={handleInputChange}

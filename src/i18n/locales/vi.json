@@ -228,7 +228,7 @@
     "phoneInvalid": "Hãy nhập số điện thoại hợp lệ.",
     "openMenu": "Mở menu hồ sơ",
     "uploadAvatar": "Tải ảnh đại diện",
-    "avatarFormats": "Định dạng hỗ trợ: JPEG, PNG",
+    "avatarFormats": "(Định dạng hỗ trợ: JPEG, PNG)",
     "avatarFormatError": "Hãy chọn ảnh định dạng JPEG hoặc PNG.",
     "avatarProcessError": "Không thể xử lý ảnh. Hãy chọn một tệp khác.",
     "avatarSaveError": "Không thể lưu ảnh. Hãy thử ảnh có kích thước nhỏ hơn.",

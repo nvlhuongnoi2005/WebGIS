@@ -1,23 +1,27 @@
 import {
+  Alert,
   Avatar,
   Button,
   Divider,
   Stack,
   Typography,
 } from "@mui/material";
-import { Building2, Camera, LogOut, Mail, UserRound } from "lucide-react";
+import { Accessibility, Building2, Camera, LogOut, Mail, UserRound } from "lucide-react";
 import {
   type ChangeEvent,
   useRef,
+  useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import type { AuthResult } from "../../features/auth/AuthStore";
 interface ProfilePanelProps {
   userName: string;
   userEmail: string;
   organization?: string;
   avatarUrl: string;
-  onAvatarChange: (avatarUrl: string) => void;
+  onAvatarChange: (avatarUrl: string) => AuthResult;
   onClose: () => void;
+  onOpenAccessibility: () => void;
   onViewProfile: () => void;
   onSignOut: () => void;
 }
@@ -29,34 +33,43 @@ export default function ProfilePanel({
   avatarUrl,
   onAvatarChange,
   onClose,
+  onOpenAccessibility,
   onViewProfile,
   onSignOut,
 }: ProfilePanelProps) {
   const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
 
   function handleOpenFilePicker() {
     fileInputRef.current?.click();
   }
 
-  function handleAvatarUpload(event: ChangeEvent<HTMLInputElement>) {
+  async function handleAvatarUpload(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
+    event.target.value = "";
 
     if (!file) {
       return;
     }
 
-    const reader = new FileReader();
+    if (!isSupportedAvatarFile(file)) {
+      setAvatarError(t("profile.avatarFormatError"));
+      return;
+    }
 
-    reader.onload = () => {
-      const nextAvatarUrl = reader.result;
+    setAvatarError(null);
 
-      if (typeof nextAvatarUrl === "string") {
-        onAvatarChange(nextAvatarUrl);
+    try {
+      const nextAvatarUrl = await createAvatarDataUrl(file);
+      const result = onAvatarChange(nextAvatarUrl);
+
+      if (!result.ok) {
+        setAvatarError(t("profile.avatarSaveError"));
       }
-    };
-
-    reader.readAsDataURL(file);
+    } catch {
+      setAvatarError(t("profile.avatarProcessError"));
+    }
   }
 
   function handleViewProfile() {
@@ -66,6 +79,11 @@ export default function ProfilePanel({
 
   function handleSignOut() {
     onSignOut();
+    onClose();
+  }
+
+  function handleOpenAccessibility() {
+    onOpenAccessibility();
     onClose();
   }
 
@@ -89,7 +107,8 @@ export default function ProfilePanel({
           sx={{
             width: 60,
             height: 60,
-            border: "3px solid #ffffff",
+            border: "3px solid",
+            borderColor: "background.paper",
             boxShadow: "0 4px 12px rgb(11 87 208 / 20%)",
           }}
         />
@@ -120,18 +139,27 @@ export default function ProfilePanel({
           size="small"
           startIcon={<Camera size={15} />}
           onClick={handleOpenFilePicker}
-          sx={{ minHeight: 32 }}
+          sx={{ minHeight: 40, py: 0.25 }}
         >
-          {t("profile.uploadAvatar")}
+          <Stack spacing={0} sx={{ alignItems: "flex-start", lineHeight: 1.1 }}>
+            <Typography component="span" variant="body2" sx={{ fontWeight: 700 }}>
+              {t("profile.uploadAvatar")}
+            </Typography>
+            <Typography component="span" variant="caption" color="text.secondary" sx={{ fontSize: 10 }}>
+              {t("profile.avatarFormats")}
+            </Typography>
+          </Stack>
         </Button>
 
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*"
+          accept="image/jpeg,image/png,.jpg,.jpeg,.png"
           hidden
           onChange={handleAvatarUpload}
         />
+
+        {avatarError && <Alert severity="error" sx={{ width: "100%", py: 0 }}>{avatarError}</Alert>}
       </Stack>
 
       <Divider sx={{ my: 0.5 }} />
@@ -146,6 +174,15 @@ export default function ProfilePanel({
       </Button>
 
       <Button
+        variant="outlined"
+        startIcon={<Accessibility size={17} />}
+        onClick={handleOpenAccessibility}
+        fullWidth
+      >
+        {t("accessibility.settings")}
+      </Button>
+
+      <Button
         variant="text"
         color="error"
         startIcon={<LogOut size={17} />}
@@ -156,4 +193,47 @@ export default function ProfilePanel({
       </Button>
     </Stack>
   );
+}
+
+function isSupportedAvatarFile(file: File): boolean {
+  return ["image/jpeg", "image/png"].includes(file.type)
+    || /\.jpe?g$|\.png$/i.test(file.name);
+}
+
+async function createAvatarDataUrl(file: File): Promise<string> {
+  const imageUrl = URL.createObjectURL(file);
+
+  try {
+    const image = await loadImage(imageUrl);
+    const maxSize = 512;
+    const scale = Math.min(1, maxSize / Math.max(image.naturalWidth, image.naturalHeight));
+    const width = Math.max(1, Math.round(image.naturalWidth * scale));
+    const height = Math.max(1, Math.round(image.naturalHeight * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d");
+
+    if (!context) {
+      throw new Error("Canvas is not available.");
+    }
+
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, width, height);
+    context.imageSmoothingQuality = "high";
+    context.drawImage(image, 0, 0, width, height);
+
+    return canvas.toDataURL("image/jpeg", 0.84);
+  } finally {
+    URL.revokeObjectURL(imageUrl);
+  }
+}
+
+function loadImage(source: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("Unable to load image."));
+    image.src = source;
+  });
 }
