@@ -35,7 +35,7 @@ function ToolPanel({ activeTool, onSelectTool }: ToolPanelProps) {
         border: "1px solid",
         borderColor: "divider",
         borderRadius: 2.5,
-        bgcolor: "rgba(255, 255, 255, 0.94)",
+        bgcolor: "background.paper",
       }}
     >
       <Stack spacing={0.5}>

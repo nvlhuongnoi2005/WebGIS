@@ -157,6 +157,10 @@
   "profile": {
     "openMenu": "Open profile menu",
     "uploadAvatar": "Upload avatar",
+    "avatarFormats": "(Supported formats: JPEG, PNG)",
+    "avatarFormatError": "Choose a JPEG or PNG image.",
+    "avatarProcessError": "The image could not be processed. Please choose another file.",
+    "avatarSaveError": "The image could not be saved. Please try a smaller image.",
     "viewProfile": "View profile",
     "signOut": "Sign out",
     "accountTitle": "Account information",
@@ -174,7 +178,22 @@
   },
   "accessibility": {
     "skipToContent": "Skip to main content",
-    "mapTools": "Map tools"
+    "mapTools": "Map tools",
+    "settings": "Display & accessibility",
+    "settingsDescription": "Choose display options that make the interface easier to use.",
+    "colorMode": "Color mode",
+    "system": "Use device setting",
+    "light": "Light",
+    "dark": "Dark",
+    "switchToDark": "Switch to dark mode",
+    "switchToLight": "Switch to light mode",
+    "highContrast": "High contrast",
+    "highContrastDescription": "Increase contrast between text, controls, and backgrounds.",
+    "largeText": "Larger text",
+    "largeTextDescription": "Increase the base text size across the app.",
+    "reduceMotion": "Reduce motion",
+    "reduceMotionDescription": "Limit non-essential movement and transitions.",
+    "reset": "Reset preferences"
   },
   "auth": {
     "brand": "VGIS",

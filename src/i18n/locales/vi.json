@@ -156,7 +156,22 @@
   },
   "accessibility": {
     "skipToContent": "Chuyển đến nội dung chính",
-    "mapTools": "Công cụ bản đồ"
+    "mapTools": "Công cụ bản đồ",
+    "settings": "Hiển thị và hỗ trợ tiếp cận",
+    "settingsDescription": "Chọn các tùy chỉnh hiển thị để sử dụng giao diện dễ dàng hơn.",
+    "colorMode": "Chế độ màu",
+    "system": "Theo thiết bị",
+    "light": "Sáng",
+    "dark": "Tối",
+    "switchToDark": "Chuyển sang chế độ tối",
+    "switchToLight": "Chuyển sang chế độ sáng",
+    "highContrast": "Tương phản cao",
+    "highContrastDescription": "Tăng độ tương phản giữa chữ, điều khiển và nền.",
+    "largeText": "Chữ lớn hơn",
+    "largeTextDescription": "Tăng cỡ chữ cơ bản trên toàn ứng dụng.",
+    "reduceMotion": "Giảm chuyển động",
+    "reduceMotionDescription": "Hạn chế các chuyển động và hiệu ứng không cần thiết.",
+    "reset": "Đặt lại tùy chỉnh"
   },
   "auth": {
     "forgotPassword": "Quên mật khẩu?",
@@ -213,6 +228,10 @@
     "phoneInvalid": "Hãy nhập số điện thoại hợp lệ.",
     "openMenu": "Mở menu hồ sơ",
     "uploadAvatar": "Tải ảnh đại diện",
+    "avatarFormats": "Định dạng hỗ trợ: JPEG, PNG",
+    "avatarFormatError": "Hãy chọn ảnh định dạng JPEG hoặc PNG.",
+    "avatarProcessError": "Không thể xử lý ảnh. Hãy chọn một tệp khác.",
+    "avatarSaveError": "Không thể lưu ảnh. Hãy thử ảnh có kích thước nhỏ hơn.",
     "viewProfile": "Xem hồ sơ",
     "signOut": "Đăng xuất"
   },
