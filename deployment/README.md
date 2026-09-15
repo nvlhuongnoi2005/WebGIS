@@ -40,8 +40,7 @@ Use URL-safe random values for the database password so no URL escaping is
 needed in `DATABASE_URL`.
 
 ```powershell
-openssl genpkey -algorithm ED25519 -out auth-jwt-private.pem
-openssl pkey -in auth-jwt-private.pem -pubout -out auth-jwt-public.pem
+go run ./be/cmd/keygen -out-dir deployment/.secrets
 Copy-Item deployment/secret.example.yaml deployment/secret.yaml
 kubectl apply -f deployment/secret.yaml
 ```

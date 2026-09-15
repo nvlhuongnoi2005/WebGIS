@@ -10,7 +10,8 @@
     "auth:start": "go -C be run .",
     "auth:migrate": "go -C be run . migrate",
     "test": "go -C be test ./...",
-    "build": "go -C be build ./... && tsc -b && vite build --config fe/vite.config.ts",
+    "build": "go -C be build ./... && npm run build:fe",
+    "build:fe": "tsc -b && vite build --config fe/vite.config.ts",
     "lint": "eslint .",
     "preview": "vite preview --config fe/vite.config.ts"
   },

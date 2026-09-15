@@ -29,6 +29,7 @@ dist-ssr
 
 # Kubernetes credentials must only exist locally or in a secret manager.
 deployment/secret.yaml
+deployment/.secrets/
 
 # Local Go compiler/module cache used by this repository.
 .cache/

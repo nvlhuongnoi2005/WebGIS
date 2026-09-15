@@ -149,7 +149,7 @@ spec:
     spec:
       containers:
         - name: nominatim
-          image: registry.example.com/webgis/nominatim:REPLACE_TAG
+          image: registry.example.com/webgis/nominatim:26.9
           ports:
             - name: http
               containerPort: 8083
