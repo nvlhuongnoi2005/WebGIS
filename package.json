@@ -4,10 +4,15 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
+    "start": "concurrently --kill-others-on-fail --names FE,BE --prefix-colors blue,green \"npm run dev\" \"npm run auth:dev\"",
+    "dev": "vite --config fe/vite.config.ts",
+    "auth:dev": "tsx watch be/index.ts",
+    "auth:start": "tsx be/index.ts",
+    "auth:migrate": "tsx be/migrate.ts",
+    "test": "tsx --test be/test/**/*.test.ts",
+    "build": "tsc -b && vite build --config fe/vite.config.ts",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview --config fe/vite.config.ts"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -15,33 +20,51 @@
     "@mui/material": "^9.3.1",
     "@turf/area": "^7.4.0",
     "@turf/distance": "^7.4.0",
+    "argon2": "^0.45.1",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
     "i18next": "^26.3.6",
     "i18next-browser-languagedetector": "^8.2.1",
+    "jose": "^6.2.12",
     "lucide-react": "^1.31.0",
     "maplibre-gl": "^6.8.0",
+    "pg": "^8.23.0",
     "proj4": "^2.21.0",
     "react": "^19.2.8",
     "react-country-flag": "^3.1.0",
     "react-dom": "^19.2.8",
-    "react-i18next": "^17.0.11"
+    "react-i18next": "^17.0.11",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@babel/core": "^7.29.7",
     "@eslint/js": "^10.0.1",
     "@rolldown/plugin-babel": "^0.2.3",
     "@types/babel__core": "^7.20.5",
+    "@types/cookie-parser": "^1.4.10",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
     "@types/geojson": "^7946.0.16",
     "@types/node": "^24.13.3",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.4",
     "babel-plugin-react-compiler": "^1.0.0",
+    "concurrently": "^10.0.5",
     "eslint": "^10.8.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.3",
     "globals": "^17.7.0",
+    "tsx": "^4.23.13",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.65.0",
     "vite": "^8.2.0"
+  },
+  "allowScripts": {
+    "argon2@0.45.1": true,
+    "esbuild@0.28.2": true
   }
 }
