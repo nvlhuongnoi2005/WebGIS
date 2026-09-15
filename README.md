@@ -3,7 +3,7 @@
 ## Authentication and API gateway
 
 The application is split into `fe/` (Vite/React client) and `be/`
-(Node/Express authentication gateway).
+(Go authentication gateway using the standard `net/http` server).
 It replaces the former browser-only account store: passwords, refresh tokens,
 and account data are never stored in `localStorage`.
 
@@ -38,6 +38,13 @@ For another environment, configure a private `DATABASE_URL`, then run:
 npm run auth:migrate
 ```
 
+For the existing local `nominatim` database, the runtime role `webgis_auth`
+is deliberately limited to DML on the auth tables and cannot alter the shared
+`public` schema. The current migration has already been applied there. Run a
+future schema migration during maintenance with the database owner, or use the
+dedicated `auth-postgres` Kubernetes database where the migration Job user is
+the database owner.
+
 The current PostGIS Docker container does not publish port 5432 to Windows, so
 the auth process must either run on its Docker network or use a deliberately
 private PostgreSQL port mapping. Do not expose Postgres publicly. For a gateway
@@ -54,7 +61,9 @@ the existing Postgres credentials from that deployment's secret store.
    restart. For production, set `AUTH_JWT_PRIVATE_KEY` and
    `AUTH_JWT_PUBLIC_KEY` from a secret manager, set `AUTH_SECURE_COOKIES=true`,
    and terminate HTTPS before the gateway.
-3. Start the gateway with `npm run auth:dev`, and the client with `npm run dev`.
+3. Install Go 1.25+ and restart the terminal after installation so `go` is on
+   `PATH`. Start the gateway with `npm run auth:dev`, and the client with
+   `npm run dev`; `npm start` starts both.
 
 The public verification key is available as a cacheable JWKS response at
 `GET /auth/.well-known/jwks.json`. Gateways must permit only `EdDSA`, issuer

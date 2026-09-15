@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: webgis-config
+  labels:
+    app.kubernetes.io/part-of: webgis
+data:
+  NODE_ENV: production
+  AUTH_PORT: "3001"
+  AUTH_JWT_ISSUER: auth-service
+  AUTH_JWT_AUDIENCE: api-gateway
+  AUTH_JWT_KID: primary-2026
+  AUTH_ACCESS_TOKEN_TTL_SECONDS: "900"
+  AUTH_REFRESH_TOKEN_TTL_DAYS: "30"
+  AUTH_COOKIE_NAME: webgis_refresh_token
+  AUTH_COOKIE_SECURE: "true"
+  AUTH_COOKIE_SAME_SITE: lax
+  AUTH_DEV_EPHEMERAL_KEYS: "false"
+  APP_ORIGINS: https://webgis.example.com
+  VALHALLA_INTERNAL_URL: http://valhalla:8002

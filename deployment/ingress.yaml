@@ -1,0 +1,34 @@
+# Requires an ingress controller. Docker Desktop Kubernetes does not install one by default.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: webgis
+  labels:
+    app.kubernetes.io/part-of: webgis
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: webgis.example.com
+      http:
+        paths:
+          - path: /auth
+            pathType: Prefix
+            backend:
+              service:
+                name: controller
+                port:
+                  name: http
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: controller
+                port:
+                  name: http
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  name: http

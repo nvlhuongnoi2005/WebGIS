@@ -1,0 +1,180 @@
+# Apply only after moving/importing the existing Docker data into these PVCs and
+# replacing the Nominatim image reference. See deployment/README.md.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: tile-data
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tile-server
+  labels:
+    app.kubernetes.io/name: tile-server
+    app.kubernetes.io/part-of: webgis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tile-server
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: tile-server
+        app.kubernetes.io/part-of: webgis
+    spec:
+      containers:
+        - name: tile-server
+          image: quanghuy2307/tile-server:1.0.0
+          ports:
+            - name: http
+              containerPort: 8080
+          volumeMounts:
+            - name: data
+              mountPath: /tile-server/data
+              readOnly: true
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: tile-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tile-server
+spec:
+  selector:
+    app.kubernetes.io/name: tile-server
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: valhalla-data
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 40Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: valhalla
+  labels:
+    app.kubernetes.io/name: valhalla
+    app.kubernetes.io/part-of: webgis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: valhalla
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: valhalla
+        app.kubernetes.io/part-of: webgis
+    spec:
+      containers:
+        - name: valhalla
+          image: ghcr.io/valhalla/valhalla-scripted:latest
+          ports:
+            - name: http
+              containerPort: 8002
+          volumeMounts:
+            - name: data
+              mountPath: /custom_files
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: valhalla-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: valhalla
+spec:
+  selector:
+    app.kubernetes.io/name: valhalla
+  ports:
+    - name: http
+      port: 8002
+      targetPort: http
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nominatim-data
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 40Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nominatim-project
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nominatim
+  labels:
+    app.kubernetes.io/name: nominatim
+    app.kubernetes.io/part-of: webgis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nominatim
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: nominatim
+        app.kubernetes.io/part-of: webgis
+    spec:
+      containers:
+        - name: nominatim
+          image: registry.example.com/webgis/nominatim:REPLACE_TAG
+          ports:
+            - name: http
+              containerPort: 8083
+          volumeMounts:
+            - name: data
+              mountPath: /data
+              readOnly: true
+            - name: project
+              mountPath: /nominatim-project
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: nominatim-data
+        - name: project
+          persistentVolumeClaim:
+            claimName: nominatim-project
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nominatim
+spec:
+  selector:
+    app.kubernetes.io/name: nominatim
+  ports:
+    - name: http
+      port: 8083
+      targetPort: http

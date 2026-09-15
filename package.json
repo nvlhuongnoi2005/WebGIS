@@ -6,11 +6,11 @@
   "scripts": {
     "start": "concurrently --kill-others-on-fail --names FE,BE --prefix-colors blue,green \"npm run dev\" \"npm run auth:dev\"",
     "dev": "vite --config fe/vite.config.ts",
-    "auth:dev": "tsx watch be/index.ts",
-    "auth:start": "tsx be/index.ts",
-    "auth:migrate": "tsx be/migrate.ts",
-    "test": "tsx --test be/test/**/*.test.ts",
-    "build": "tsc -b && vite build --config fe/vite.config.ts",
+    "auth:dev": "go -C be run .",
+    "auth:start": "go -C be run .",
+    "auth:migrate": "go -C be run . migrate",
+    "test": "go -C be test ./...",
+    "build": "go -C be build ./... && tsc -b && vite build --config fe/vite.config.ts",
     "lint": "eslint .",
     "preview": "vite preview --config fe/vite.config.ts"
   },

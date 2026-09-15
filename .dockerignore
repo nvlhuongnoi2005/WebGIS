@@ -1,0 +1,10 @@
+.git
+.env
+be/.env
+node_modules
+dist
+fe/dist
+benchmark_results
+deployment
+npm-debug.log*
+yarn-error.log*
