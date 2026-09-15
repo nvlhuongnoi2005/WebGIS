@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"crypto/rand"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
@@ -15,7 +14,6 @@ type Config struct {
 	Port                                      string
 	DatabaseURL, AppOrigins, Issuer, Audience string
 	KeyID, PrivateKeyPEM, PublicKeyPEM        string
-	PreviousPublicKeys                        []PublicKeyConfig
 	AllowEphemeral                            bool
 	AccessTTL, RefreshDays                    int
 	RefreshPepper                             string
@@ -25,11 +23,6 @@ type Config struct {
 	LoginMaxConcurrent, LoginMaxAttempts      int
 	LoginWindowSeconds                        int
 	GatewayConsumer, ValhallaURL              string
-}
-
-type PublicKeyConfig struct {
-	KeyID     string `json:"kid"`
-	PublicKey string `json:"publicKey"`
 }
 
 func loadDotEnv(path string) {
@@ -137,25 +130,11 @@ func loadConfig() (Config, error) {
 		}
 		pepper = base64.RawURLEncoding.EncodeToString(bytes)
 	}
-	previous := []PublicKeyConfig{}
-	if raw := env("AUTH_JWT_PREVIOUS_PUBLIC_KEYS", ""); raw != "" {
-		if err := json.Unmarshal([]byte(raw), &previous); err != nil {
-			return Config{}, fmt.Errorf("AUTH_JWT_PREVIOUS_PUBLIC_KEYS must be a JSON array of {kid, publicKey}")
-		}
-		for index := range previous {
-			previous[index].KeyID = strings.TrimSpace(previous[index].KeyID)
-			previous[index].PublicKey = strings.ReplaceAll(previous[index].PublicKey, `\n`, "\n")
-			if previous[index].KeyID == "" || previous[index].PublicKey == "" {
-				return Config{}, fmt.Errorf("AUTH_JWT_PREVIOUS_PUBLIC_KEYS must be a JSON array of {kid, publicKey}")
-			}
-		}
-	}
 	config := Config{
 		Port: env("AUTH_PORT", "3001"), DatabaseURL: databaseURL, AppOrigins: env("APP_ORIGINS", "http://localhost:5173"),
 		Issuer: env("AUTH_JWT_ISSUER", "auth-service"), Audience: env("AUTH_JWT_AUDIENCE", "api-gateway"), KeyID: env("AUTH_JWT_KID", "dev-1"),
 		PrivateKeyPEM: strings.ReplaceAll(env("AUTH_JWT_PRIVATE_KEY", ""), `\n`, "\n"), PublicKeyPEM: strings.ReplaceAll(env("AUTH_JWT_PUBLIC_KEY", ""), `\n`, "\n"),
-		PreviousPublicKeys: previous,
-		AllowEphemeral:     envBool("AUTH_DEV_EPHEMERAL_KEYS", false), AccessTTL: accessTTL, RefreshDays: refreshDays, RefreshPepper: pepper,
+		AllowEphemeral: envBool("AUTH_DEV_EPHEMERAL_KEYS", false), AccessTTL: accessTTL, RefreshDays: refreshDays, RefreshPepper: pepper,
 		SecureCookies: envBool("AUTH_SECURE_COOKIES", nodeEnv == "production"), ArgonMemory: uint32(memory), ArgonTime: uint32(timeCost), ArgonParallelism: uint32(parallelism), ArgonHashLength: uint32(hashLength),
 		LoginMaxConcurrent: maxConcurrent, LoginMaxAttempts: maxAttempts, LoginWindowSeconds: window / 1000, GatewayConsumer: env("AUTH_GATEWAY_CONSUMER", "local-gateway-1"), ValhallaURL: strings.TrimRight(env("VALHALLA_INTERNAL_URL", "http://localhost:8002"), "/"),
 	}
