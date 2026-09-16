@@ -1,8 +1,13 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { setWorkerUrl } from "maplibre-gl";
+import maplibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import { AccessibilitySettingsButton } from "./features/accessibility";
 import { AuthProvider, LoginPage, useAuth } from "./features/auth";
 import { MapView } from "./features/map";
+
+// Register the Vite-emitted worker before any map instance is created.
+setWorkerUrl(maplibreWorkerUrl);
 
 function App() {
   return (

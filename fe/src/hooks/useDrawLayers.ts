@@ -45,13 +45,12 @@ export function useDrawLayers({
 }: UseDrawLayersOptions) {
   useEffect(() => {
     if (!map.current || !mapLoaded) return;
-    ensureDrawLayers(map.current);
-  }, [map, mapLoaded, mapStyleVersion]);
-
-  useEffect(() => {
-    if (!map.current || !mapLoaded) return;
 
     const mapInstance = map.current;
+    // setStyle(..., { diff: false }) removes every custom GeoJSON source and
+    // layer. Recreate them and restore their data atomically after style.load
+    // so draw features cannot disappear when a basemap or overlay changes.
+    ensureDrawLayers(mapInstance);
     setSourceData(
       mapInstance,
       DRAWINGS_SOURCE_ID,
@@ -147,6 +146,23 @@ function ensureDrawLayers(map: maplibregl.Map) {
   );
   addPointLayer(map, "drawings-vertices-layer", VERTICES_SOURCE_ID, "#1976d2");
   addPointLayer(map, "drawings-draft-vertices-layer", DRAFT_VERTICES_SOURCE_ID, "#1976d2");
+
+  // Custom editing affordances must remain above the basemap and vector
+  // overlay layers, including after a style diff preserves an older layer.
+  [
+    "drawings-fill-layer",
+    "drawings-line-layer",
+    "drawings-point-layer",
+    "drawings-selection-fill-layer",
+    "drawings-selection-line-layer",
+    "drawings-selection-point-layer",
+    "drawings-draft-fill-layer",
+    "drawings-draft-line-layer",
+    "drawings-vertices-layer",
+    "drawings-draft-vertices-layer",
+  ].forEach(id => {
+    if (map.getLayer(id)) map.moveLayer(id);
+  });
 }
 
 function createRenderableDrawings(

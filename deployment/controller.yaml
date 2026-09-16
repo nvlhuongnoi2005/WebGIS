@@ -16,9 +16,11 @@ spec:
         app.kubernetes.io/name: controller
         app.kubernetes.io/part-of: webgis
     spec:
+      imagePullSecrets:
+        - name: ghcr-pull
       containers:
         - name: controller
-          image: webgis/controller:26.9
+          image: ghcr.io/nvlhuongnoi2005/webgis/controller:26.9
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

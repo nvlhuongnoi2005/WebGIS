@@ -60,7 +60,10 @@ type TileServerCatalogItem = {
 };
 
 const TILE_SERVER_OVERLAY_IDS = new Set(
-  (import.meta.env.VITE_TILE_SERVER_OVERLAY_IDS)
+  // vietnam_osm is a vector overlay. Keep this safe default for production
+  // images too; Vite environment variables are baked in while building and
+  // may be absent from a deployment environment.
+  (import.meta.env.VITE_TILE_SERVER_OVERLAY_IDS || "vietnam_osm")
     .split(",")
     .map((id: string) => id.trim())
     .filter(Boolean)
@@ -225,6 +228,17 @@ function resolveTileServerTileUrl(tilePath: string) {
     try {
       const url = new URL(tilePath);
       const backendUrl = new URL(TILE_SERVER_BACKEND_URL);
+
+      // TileJSON generated inside Kubernetes contains an internal URL such as
+      // http://tile-server:8080/datas/vietnam_osm/{z}/{x}/{y}.pbf. That DNS
+      // name is intentionally not visible to browsers. Tile assets from any
+      // Tile Server origin must therefore use the public Controller proxy.
+      if (url.pathname.startsWith("/datas/") || url.pathname.startsWith("/fonts/")) {
+        // Do not use URL.pathname here: it encodes MapLibre's {z}/{x}/{y}
+        // template placeholders as %7Bz%7D/%7Bx%7D/%7By%7D.
+        const tilePathAndQuery = tilePath.slice(url.origin.length);
+        return `${TILE_SERVER_URL}${tilePathAndQuery.startsWith("/") ? "" : "/"}${tilePathAndQuery}`;
+      }
 
       if (url.origin === backendUrl.origin) {
         // Do not use URL.pathname here: it encodes MapLibre's {z}/{x}/{y}

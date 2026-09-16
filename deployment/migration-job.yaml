@@ -15,9 +15,11 @@ spec:
         app.kubernetes.io/part-of: webgis
     spec:
       restartPolicy: OnFailure
+      imagePullSecrets:
+        - name: ghcr-pull
       containers:
         - name: migrate
-          image: webgis/controller:26.9
+          image: ghcr.io/nvlhuongnoi2005/webgis/controller:26.9
           imagePullPolicy: IfNotPresent
           command: ["/controller", "migrate"]
           envFrom:

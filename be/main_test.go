@@ -1,6 +1,10 @@
 package main
 
-import "testing"
+import (
+	"net/http"
+	"net/http/httptest"
+	"testing"
+)
 
 func TestArgon2idPasswordRoundTrip(t *testing.T) {
 	service := NewPasswordService(Config{ArgonMemory: 8192, ArgonTime: 1, ArgonParallelism: 1, ArgonHashLength: 32})
@@ -45,5 +49,38 @@ func TestEdDSAAccessToken(t *testing.T) {
 	}
 	if claims.Subject != user.ID || claims.SessionID != "session-1" || !hasScope(claims, "map:read") {
 		t.Fatal("token claims did not round-trip")
+	}
+}
+
+func TestTileProxyForwardsOnlySafeTilePaths(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
+		if request.URL.Path != "/datas/asia_full/0/0/0.png" {
+			t.Fatalf("unexpected worker path: %s", request.URL.Path)
+		}
+		if request.Header.Get("X-Request-Id") != "request-1" {
+			t.Fatal("request id was not forwarded")
+		}
+		response.Header().Set("Cache-Control", "public, max-age=60")
+		response.Header().Set("Content-Type", "image/png")
+		_, _ = response.Write([]byte("tile"))
+	}))
+	defer upstream.Close()
+
+	server := &Server{config: Config{TileServerURL: upstream.URL}, workerClient: upstream.Client()}
+	request := httptest.NewRequest(http.MethodGet, "/api/tiles/datas/asia_full/0/0/0.png", nil)
+	request.Header.Set("X-Request-Id", "request-1")
+	response := httptest.NewRecorder()
+	server.tileProxy(response, request, "/datas/asia_full/0/0/0.png")
+	if response.Code != http.StatusOK || response.Body.String() != "tile" {
+		t.Fatalf("unexpected tile response: status=%d body=%q", response.Code, response.Body.String())
+	}
+	if response.Header().Get("Cache-Control") != "public, max-age=60" {
+		t.Fatal("cache header was not forwarded")
+	}
+
+	blocked := httptest.NewRecorder()
+	server.tileProxy(blocked, httptest.NewRequest(http.MethodGet, "/api/tiles/../secret", nil), "/../secret")
+	if blocked.Code != http.StatusNotFound {
+		t.Fatalf("unsafe path returned %d, want 404", blocked.Code)
 	}
 }

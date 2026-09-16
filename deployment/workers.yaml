@@ -1,15 +1,5 @@
-# Apply only after moving/importing the existing Docker data into these PVCs and
-# replacing the Nominatim image reference. See deployment/README.md.
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: tile-data
-spec:
-  accessModes: ["ReadWriteOnce"]
-  resources:
-    requests:
-      storage: 20Gi
----
+# Apply this only after deployment/worker-storage.yaml and the data-import steps
+# in deployment/README.md. All services remain internal to the webgis namespace.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -28,12 +18,19 @@ spec:
         app.kubernetes.io/name: tile-server
         app.kubernetes.io/part-of: webgis
     spec:
+      imagePullSecrets:
+        - name: ghcr-pull
       containers:
         - name: tile-server
-          image: quanghuy2307/tile-server:1.0.0
+          image: ghcr.io/nvlhuongnoi2005/webgis/tile-server:26.9
+          imagePullPolicy: IfNotPresent
           ports:
             - name: http
               containerPort: 8080
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 5
           volumeMounts:
             - name: data
               mountPath: /tile-server/data
@@ -48,22 +45,13 @@ kind: Service
 metadata:
   name: tile-server
 spec:
+  type: ClusterIP
   selector:
     app.kubernetes.io/name: tile-server
   ports:
     - name: http
       port: 8080
       targetPort: http
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: valhalla-data
-spec:
-  accessModes: ["ReadWriteOnce"]
-  resources:
-    requests:
-      storage: 40Gi
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -83,51 +71,64 @@ spec:
         app.kubernetes.io/name: valhalla
         app.kubernetes.io/part-of: webgis
     spec:
+      imagePullSecrets:
+        - name: ghcr-pull
       containers:
         - name: valhalla
-          image: ghcr.io/valhalla/valhalla-scripted:latest
+          image: ghcr.io/nvlhuongnoi2005/webgis/valhalla:26.9
+          imagePullPolicy: IfNotPresent
+          args: ["build_tiles"]
+          env:
+            - name: server_threads
+              value: "4"
+            - name: serve_tiles
+              value: "True"
+            - name: use_tiles_ignore_pbf
+              value: "False"
+            - name: force_rebuild
+              value: "False"
+            - name: build_elevation
+              value: "False"
+            - name: build_admins
+              value: "True"
+            - name: build_time_zones
+              value: "True"
+            - name: build_transit
+              value: "False"
+            - name: build_tar
+              value: "True"
+            - name: tileset_name
+              value: valhalla_tiles
+            - name: update_existing_config
+              value: "True"
           ports:
             - name: http
               containerPort: 8002
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 10
           volumeMounts:
             - name: data
               mountPath: /custom_files
       volumes:
         - name: data
           persistentVolumeClaim:
-            claimName: valhalla-data
+            claimName: map-data
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: valhalla
 spec:
+  type: ClusterIP
   selector:
     app.kubernetes.io/name: valhalla
   ports:
     - name: http
       port: 8002
       targetPort: http
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: nominatim-data
-spec:
-  accessModes: ["ReadWriteOnce"]
-  resources:
-    requests:
-      storage: 40Gi
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: nominatim-project
-spec:
-  accessModes: ["ReadWriteOnce"]
-  resources:
-    requests:
-      storage: 20Gi
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -147,12 +148,31 @@ spec:
         app.kubernetes.io/name: nominatim
         app.kubernetes.io/part-of: webgis
     spec:
+      imagePullSecrets:
+        - name: ghcr-pull
       containers:
         - name: nominatim
-          image: registry.example.com/webgis/nominatim:26.9
+          image: ghcr.io/nvlhuongnoi2005/webgis/nominatim:26.9
+          imagePullPolicy: IfNotPresent
+          args: ["serve", "--engine", "falcon", "--server", "0.0.0.0:8083"]
+          env:
+            - name: NOMINATIM_DATABASE_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: nominatim-db-credentials
+                  key: NOMINATIM_DATABASE_DSN
+            - name: NOMINATIM_DATABASE_WEBUSER
+              valueFrom:
+                secretKeyRef:
+                  name: nominatim-db-credentials
+                  key: POSTGRES_USER
           ports:
             - name: http
               containerPort: 8083
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 10
           volumeMounts:
             - name: data
               mountPath: /data
@@ -162,7 +182,7 @@ spec:
       volumes:
         - name: data
           persistentVolumeClaim:
-            claimName: nominatim-data
+            claimName: map-data
         - name: project
           persistentVolumeClaim:
             claimName: nominatim-project
@@ -172,6 +192,7 @@ kind: Service
 metadata:
   name: nominatim
 spec:
+  type: ClusterIP
   selector:
     app.kubernetes.io/name: nominatim
   ports:

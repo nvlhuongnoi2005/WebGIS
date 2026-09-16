@@ -541,6 +541,114 @@ func (server *Server) route(response http.ResponseWriter, request *http.Request)
 	_, _ = io.Copy(response, io.LimitReader(workerResponse.Body, 10*1024*1024))
 }
 
+// tileProxy keeps the worker private: browser requests always enter through the
+// Controller, while the Controller is the only workload allowed to reach Tile Server.
+// Basemap files are public, cacheable map assets; protected operations remain under
+// the authenticated /api/gateway routes.
+func (server *Server) tileProxy(response http.ResponseWriter, request *http.Request, workerPath string) {
+	if request.Method != http.MethodGet && request.Method != http.MethodHead {
+		clientError(response, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+	if workerPath == "" {
+		workerPath = "/"
+	}
+	if !strings.HasPrefix(workerPath, "/") {
+		clientError(response, http.StatusNotFound, "Not found")
+		return
+	}
+	for _, segment := range strings.Split(workerPath, "/") {
+		if segment == "." || segment == ".." || strings.Contains(segment, "\\") {
+			clientError(response, http.StatusNotFound, "Not found")
+			return
+		}
+	}
+
+	target := server.config.TileServerURL + workerPath
+	if request.URL.RawQuery != "" {
+		target += "?" + request.URL.RawQuery
+	}
+	workerRequest, err := http.NewRequestWithContext(request.Context(), request.Method, target, nil)
+	if err != nil {
+		clientError(response, http.StatusBadGateway, "Tile service unavailable")
+		return
+	}
+	for _, header := range []string{"Accept", "Accept-Encoding", "If-Modified-Since", "If-None-Match", "Range"} {
+		if value := request.Header.Get(header); value != "" {
+			workerRequest.Header.Set(header, value)
+		}
+	}
+	workerRequest.Header.Set("X-Request-Id", request.Header.Get("X-Request-Id"))
+	workerResponse, err := server.workerClient.Do(workerRequest)
+	if err != nil {
+		clientError(response, http.StatusBadGateway, "Tile service unavailable")
+		return
+	}
+	defer workerResponse.Body.Close()
+	for _, header := range []string{"Accept-Ranges", "Cache-Control", "Content-Encoding", "Content-Length", "Content-Type", "ETag", "Last-Modified", "Vary"} {
+		if value := workerResponse.Header.Get(header); value != "" {
+			response.Header().Set(header, value)
+		}
+	}
+	response.WriteHeader(workerResponse.StatusCode)
+	if request.Method != http.MethodHead {
+		_, _ = io.Copy(response, workerResponse.Body)
+	}
+}
+
+// nominatimProxy provides the public geocoding API through the Controller so
+// the Nominatim worker remains a private ClusterIP service.
+func (server *Server) nominatimProxy(response http.ResponseWriter, request *http.Request, workerPath string) {
+	if request.Method != http.MethodGet && request.Method != http.MethodHead {
+		clientError(response, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+	if workerPath == "" {
+		workerPath = "/"
+	}
+	if !strings.HasPrefix(workerPath, "/") {
+		clientError(response, http.StatusNotFound, "Not found")
+		return
+	}
+	for _, segment := range strings.Split(workerPath, "/") {
+		if segment == "." || segment == ".." || strings.Contains(segment, "\\") {
+			clientError(response, http.StatusNotFound, "Not found")
+			return
+		}
+	}
+
+	target := server.config.NominatimURL + workerPath
+	if request.URL.RawQuery != "" {
+		target += "?" + request.URL.RawQuery
+	}
+	workerRequest, err := http.NewRequestWithContext(request.Context(), request.Method, target, nil)
+	if err != nil {
+		clientError(response, http.StatusBadGateway, "Geocoding service unavailable")
+		return
+	}
+	for _, header := range []string{"Accept", "Accept-Encoding", "If-Modified-Since", "If-None-Match"} {
+		if value := request.Header.Get(header); value != "" {
+			workerRequest.Header.Set(header, value)
+		}
+	}
+	workerRequest.Header.Set("X-Request-Id", request.Header.Get("X-Request-Id"))
+	workerResponse, err := server.workerClient.Do(workerRequest)
+	if err != nil {
+		clientError(response, http.StatusBadGateway, "Geocoding service unavailable")
+		return
+	}
+	defer workerResponse.Body.Close()
+	for _, header := range []string{"Cache-Control", "Content-Encoding", "Content-Length", "Content-Type", "ETag", "Last-Modified", "Vary"} {
+		if value := workerResponse.Header.Get(header); value != "" {
+			response.Header().Set(header, value)
+		}
+	}
+	response.WriteHeader(workerResponse.StatusCode)
+	if request.Method != http.MethodHead {
+		_, _ = io.Copy(response, workerResponse.Body)
+	}
+}
+
 func (server *Server) disableUser(response http.ResponseWriter, request *http.Request, userID string) {
 	_, ok := server.authenticate(response, request, "admin:manage-users")
 	if !ok {
@@ -642,6 +750,16 @@ func (server *Server) ServeHTTP(response http.ResponseWriter, request *http.Requ
 		if claims, ok := server.authenticate(response, request, "map:read"); ok {
 			writeJSON(response, 200, map[string]any{"user_id": claims.Subject, "plan": claims.Plan, "request_id": request.Header.Get("X-Request-Id")})
 		}
+	case (request.Method == http.MethodGet || request.Method == http.MethodHead) && request.URL.Path == "/api/tile-catalog":
+		server.tileProxy(response, request, "/")
+	case (request.Method == http.MethodGet || request.Method == http.MethodHead) && request.URL.Path == "/api/tiles":
+		server.tileProxy(response, request, "/")
+	case (request.Method == http.MethodGet || request.Method == http.MethodHead) && strings.HasPrefix(request.URL.Path, "/api/tiles/"):
+		server.tileProxy(response, request, strings.TrimPrefix(request.URL.Path, "/api/tiles"))
+	case (request.Method == http.MethodGet || request.Method == http.MethodHead) && request.URL.Path == "/api/nominatim":
+		server.nominatimProxy(response, request, "/")
+	case (request.Method == http.MethodGet || request.Method == http.MethodHead) && strings.HasPrefix(request.URL.Path, "/api/nominatim/"):
+		server.nominatimProxy(response, request, strings.TrimPrefix(request.URL.Path, "/api/nominatim"))
 	case request.Method == http.MethodPost && strings.HasPrefix(request.URL.Path, "/api/admin/users/") && strings.HasSuffix(request.URL.Path, "/disable"):
 		userID := strings.TrimSuffix(strings.TrimPrefix(request.URL.Path, "/api/admin/users/"), "/disable")
 		if userID == "" || strings.Contains(userID, "/") {

@@ -1,0 +1,60 @@
+# Temporary pods used only while importing existing Docker data into PVCs.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: import-tile-data
+  labels:
+    app.kubernetes.io/name: worker-importer
+spec:
+  restartPolicy: Never
+  containers:
+    - name: importer
+      image: busybox:1.37
+      command: ["sh", "-c", "sleep infinity"]
+      volumeMounts:
+        - name: data
+          mountPath: /target
+  volumes:
+    - name: data
+      persistentVolumeClaim:
+        claimName: tile-data
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: import-map-data
+  labels:
+    app.kubernetes.io/name: worker-importer
+spec:
+  restartPolicy: Never
+  containers:
+    - name: importer
+      image: busybox:1.37
+      command: ["sh", "-c", "sleep infinity"]
+      volumeMounts:
+        - name: data
+          mountPath: /target
+  volumes:
+    - name: data
+      persistentVolumeClaim:
+        claimName: map-data
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: import-nominatim-project
+  labels:
+    app.kubernetes.io/name: worker-importer
+spec:
+  restartPolicy: Never
+  containers:
+    - name: importer
+      image: busybox:1.37
+      command: ["sh", "-c", "sleep infinity"]
+      volumeMounts:
+        - name: data
+          mountPath: /target
+  volumes:
+    - name: data
+      persistentVolumeClaim:
+        claimName: nominatim-project
