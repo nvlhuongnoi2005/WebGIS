@@ -21,7 +21,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const idleTimeoutMs = useRef(DEFAULT_IDLE_TIMEOUT_MS);
-  const lastActivityAt = useRef(Date.now());
+  const lastActivityAt = useRef(0);
   const lastHeartbeatAt = useRef(0);
 
   const expireSession = useCallback(() => {
@@ -82,6 +82,10 @@ export function AuthProvider({ children }: PropsWithChildren) {
       return false;
     }
   }, [acceptTokenResponse, expireSession]);
+
+  useEffect(() => {
+    lastActivityAt.current = Date.now();
+  }, []);
 
   useEffect(() => {
     setSessionExpiredHandler(expireSession);
