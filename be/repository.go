@@ -66,6 +66,33 @@ func (repository *Repository) SessionForRefresh(ctx context.Context, q DB, hash 
 	return session, err
 }
 
+// TouchActiveSession makes the database the authority for the inactivity
+// timeout. A signed access token alone must not revive an idle session.
+func (repository *Repository) TouchActiveSession(ctx context.Context, q DB, sessionID string, idleTimeoutSeconds int) (bool, error) {
+	result, err := q.Exec(ctx, `UPDATE sessions
+		SET last_used_at=now()
+		WHERE id=$1
+		  AND revoked_at IS NULL
+		  AND expires_at > now()
+		  AND last_used_at > now() - make_interval(secs => $2)`, sessionID, idleTimeoutSeconds)
+	if err != nil {
+		return false, err
+	}
+	return result.RowsAffected() == 1, nil
+}
+
+func (repository *Repository) SessionForRefreshWithinIdleTimeout(ctx context.Context, q DB, hash string, idleTimeoutSeconds int) (Session, error) {
+	var session Session
+	err := q.QueryRow(ctx, `SELECT id,user_id,refresh_token_hash,expires_at,revoked_at
+		FROM sessions
+		WHERE refresh_token_hash=$1
+		  AND revoked_at IS NULL
+		  AND expires_at > now()
+		  AND last_used_at > now() - make_interval(secs => $2)
+		FOR UPDATE`, hash, idleTimeoutSeconds).Scan(&session.ID, &session.UserID, &session.RefreshTokenHash, &session.ExpiresAt, &session.RevokedAt)
+	return session, err
+}
+
 func (repository *Repository) RefreshHistory(ctx context.Context, q DB, hash string) (string, string, error) {
 	var sessionID, userID string
 	err := q.QueryRow(ctx, `SELECT session_id,user_id FROM refresh_token_history WHERE refresh_token_hash=$1 AND expires_at > now()`, hash).Scan(&sessionID, &userID)

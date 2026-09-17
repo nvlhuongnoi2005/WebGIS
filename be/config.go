@@ -17,7 +17,7 @@ type Config struct {
 	KeyID, PrivateKeyPEM, PublicKeyPEM                        string
 	PreviousPublicKeys                                        []PublicKeyConfig
 	AllowEphemeral                                            bool
-	AccessTTL, RefreshDays                                    int
+	AccessTTL, RefreshDays, SessionIdleTimeoutSeconds         int
 	RefreshPepper                                             string
 	SecureCookies                                             bool
 	ArgonMemory, ArgonTime, ArgonParallelism                  uint32
@@ -98,6 +98,10 @@ func loadConfig() (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
+	idleTimeout, err := envInt("AUTH_SESSION_IDLE_TIMEOUT_SECONDS", 7200, 60)
+	if err != nil {
+		return Config{}, err
+	}
 	memory, err := envInt("AUTH_ARGON2_MEMORY_KIB", 19456, 8192)
 	if err != nil {
 		return Config{}, err
@@ -155,7 +159,7 @@ func loadConfig() (Config, error) {
 		Issuer: env("AUTH_JWT_ISSUER", "auth-service"), Audience: env("AUTH_JWT_AUDIENCE", "api-gateway"), KeyID: env("AUTH_JWT_KID", "dev-1"),
 		PrivateKeyPEM: strings.ReplaceAll(env("AUTH_JWT_PRIVATE_KEY", ""), `\n`, "\n"), PublicKeyPEM: strings.ReplaceAll(env("AUTH_JWT_PUBLIC_KEY", ""), `\n`, "\n"),
 		PreviousPublicKeys: previous,
-		AllowEphemeral:     envBool("AUTH_DEV_EPHEMERAL_KEYS", false), AccessTTL: accessTTL, RefreshDays: refreshDays, RefreshPepper: pepper,
+		AllowEphemeral:     envBool("AUTH_DEV_EPHEMERAL_KEYS", false), AccessTTL: accessTTL, RefreshDays: refreshDays, SessionIdleTimeoutSeconds: idleTimeout, RefreshPepper: pepper,
 		SecureCookies: envBool("AUTH_SECURE_COOKIES", nodeEnv == "production"), ArgonMemory: uint32(memory), ArgonTime: uint32(timeCost), ArgonParallelism: uint32(parallelism), ArgonHashLength: uint32(hashLength),
 		LoginMaxConcurrent: maxConcurrent, LoginMaxAttempts: maxAttempts, LoginWindowSeconds: window / 1000, GatewayConsumer: env("AUTH_GATEWAY_CONSUMER", "local-gateway-1"), ValhallaURL: strings.TrimRight(env("VALHALLA_INTERNAL_URL", "http://localhost:8002"), "/"), TileServerURL: strings.TrimRight(env("TILE_SERVER_INTERNAL_URL", "http://localhost:8080"), "/"), NominatimURL: strings.TrimRight(env("NOMINATIM_INTERNAL_URL", "http://localhost:8083"), "/"),
 	}

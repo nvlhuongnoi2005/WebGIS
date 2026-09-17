@@ -12,11 +12,12 @@ data:
   AUTH_JWT_KID: primary-2026
   AUTH_ACCESS_TOKEN_TTL_SECONDS: "900"
   AUTH_REFRESH_TOKEN_TTL_DAYS: "30"
+  AUTH_SESSION_IDLE_TIMEOUT_SECONDS: "7200"
   AUTH_COOKIE_NAME: webgis_refresh_token
   AUTH_SECURE_COOKIES: "true"
   AUTH_COOKIE_SAME_SITE: lax
   AUTH_DEV_EPHEMERAL_KEYS: "false"
-  APP_ORIGINS: https://webgis.example.com
+  APP_ORIGINS: http://webgis.localhost
   VALHALLA_INTERNAL_URL: http://valhalla:8002
   TILE_SERVER_INTERNAL_URL: http://tile-server:8080
   NOMINATIM_INTERNAL_URL: http://nominatim:8083

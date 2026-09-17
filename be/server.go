@@ -118,6 +118,15 @@ func (server *Server) authenticate(response http.ResponseWriter, request *http.R
 		unauthorized(response)
 		return Claims{}, false
 	}
+	active, err := server.repository.TouchActiveSession(request.Context(), server.repository.pool, claims.SessionID, server.config.SessionIdleTimeoutSeconds)
+	if err != nil {
+		clientError(response, http.StatusServiceUnavailable, "Authentication temporarily unavailable")
+		return Claims{}, false
+	}
+	if !active {
+		unauthorized(response)
+		return Claims{}, false
+	}
 	for _, scope := range scopes {
 		if !hasScope(claims, scope) {
 			clientError(response, http.StatusForbidden, "Forbidden")
@@ -164,7 +173,7 @@ func (server *Server) issueLoginResponse(response http.ResponseWriter, user User
 		return
 	}
 	server.setRefreshCookies(response, refreshToken)
-	writeJSON(response, 200, map[string]any{"access_token": access, "token_type": "Bearer", "expires_in": expiresIn, "user": publicUser(user)})
+	writeJSON(response, 200, map[string]any{"access_token": access, "token_type": "Bearer", "expires_in": expiresIn, "idle_timeout_seconds": server.config.SessionIdleTimeoutSeconds, "user": publicUser(user)})
 }
 
 func (server *Server) register(response http.ResponseWriter, request *http.Request) {
@@ -311,7 +320,7 @@ func (server *Server) refresh(response http.ResponseWriter, request *http.Reques
 		return
 	}
 	defer tx.Rollback(ctx)
-	session, sessionErr := server.repository.SessionForRefresh(ctx, tx, hash)
+	session, sessionErr := server.repository.SessionForRefreshWithinIdleTimeout(ctx, tx, hash, server.config.SessionIdleTimeoutSeconds)
 	if sessionErr != nil {
 		sid, uid, historyErr := server.repository.RefreshHistory(ctx, tx, hash)
 		if historyErr == nil {
@@ -356,6 +365,7 @@ func (server *Server) refresh(response http.ResponseWriter, request *http.Reques
 func (server *Server) logout(response http.ResponseWriter, request *http.Request, all bool) {
 	claims, ok := server.authenticate(response, request)
 	if !ok {
+		server.clearRefreshCookies(response)
 		return
 	}
 	ctx := request.Context()
