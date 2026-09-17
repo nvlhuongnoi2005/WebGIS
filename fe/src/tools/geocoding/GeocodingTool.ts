@@ -5,6 +5,7 @@ export interface GeocodingFeature {
   type: string;
   place_name: string;
   text: string;
+  context?: string;
   center: MapCoordinates;
   geometry: {
     type: string;
@@ -25,6 +26,7 @@ interface NominatimResult {
 }
 
 const NOMINATIM_URL = "/api/nominatim";
+const SUGGESTIONS_URL = "/api/suggestions";
 
 export function getGeocodingLanguage(language?: string) {
   return (language || "vi").toLowerCase().startsWith("vi") ? "vi,en" : "en,vi";
@@ -35,8 +37,21 @@ export async function fetchGeocoding(
   acceptLanguage: string,
   signal?: AbortSignal
 ): Promise<GeocodingFeature[]> {
+  const normalizedQuery = searchQuery.trim();
+  if (normalizedQuery.length >= 2) {
+    try {
+      const suggestionResponse = await fetch(`${SUGGESTIONS_URL}?${new URLSearchParams({ q: normalizedQuery })}`, { signal });
+      if (suggestionResponse.ok) {
+        const suggestions = await suggestionResponse.json() as GeocodingFeature[];
+        if (suggestions.length > 0) return suggestions;
+      }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") throw error;
+      // Nominatim remains the source-of-truth fallback while ES is unavailable.
+    }
+  }
   const params = new URLSearchParams({
-    q: searchQuery.trim(),
+    q: normalizedQuery,
     format: "jsonv2",
     addressdetails: "1",
     limit: "6",

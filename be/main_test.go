@@ -6,6 +6,22 @@ import (
 	"testing"
 )
 
+func TestNormalizeSuggestion(t *testing.T) {
+	if got := normalizeSuggestion("Hồ Tây – Đống Đa"); got != "ho tay dong đa" && got != "ho tay dong da" {
+		t.Fatalf("unexpected Vietnamese normalization: %q", got)
+	}
+	aliases := suggestionAliases("Hà Nội")
+	found := false
+	for _, alias := range aliases {
+		if alias == "hn" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("Hà Nội should expose the HN alias")
+	}
+}
+
 func TestArgon2idPasswordRoundTrip(t *testing.T) {
 	service := NewPasswordService(Config{ArgonMemory: 8192, ArgonTime: 1, ArgonParallelism: 1, ArgonHashLength: 32})
 	hash, err := service.Hash("Lapnv@2005")
@@ -20,6 +36,40 @@ func TestArgon2idPasswordRoundTrip(t *testing.T) {
 	}
 	if hash[:10] != "$argon2id$" {
 		t.Fatalf("unexpected hash format: %s", hash)
+	}
+}
+
+func TestNormalizeVietnameseSuggestions(t *testing.T) {
+	if got := normalizeSuggestion("H\u1ed3 T\u00e2y \u2013 \u0110\u1ed1ng \u0110a"); got != "ho tay dong da" {
+		t.Fatalf("unexpected Vietnamese normalization: %q", got)
+	}
+	aliases := suggestionAliases("H\u00e0 N\u1ed9i")
+	found := false
+	for _, alias := range aliases {
+		if alias == "hn" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("Ha Noi should expose the HN alias")
+	}
+}
+
+func TestSuggestionRank(t *testing.T) {
+	if suggestionRank("place:city", 0.2) <= suggestionRank("amenity:restaurant", 0.8) {
+		t.Fatal("cities should rank ahead of similarly matched POIs")
+	}
+	if suggestionRank("water:lake", 0.1) <= suggestionRank("water:reservoir", 0.1) {
+		t.Fatal("lakes should rank ahead of reservoirs")
+	}
+}
+
+func TestSuggestionPlaceName(t *testing.T) {
+	if got := suggestionPlaceName("H\u1ed3 T\u00e2y", "Th\u00e0nh ph\u1ed1 H\u00e0 N\u1ed9i"); got != "H\u1ed3 T\u00e2y, Th\u00e0nh ph\u1ed1 H\u00e0 N\u1ed9i" {
+		t.Fatalf("unexpected place name: %q", got)
+	}
+	if got := suggestionPlaceName("H\u00e0 N\u1ed9i", ""); got != "H\u00e0 N\u1ed9i" {
+		t.Fatalf("unexpected fallback place name: %q", got)
 	}
 }
 

@@ -19,6 +19,14 @@ func main() {
 	}
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
+	if len(os.Args) == 2 && os.Args[1] == "index-suggestions" {
+		if err := runSuggestionIndexer(ctx, config); err != nil {
+			slog.Error("suggestion indexing failed", "error", err.Error())
+			os.Exit(1)
+		}
+		slog.Info("suggestion indexing completed")
+		return
+	}
 	repository, err := NewRepository(ctx, config)
 	if err != nil {
 		slog.Error("database connection failed", "error", err.Error())

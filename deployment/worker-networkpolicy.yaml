@@ -66,6 +66,10 @@ spec:
         - podSelector:
             matchLabels:
               app.kubernetes.io/name: nominatim
+
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: search-indexer
       ports:
         - protocol: TCP
           port: 5432

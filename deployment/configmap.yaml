@@ -21,3 +21,4 @@ data:
   VALHALLA_INTERNAL_URL: http://valhalla:8002
   TILE_SERVER_INTERNAL_URL: http://tile-server:8080
   NOMINATIM_INTERNAL_URL: http://nominatim:8083
+  ELASTICSEARCH_URL: http://elasticsearch:9200

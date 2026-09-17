@@ -499,7 +499,7 @@ function LocationSearchField({
                 </ListItemIcon>
                 <ListItemText
                   primary={feature.text || feature.place_name}
-                  secondary={feature.place_name}
+                  secondary={feature.context || feature.place_name}
                   slotProps={{
                     primary: { noWrap: true, sx: { fontSize: 13.5, fontWeight: 600 } },
                     secondary: { noWrap: true, sx: { fontSize: 12 } },

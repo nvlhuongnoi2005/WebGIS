@@ -770,6 +770,8 @@ func (server *Server) ServeHTTP(response http.ResponseWriter, request *http.Requ
 		server.nominatimProxy(response, request, "/")
 	case (request.Method == http.MethodGet || request.Method == http.MethodHead) && strings.HasPrefix(request.URL.Path, "/api/nominatim/"):
 		server.nominatimProxy(response, request, strings.TrimPrefix(request.URL.Path, "/api/nominatim"))
+	case request.Method == http.MethodGet && request.URL.Path == "/api/suggestions":
+		server.suggestions(response, request)
 	case request.Method == http.MethodPost && strings.HasPrefix(request.URL.Path, "/api/admin/users/") && strings.HasSuffix(request.URL.Path, "/disable"):
 		userID := strings.TrimSuffix(strings.TrimPrefix(request.URL.Path, "/api/admin/users/"), "/disable")
 		if userID == "" || strings.Contains(userID, "/") {

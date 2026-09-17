@@ -120,7 +120,7 @@ function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) 
       if (feature.place_name && feature.place_name !== feature.text) {
         const desc = document.createElement("div");
         desc.className = "search-popup-desc";
-        desc.innerText = feature.place_name;
+        desc.innerText = feature.context || feature.place_name;
         popupContent.appendChild(desc);
       }
 
@@ -400,7 +400,7 @@ function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) 
               color="text.secondary"
               sx={{ lineHeight: 1.35 }}
             >
-              {selectedFeature.place_name}
+              {selectedFeature.context || selectedFeature.place_name}
             </Typography>
             <Typography variant="caption" color="text.secondary">
               {t("search.coordinates")}: {formatDmsCoordinates(
@@ -437,7 +437,7 @@ function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) 
                   }
                   secondary={
                     <Box component="span" sx={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 12 }}>
-                      {feature.place_name}
+                      {feature.context || feature.place_name}
                     </Box>
                   }
                 />
