@@ -20,14 +20,14 @@ export function createAppTheme({ mode, highContrast }: AppThemeOptions) {
           action: { hover: "#2b2b2b", selected: "#343434" },
         }
       : {
-          primary: { main: "#a90020", light: "#ffe1e7", dark: "#630012", contrastText: "#ffffff" },
-          secondary: { main: "#7b1024", light: "#fce1e7", dark: "#4d0614" },
+          primary: { main: "#a90020", light: "#f2e8ea", dark: "#630012", contrastText: "#ffffff" },
+          secondary: { main: "#7b1024", light: "#f3eaec", dark: "#4d0614" },
           error: { main: "#a60000" },
           success: { main: "#006b24" },
           background: { default: "#ffffff", paper: "#ffffff" },
           text: { primary: "#000000", secondary: "#1f1f1f" },
           divider: "#1f1f1f",
-          action: { hover: "#fff0f3", selected: "#ffe1e7" },
+          action: { hover: "#f3f3f4", selected: "#f2e8ea" },
         }
     : isDark
       ? {
@@ -41,14 +41,14 @@ export function createAppTheme({ mode, highContrast }: AppThemeOptions) {
           action: { hover: "#351720", selected: "#5b1825" },
         }
       : {
-          primary: { main: "#e0002b", light: "#ffe1e7", dark: "#a90020", contrastText: "#ffffff" },
-          secondary: { main: "#ad1630", light: "#fde2e7", dark: "#780017" },
+          primary: { main: "#e0002b", light: "#f2e8ea", dark: "#a90020", contrastText: "#ffffff" },
+          secondary: { main: "#ad1630", light: "#f3eaec", dark: "#780017" },
           error: { main: "#ba1a1a" },
           success: { main: "#146c2e" },
-          background: { default: "#fff7f8", paper: "#ffffff" },
-          text: { primary: "#2b1117", secondary: "#6c4650" },
-          divider: "#f0d9df",
-          action: { hover: "#fff0f3", selected: "#ffe1e7" },
+          background: { default: "#f7f7f8", paper: "#ffffff" },
+          text: { primary: "#241f21", secondary: "#655c5f" },
+          divider: "#e4e1e2",
+          action: { hover: "#f3f3f4", selected: "#f2e8ea" },
         };
 
   return createTheme({

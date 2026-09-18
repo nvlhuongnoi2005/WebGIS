@@ -9,16 +9,16 @@
   min-height: 0;
   overflow: hidden;
   --map-surface: rgb(255 255 255 / 96%);
-  --map-surface-border: rgb(244 203 213 / 96%);
+  --map-surface-border: rgb(228 225 226 / 96%);
   --map-shadow: 0 16px 36px rgb(126 8 36 / 18%);
-  --map-subtle-surface: #fff5f7;
-  --map-selected-surface: #ffe1e7;
+  --map-subtle-surface: #f7f7f8;
+  --map-selected-surface: #f2e8ea;
   --map-selected-text: #a90020;
-  --map-divider: #f0d9df;
-  --map-popup-text: #2b1117;
-  --map-popup-secondary: #79505a;
-  --map-popup-border: #f1b8c5;
-  --map-popup-hover: #fff0f3;
+  --map-divider: #e4e1e2;
+  --map-popup-text: #241f21;
+  --map-popup-secondary: #655c5f;
+  --map-popup-border: #e0b3bd;
+  --map-popup-hover: #f5f3f4;
 }
 
 html[data-color-mode="dark"] .map-wrapper {
