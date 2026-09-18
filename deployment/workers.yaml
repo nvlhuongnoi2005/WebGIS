@@ -22,7 +22,7 @@ spec:
         - name: ghcr-pull
       containers:
         - name: tile-server
-          image: ghcr.io/nvlhuongnoi2005/webgis/tile-server:26.9
+          image: ghcr.io/nvlhuongnoi2005/webgis/tile-server:sha-dddf700f26a39dbc13c024a146a1c635cad62bfa
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -75,7 +75,7 @@ spec:
         - name: ghcr-pull
       containers:
         - name: valhalla
-          image: ghcr.io/nvlhuongnoi2005/webgis/valhalla:26.9
+          image: ghcr.io/nvlhuongnoi2005/webgis/valhalla:sha-dddf700f26a39dbc13c024a146a1c635cad62bfa
           imagePullPolicy: IfNotPresent
           args: ["build_tiles"]
           env:
@@ -152,7 +152,7 @@ spec:
         - name: ghcr-pull
       containers:
         - name: nominatim
-          image: ghcr.io/nvlhuongnoi2005/webgis/nominatim:26.9
+          image: ghcr.io/nvlhuongnoi2005/webgis/nominatim:sha-dddf700f26a39dbc13c024a146a1c635cad62bfa
           imagePullPolicy: IfNotPresent
           args: ["serve", "--engine", "falcon", "--server", "0.0.0.0:8083"]
           env:
