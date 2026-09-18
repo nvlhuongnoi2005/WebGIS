@@ -20,7 +20,7 @@ spec:
         - name: ghcr-pull
       containers:
         - name: controller
-          image: ghcr.io/nvlhuongnoi2005/webgis/controller:sha-23b52fa304c0a3475e0422e7694e37b0a81cfca3
+          image: ghcr.io/nvlhuongnoi2005/webgis/controller:sha-2413ffd77bee3d21b6b7675a3be64805ec2c90ba
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
