@@ -10,6 +10,7 @@ import type {
   KeyboardEvent,
   MutableRefObject,
 } from "react";
+import type { Feature } from "geojson";
 
 import * as maplibregl from "maplibre-gl";
 import {
@@ -44,6 +45,9 @@ import type { MapTool } from "../../types/map";
 export type { GeocodingFeature } from "../../tools/geocoding/GeocodingTool";
 
 const SEARCH_DEBOUNCE_MS = 150;
+const SEARCH_GEOMETRY_SOURCE = "search-result-geometry";
+const SEARCH_GEOMETRY_FILL_LAYER = "search-result-geometry-fill";
+const SEARCH_GEOMETRY_LINE_LAYER = "search-result-geometry-line";
 
 interface SearchBarProps {
   activeTool: MapTool;
@@ -74,6 +78,56 @@ function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) 
     }
   };
 
+  const clearSearchGeometry = () => {
+    const currentMap = map.current;
+    if (!currentMap) return;
+
+    if (currentMap.getLayer(SEARCH_GEOMETRY_LINE_LAYER)) {
+      currentMap.removeLayer(SEARCH_GEOMETRY_LINE_LAYER);
+    }
+    if (currentMap.getLayer(SEARCH_GEOMETRY_FILL_LAYER)) {
+      currentMap.removeLayer(SEARCH_GEOMETRY_FILL_LAYER);
+    }
+    if (currentMap.getSource(SEARCH_GEOMETRY_SOURCE)) {
+      currentMap.removeSource(SEARCH_GEOMETRY_SOURCE);
+    }
+  };
+
+  const showSearchGeometry = (feature: GeocodingFeature) => {
+    const currentMap = map.current;
+    if (!currentMap || feature.geometry.type === "Point") return;
+
+    const geometryFeature: Feature = {
+      type: "Feature",
+      properties: {},
+      geometry: feature.geometry,
+    };
+
+    currentMap.addSource(SEARCH_GEOMETRY_SOURCE, {
+      type: "geojson",
+      data: geometryFeature,
+    });
+    currentMap.addLayer({
+      id: SEARCH_GEOMETRY_FILL_LAYER,
+      type: "fill",
+      source: SEARCH_GEOMETRY_SOURCE,
+      paint: {
+        "fill-color": "#1976d2",
+        "fill-opacity": 0.18,
+      },
+    });
+    currentMap.addLayer({
+      id: SEARCH_GEOMETRY_LINE_LAYER,
+      type: "line",
+      source: SEARCH_GEOMETRY_SOURCE,
+      paint: {
+        "line-color": "#0d47a1",
+        "line-width": 3,
+        "line-opacity": 0.9,
+      },
+    });
+  };
+
   const selectLocation = (
     feature: GeocodingFeature,
     closeActiveTool = true
@@ -91,6 +145,7 @@ function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) 
     }
 
     clearMarker();
+    clearSearchGeometry();
 
     const coordinates: [number, number] = feature.center;
 
@@ -106,6 +161,12 @@ function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) 
         zoom: 16,
         duration: 1200,
       });
+    }
+
+    showSearchGeometry(feature);
+
+    if (feature.isArea) {
+      return;
     }
 
     if (coordinates) {
@@ -264,6 +325,7 @@ function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) 
     setSelectedFeature(null);
     setIsOpen(false);
     clearMarker();
+    clearSearchGeometry();
   };
 
   const handleDirections = () => {
@@ -310,13 +372,25 @@ function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) 
   }, []);
 
   useEffect(() => {
+    const currentMap = map.current;
+
     return () => {
       if (searchMarkerRef.current) {
         searchMarkerRef.current.remove();
         searchMarkerRef.current = null;
       }
+      if (!currentMap) return;
+      if (currentMap.getLayer(SEARCH_GEOMETRY_LINE_LAYER)) {
+        currentMap.removeLayer(SEARCH_GEOMETRY_LINE_LAYER);
+      }
+      if (currentMap.getLayer(SEARCH_GEOMETRY_FILL_LAYER)) {
+        currentMap.removeLayer(SEARCH_GEOMETRY_FILL_LAYER);
+      }
+      if (currentMap.getSource(SEARCH_GEOMETRY_SOURCE)) {
+        currentMap.removeSource(SEARCH_GEOMETRY_SOURCE);
+      }
     };
-  }, []);
+  }, [map]);
 
   return (
     <Box
