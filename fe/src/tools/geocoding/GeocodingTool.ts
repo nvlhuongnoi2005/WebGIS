@@ -1,3 +1,5 @@
+import type { Geometry } from "geojson";
+
 import type { MapCoordinates } from "../../types/map";
 
 export interface GeocodingFeature {
@@ -7,11 +9,19 @@ export interface GeocodingFeature {
   text: string;
   context?: string;
   center: MapCoordinates;
-  geometry: {
-    type: string;
-    coordinates: MapCoordinates;
-  };
+  /** Native GeoJSON geometry returned by Nominatim, not only a centroid. */
+  geometry: Geometry;
   bbox?: [number, number, number, number];
+  isArea: boolean;
+  nominatim: {
+    osmType?: string;
+    osmId?: number;
+    category?: string;
+    type?: string;
+    address?: Record<string, string>;
+    namedetails?: Record<string, string>;
+    extratags?: Record<string, string>;
+  };
 }
 
 interface NominatimResult {
@@ -23,13 +33,67 @@ interface NominatimResult {
   display_name: string;
   name?: string;
   boundingbox?: [string, string, string, string];
+  category?: string;
+  type?: string;
+  addresstype?: string;
+  address?: Record<string, string>;
+  namedetails?: Record<string, string>;
+  extratags?: Record<string, string>;
+  geojson?: Geometry;
 }
 
 const NOMINATIM_URL = "/api/nominatim";
-const SUGGESTIONS_URL = "/api/suggestions";
+
+const ADDRESS_FIELDS = [
+  "house_number",
+  "road",
+  "neighbourhood",
+  "suburb",
+  "quarter",
+  "village",
+  "town",
+  "city_district",
+  "county",
+  "city",
+  "state_district",
+  "state",
+  "country",
+] as const;
 
 export function getGeocodingLanguage(language?: string) {
   return (language || "vi").toLowerCase().startsWith("vi") ? "vi,en" : "en,vi";
+}
+
+function isGeoJSONGeometry(value: unknown): value is Geometry {
+  if (!value || typeof value !== "object" || !("type" in value)) {
+    return false;
+  }
+
+  const geometry = value as { type?: unknown };
+  return typeof geometry.type === "string";
+}
+
+function isVietnameseLanguage(acceptLanguage: string) {
+  return acceptLanguage.toLowerCase().split(",").some(language => language.trim().startsWith("vi"));
+}
+
+function formatAddress(address: Record<string, string> | undefined, fallback: string) {
+  if (!address) return fallback;
+
+  const seen = new Set<string>();
+  const parts = ADDRESS_FIELDS.flatMap(field => {
+    const value = address[field]?.trim();
+    const key = value?.toLocaleLowerCase();
+    if (!value || !key || seen.has(key)) return [];
+    seen.add(key);
+    return [value];
+  });
+
+  return parts.join(", ") || fallback;
+}
+
+function isAreaGeometry(geometry: Geometry) {
+  return geometry.type === "Polygon" || geometry.type === "MultiPolygon";
 }
 
 export async function fetchGeocoding(
@@ -38,22 +102,15 @@ export async function fetchGeocoding(
   signal?: AbortSignal
 ): Promise<GeocodingFeature[]> {
   const normalizedQuery = searchQuery.trim();
-  if (normalizedQuery.length >= 2) {
-    try {
-      const suggestionResponse = await fetch(`${SUGGESTIONS_URL}?${new URLSearchParams({ q: normalizedQuery })}`, { signal });
-      if (suggestionResponse.ok) {
-        const suggestions = await suggestionResponse.json() as GeocodingFeature[];
-        if (suggestions.length > 0) return suggestions;
-      }
-    } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError") throw error;
-      // Nominatim remains the source-of-truth fallback while ES is unavailable.
-    }
-  }
   const params = new URLSearchParams({
     q: normalizedQuery,
     format: "jsonv2",
     addressdetails: "1",
+    namedetails: "1",
+    extratags: "1",
+    // GeoJSON retains every geometry Nominatim can return: points, lines,
+    // polygons, multipolygons and geometry collections.
+    polygon_geojson: "1",
     limit: "6",
     "accept-language": acceptLanguage,
   });
@@ -71,6 +128,18 @@ export async function fetchGeocoding(
     const longitude = Number(result.lon);
     const latitude = Number(result.lat);
     const coordinates: MapCoordinates = [longitude, latitude];
+    const fallbackGeometry: Geometry = {
+      type: "Point",
+      coordinates,
+    };
+    const geometry = isGeoJSONGeometry(result.geojson)
+      ? result.geojson
+      : fallbackGeometry;
+    const isArea = isAreaGeometry(geometry);
+    const address = formatAddress(result.address, result.display_name);
+    const label = isArea
+      ? (isVietnameseLanguage(acceptLanguage) ? "Khu vực" : "Area")
+      : (isVietnameseLanguage(acceptLanguage) ? "Địa chỉ" : "Address");
     const bbox: [number, number, number, number] | undefined =
       result.boundingbox && [
         Number(result.boundingbox[2]),
@@ -84,10 +153,18 @@ export async function fetchGeocoding(
       type: "Feature",
       place_name: result.display_name,
       text: result.name || result.display_name,
+      context: `${label}: ${address}`,
       center: coordinates,
-      geometry: {
-        type: "Point",
-        coordinates,
+      geometry,
+      isArea,
+      nominatim: {
+        osmType: result.osm_type,
+        osmId: result.osm_id,
+        category: result.category,
+        type: result.type || result.addresstype,
+        address: result.address,
+        namedetails: result.namedetails,
+        extratags: result.extratags,
       },
       bbox,
     };

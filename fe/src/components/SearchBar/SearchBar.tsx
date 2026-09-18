@@ -92,8 +92,7 @@ function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) 
 
     clearMarker();
 
-    const coordinates: [number, number] =
-      feature.center || feature.geometry.coordinates;
+    const coordinates: [number, number] = feature.center;
 
     if (feature.bbox) {
       map.current.fitBounds(feature.bbox, {
