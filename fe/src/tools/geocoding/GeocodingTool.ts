@@ -30,6 +30,7 @@ export interface GeocodingSuggestion {
   place_name: string;
   text: string;
   context?: string;
+  category?: string;
   center: MapCoordinates;
   resolveQuery: string;
 }
@@ -57,6 +58,7 @@ interface SuggestionResult {
   place_name?: string;
   text?: string;
   context?: string;
+  category?: string;
   center?: unknown;
 }
 
@@ -148,6 +150,7 @@ export async function fetchGeocodingSuggestions(
       place_name: placeName,
       text: result.text?.trim() || placeName,
       context: result.context?.trim(),
+      category: result.category?.trim(),
       center: result.center,
       resolveQuery: placeName,
     }];

@@ -200,6 +200,7 @@ func (server *Server) suggestions(response http.ResponseWriter, request *http.Re
 		}
 		results = append(results, map[string]any{
 			"id": "es-" + hit.ID, "type": "Feature", "place_name": suggestionPlaceName(hit.Source.Name, hit.Source.Address), "text": hit.Source.Name, "context": hit.Source.Address,
+			"category": hit.Source.Category,
 			"center": hit.Source.Location, "geometry": map[string]any{"type": "Point", "coordinates": hit.Source.Location},
 		})
 	}
