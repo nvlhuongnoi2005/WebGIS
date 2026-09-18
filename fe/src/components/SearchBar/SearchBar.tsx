@@ -37,9 +37,13 @@ import { useTranslation } from "react-i18next";
 import { formatDmsCoordinates } from "../../tools/coordinate/CoordinateTool";
 import {
   fetchGeocoding as fetchGeocodingResults,
+  fetchGeocodingSuggestions,
   getGeocodingLanguage,
 } from "../../tools/geocoding/GeocodingTool";
-import type { GeocodingFeature } from "../../tools/geocoding/GeocodingTool";
+import type {
+  GeocodingFeature,
+  GeocodingSuggestion,
+} from "../../tools/geocoding/GeocodingTool";
 import type { MapTool } from "../../types/map";
 
 export type { GeocodingFeature } from "../../tools/geocoding/GeocodingTool";
@@ -48,6 +52,12 @@ const SEARCH_DEBOUNCE_MS = 150;
 const SEARCH_GEOMETRY_SOURCE = "search-result-geometry";
 const SEARCH_GEOMETRY_FILL_LAYER = "search-result-geometry-fill";
 const SEARCH_GEOMETRY_LINE_LAYER = "search-result-geometry-line";
+
+type SearchResult = GeocodingFeature | GeocodingSuggestion;
+
+function isGeocodingFeature(result: SearchResult): result is GeocodingFeature {
+  return "geometry" in result;
+}
 
 interface SearchBarProps {
   activeTool: MapTool;
@@ -59,7 +69,7 @@ interface SearchBarProps {
 function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) {
   const { t, i18n } = useTranslation();
   const [query, setQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<GeocodingFeature[]>([]);
+  const [suggestions, setSuggestions] = useState<SearchResult[]>([]);
   const [selectedFeature, setSelectedFeature] =
     useState<GeocodingFeature | null>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -69,7 +79,7 @@ function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) 
   const searchMarkerRef = useRef<maplibregl.Marker | null>(null);
   const debounceTimerRef = useRef<number | null>(null);
   const requestControllerRef = useRef<AbortController | null>(null);
-  const searchCacheRef = useRef<Map<string, GeocodingFeature[]>>(new Map());
+  const searchCacheRef = useRef<Map<string, SearchResult[]>>(new Map());
 
   const clearMarker = () => {
     if (searchMarkerRef.current) {
@@ -207,9 +217,9 @@ function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) 
     }
   };
 
-  const fetchGeocoding = async (
+  const fetchSuggestions = async (
     searchQuery: string
-  ): Promise<GeocodingFeature[]> => {
+  ): Promise<SearchResult[]> => {
     const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
 
     if (!normalizedQuery) {
@@ -231,11 +241,7 @@ function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) 
     requestControllerRef.current = controller;
 
     try {
-      const results = await fetchGeocodingResults(
-        searchQuery,
-        activeLang,
-        controller.signal
-      );
+      const results = await fetchGeocodingSuggestions(searchQuery, controller.signal);
 
       searchCacheRef.current.set(cacheKey, results);
 
@@ -245,9 +251,16 @@ function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) 
         return [];
       }
 
-      console.error("Geocoding fetch error:", error);
-
-      return [];
+      // Keep search available while Elasticsearch is rebuilding or unavailable.
+      try {
+        return await fetchGeocodingResults(searchQuery, activeLang, controller.signal);
+      } catch (fallbackError) {
+        if (fallbackError instanceof DOMException && fallbackError.name === "AbortError") {
+          return [];
+        }
+        console.error("Search fetch error:", fallbackError);
+        return [];
+      }
     } finally {
       if (requestControllerRef.current === controller) {
         requestControllerRef.current = null;
@@ -258,6 +271,33 @@ function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) 
   const cancelPendingSearch = () => {
     requestControllerRef.current?.abort();
     requestControllerRef.current = null;
+  };
+
+  const selectSearchResult = async (
+    result: SearchResult,
+    closeActiveTool = true
+  ) => {
+    if (isGeocodingFeature(result)) {
+      selectLocation(result, closeActiveTool);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const activeLang = getGeocodingLanguage(
+        i18n.resolvedLanguage || i18n.language
+      );
+      // Elasticsearch ranks the suggestion. Nominatim is the source of truth
+      // for its geometry, so selecting an area still draws its real polygon.
+      const [feature] = await fetchGeocodingResults(result.resolveQuery, activeLang);
+      if (feature) {
+        selectLocation(feature, closeActiveTool);
+      }
+    } catch (error) {
+      console.error("Suggestion resolution error:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleInputChange = (
@@ -283,7 +323,7 @@ function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) 
     setIsLoading(true);
 
     debounceTimerRef.current = window.setTimeout(async () => {
-      const results = await fetchGeocoding(value);
+      const results = await fetchSuggestions(value);
       setSuggestions(results);
       setIsOpen(results.length > 0);
       setIsLoading(false);
@@ -302,13 +342,16 @@ function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) 
     }
 
     if (suggestions.length > 0) {
-      selectLocation(suggestions[0], false);
+      await selectSearchResult(suggestions[0], false);
 
       return;
     }
 
     setIsLoading(true);
-    const results = await fetchGeocoding(query);
+    const results = await fetchGeocodingResults(
+      query,
+      getGeocodingLanguage(i18n.resolvedLanguage || i18n.language)
+    );
     setIsLoading(false);
 
     if (results.length > 0) {
@@ -498,7 +541,7 @@ function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) 
         <Paper className="map-floating-panel" elevation={5} sx={{ mt: 0.75, maxHeight: 280, overflowY: "auto" }}>
           <List disablePadding>
             {suggestions.map(feature => (
-              <ListItemButton key={feature.id} onClick={() => selectLocation(feature)}>
+              <ListItemButton key={feature.id} onClick={() => void selectSearchResult(feature)}>
                 <ListItemIcon sx={{ minWidth: 32, color: "error.main" }}>
                   <MapPin size={16} />
                 </ListItemIcon>

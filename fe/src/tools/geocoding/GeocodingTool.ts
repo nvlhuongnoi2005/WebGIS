@@ -24,6 +24,16 @@ export interface GeocodingFeature {
   };
 }
 
+/** Lightweight Elasticsearch result; resolve it with Nominatim after selection. */
+export interface GeocodingSuggestion {
+  id: string;
+  place_name: string;
+  text: string;
+  context?: string;
+  center: MapCoordinates;
+  resolveQuery: string;
+}
+
 interface NominatimResult {
   place_id: number;
   osm_type?: string;
@@ -42,7 +52,16 @@ interface NominatimResult {
   geojson?: Geometry;
 }
 
+interface SuggestionResult {
+  id?: string;
+  place_name?: string;
+  text?: string;
+  context?: string;
+  center?: unknown;
+}
+
 const NOMINATIM_URL = "/api/nominatim";
+const SUGGESTIONS_URL = "/api/suggestions";
 
 const ADDRESS_FIELDS = [
   "house_number",
@@ -94,6 +113,42 @@ function formatAddress(address: Record<string, string> | undefined, fallback: st
 
 function isAreaGeometry(geometry: Geometry) {
   return geometry.type === "Polygon" || geometry.type === "MultiPolygon";
+}
+
+function isMapCoordinates(value: unknown): value is MapCoordinates {
+  return Array.isArray(value)
+    && value.length === 2
+    && value.every(coordinate => typeof coordinate === "number" && Number.isFinite(coordinate));
+}
+
+export async function fetchGeocodingSuggestions(
+  searchQuery: string,
+  signal?: AbortSignal
+): Promise<GeocodingSuggestion[]> {
+  const query = searchQuery.trim();
+  if (!query) return [];
+
+  const response = await fetch(`${SUGGESTIONS_URL}?${new URLSearchParams({ q: query })}`, {
+    signal,
+  });
+  if (!response.ok) {
+    throw new Error(`Suggestions failed with status: ${response.status}`);
+  }
+
+  const data = (await response.json()) as SuggestionResult[];
+  return data.flatMap(result => {
+    const placeName = result.place_name?.trim();
+    if (!result.id || !placeName || !isMapCoordinates(result.center)) return [];
+
+    return [{
+      id: result.id,
+      place_name: placeName,
+      text: result.text?.trim() || placeName,
+      context: result.context?.trim(),
+      center: result.center,
+      resolveQuery: placeName,
+    }];
+  });
 }
 
 export async function fetchGeocoding(
