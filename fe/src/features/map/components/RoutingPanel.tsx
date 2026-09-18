@@ -6,6 +6,7 @@ import {
   Alert,
   Box,
   Button,
+  ButtonBase,
   CircularProgress,
   Divider,
   IconButton,
@@ -25,6 +26,8 @@ import {
   Bike,
   Bus,
   Car,
+  ChevronDown,
+  ChevronUp,
   CheckCircle2,
   Footprints,
   LocateFixed,
@@ -115,6 +118,8 @@ function RoutingPanel({
     : null;
   const isRouteResult = status === "success";
   const isRouteSearchActive = status === "loading" || isRouteResult;
+  const [isElevationOpen, setIsElevationOpen] = useState(true);
+  const [isInstructionsOpen, setIsInstructionsOpen] = useState(true);
 
   return (
     <Paper
@@ -228,64 +233,65 @@ function RoutingPanel({
         )}
 
         {status === "success" && (
-          <ElevationProfile points={elevation} isLoading={isElevationLoading} />
+          <Box>
+            <CollapsibleSectionLabel
+              label={t("routing.elevation.title")}
+              isOpen={isElevationOpen}
+              onClick={() => setIsElevationOpen(open => !open)}
+            />
+            {isElevationOpen && <ElevationProfile points={elevation} isLoading={isElevationLoading} />}
+          </Box>
         )}
 
         {status === "success" && instructions.length > 0 && (
           <Box>
             <Divider sx={{ mb: 1 }} />
-            <Typography
-              variant="caption"
-              sx={{
-                display: "block",
-                mb: 0.75,
-                fontWeight: 700,
-                color: "text.secondary",
-                textTransform: "uppercase",
-                letterSpacing: 0.5,
-              }}
-            >
-              {t("routing.instructions")}
-            </Typography>
-            <Stack
-              spacing={0.75}
-              sx={{
-                minHeight: 0,
-                flex: isRouteResult ? 1 : undefined,
-                maxHeight: isRouteResult ? undefined : 280,
-                overflowY: "auto",
-                pr: 0.5,
-              }}
-            >
-              {instructions.map((step, index) => (
-                <Stack
-                  key={`${step.beginShapeIndex ?? "step"}-${index}`}
-                  direction="row"
-                  spacing={1}
-                  sx={{ alignItems: "flex-start" }}
-                >
-                  <Box
-                    sx={{
-                      display: "grid",
-                      placeItems: "center",
-                      flexShrink: 0,
-                      width: 22,
-                      height: 22,
-                      borderRadius: "50%",
-                      bgcolor: "primary.light",
-                      color: "primary.main",
-                      fontSize: 12,
-                      fontWeight: 700,
-                    }}
+            <CollapsibleSectionLabel
+              label={t("routing.instructions")}
+              isOpen={isInstructionsOpen}
+              onClick={() => setIsInstructionsOpen(open => !open)}
+            />
+            {isInstructionsOpen && (
+              <Stack
+                spacing={0.75}
+                sx={{
+                  minHeight: 0,
+                  flex: isRouteResult ? 1 : undefined,
+                  maxHeight: isRouteResult ? undefined : 280,
+                  overflowY: "auto",
+                  pr: 0.5,
+                }}
+              >
+                {instructions.map((step, index) => (
+                  <Stack
+                    key={`${step.beginShapeIndex ?? "step"}-${index}`}
+                    direction="row"
+                    spacing={1}
+                    sx={{ alignItems: "flex-start" }}
                   >
-                    {index + 1}
-                  </Box>
-                  <Typography variant="body2" sx={{ minWidth: 0, lineHeight: 1.4 }}>
-                    {step.instruction}
-                  </Typography>
-                </Stack>
-              ))}
-            </Stack>
+                    <Box
+                      sx={{
+                        display: "grid",
+                        placeItems: "center",
+                        flexShrink: 0,
+                        width: 22,
+                        height: 22,
+                        borderRadius: "50%",
+                        bgcolor: "primary.light",
+                        color: "primary.main",
+                        fontSize: 12,
+                        fontWeight: 700,
+                      }}
+                    >
+                      {index + 1}
+                    </Box>
+                    <Typography variant="body2" sx={{ minWidth: 0, lineHeight: 1.4 }}>
+                      {step.instruction}
+                    </Typography>
+                  </Stack>
+                ))}
+              </Stack>
+            )}
           </Box>
         )}
 
@@ -307,6 +313,22 @@ function RoutingPanel({
         )}
       </Stack>
     </Paper>
+  );
+}
+
+function CollapsibleSectionLabel({ label, isOpen, onClick }: { label: string; isOpen: boolean; onClick: () => void }) {
+  const Icon = isOpen ? ChevronUp : ChevronDown;
+  return (
+    <ButtonBase
+      onClick={onClick}
+      aria-expanded={isOpen}
+      sx={{ display: "flex", width: "100%", justifyContent: "space-between", alignItems: "center", mb: 0.75, borderRadius: 1, textAlign: "left" }}
+    >
+      <Typography variant="caption" sx={{ fontWeight: 700, color: "text.secondary", textTransform: "uppercase", letterSpacing: 0.5 }}>
+        {label}
+      </Typography>
+      <Icon size={16} />
+    </ButtonBase>
   );
 }
 
@@ -345,9 +367,6 @@ function ElevationProfile({ points, isLoading }: { points: ElevationPoint[]; isL
 
   return (
     <Box sx={{ p: 1.25, border: "1px solid", borderColor: "divider", borderRadius: 2 }}>
-      <Typography variant="caption" sx={{ display: "block", mb: 0.75, fontWeight: 700, color: "text.secondary", textTransform: "uppercase", letterSpacing: 0.5 }}>
-        {t("routing.elevation.title")}
-      </Typography>
       <Box component="svg" viewBox="0 0 320 72" role="img" aria-label={t("routing.elevation.chartLabel")} sx={{ display: "block", width: "100%", height: 76, mb: 0.75 }}>
         <path d="M4 68H316" stroke="currentColor" strokeOpacity="0.16" />
         <polyline points={chartPoints} fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
