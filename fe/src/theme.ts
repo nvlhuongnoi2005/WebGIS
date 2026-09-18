@@ -20,35 +20,35 @@ export function createAppTheme({ mode, highContrast }: AppThemeOptions) {
           action: { hover: "#2b2b2b", selected: "#343434" },
         }
       : {
-          primary: { main: "#003b85", light: "#dbe9ff", dark: "#001f4d", contrastText: "#ffffff" },
-          secondary: { main: "#005c54", light: "#d5f5f0", dark: "#003d38" },
+          primary: { main: "#a90020", light: "#ffe1e7", dark: "#630012", contrastText: "#ffffff" },
+          secondary: { main: "#7b1024", light: "#fce1e7", dark: "#4d0614" },
           error: { main: "#a60000" },
           success: { main: "#006b24" },
           background: { default: "#ffffff", paper: "#ffffff" },
           text: { primary: "#000000", secondary: "#1f1f1f" },
           divider: "#1f1f1f",
-          action: { hover: "#e7efff", selected: "#dbe9ff" },
+          action: { hover: "#fff0f3", selected: "#ffe1e7" },
         }
     : isDark
       ? {
-          primary: { main: "#a8c7fa", light: "#243a5d", dark: "#d8e6ff", contrastText: "#062e5f" },
-          secondary: { main: "#75d7d0", light: "#173f3d", dark: "#a9f1ec" },
+          primary: { main: "#ff9aaa", light: "#5b1825", dark: "#ffd5dc", contrastText: "#5b0011" },
+          secondary: { main: "#f4a7b5", light: "#4a1720", dark: "#ffd6dd" },
           error: { main: "#ffb4ab" },
           success: { main: "#8fd99d" },
-          background: { default: "#101418", paper: "#181d23" },
-          text: { primary: "#e3e9f2", secondary: "#bdc7d5" },
-          divider: "#3d4754",
-          action: { hover: "#25303d", selected: "#263a59" },
+          background: { default: "#160d10", paper: "#211014" },
+          text: { primary: "#fde9ed", secondary: "#e4bdc5" },
+          divider: "#59313a",
+          action: { hover: "#351720", selected: "#5b1825" },
         }
       : {
-          primary: { main: "#0b57d0", light: "#e8f0fe", dark: "#073b87", contrastText: "#ffffff" },
-          secondary: { main: "#006a6a", light: "#d6f5f3", dark: "#004f4f" },
+          primary: { main: "#e0002b", light: "#ffe1e7", dark: "#a90020", contrastText: "#ffffff" },
+          secondary: { main: "#ad1630", light: "#fde2e7", dark: "#780017" },
           error: { main: "#ba1a1a" },
           success: { main: "#146c2e" },
-          background: { default: "#f6f8fc", paper: "#ffffff" },
-          text: { primary: "#172033", secondary: "#526077" },
-          divider: "#dce3ef",
-          action: { hover: "#eef4ff", selected: "#e8f0fe" },
+          background: { default: "#fff7f8", paper: "#ffffff" },
+          text: { primary: "#2b1117", secondary: "#6c4650" },
+          divider: "#f0d9df",
+          action: { hover: "#fff0f3", selected: "#ffe1e7" },
         };
 
   return createTheme({
@@ -79,9 +79,9 @@ export function createAppTheme({ mode, highContrast }: AppThemeOptions) {
         styleOverrides: {
           root: { minHeight: 40, borderRadius: 10, letterSpacing: 0 },
           contained: {
-            boxShadow: isDark ? "0 2px 6px rgb(0 0 0 / 32%)" : "0 2px 5px rgb(11 87 208 / 22%)",
+            boxShadow: isDark ? "0 2px 6px rgb(0 0 0 / 32%)" : "0 2px 5px rgb(224 0 43 / 24%)",
             "&:hover": {
-              boxShadow: isDark ? "0 4px 10px rgb(0 0 0 / 42%)" : "0 4px 10px rgb(11 87 208 / 28%)",
+              boxShadow: isDark ? "0 4px 10px rgb(0 0 0 / 42%)" : "0 4px 10px rgb(224 0 43 / 30%)",
             },
           },
         },

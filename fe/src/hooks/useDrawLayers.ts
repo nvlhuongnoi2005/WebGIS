@@ -98,54 +98,54 @@ function ensureDrawLayers(map: maplibregl.Map) {
     map,
     "drawings-fill-layer",
     DRAWINGS_SOURCE_ID,
-    "#e65100",
+    "#e0002b",
     0.18
   );
   addLineLayer(
     map,
     "drawings-line-layer",
     DRAWINGS_SOURCE_ID,
-    "#e65100",
+    "#a90020",
     3,
     0.9
   );
-  addPointLayer(map, "drawings-point-layer", DRAWINGS_SOURCE_ID, "#e65100");
+  addPointLayer(map, "drawings-point-layer", DRAWINGS_SOURCE_ID, "#e0002b");
 
   addFillLayer(
     map,
     "drawings-selection-fill-layer",
     SELECTION_SOURCE_ID,
-    "#1976d2",
+    "#ff5b75",
     0.28
   );
   addLineLayer(
     map,
     "drawings-selection-line-layer",
     SELECTION_SOURCE_ID,
-    "#1976d2",
+    "#ff5b75",
     5,
     1
   );
-  addPointLayer(map, "drawings-selection-point-layer", SELECTION_SOURCE_ID, "#1976d2");
+  addPointLayer(map, "drawings-selection-point-layer", SELECTION_SOURCE_ID, "#ff5b75");
 
   addFillLayer(
     map,
     "drawings-draft-fill-layer",
     DRAFT_SOURCE_ID,
-    "#1976d2",
+    "#ff5b75",
     0.12
   );
   addLineLayer(
     map,
     "drawings-draft-line-layer",
     DRAFT_SOURCE_ID,
-    "#1976d2",
+    "#ff5b75",
     4,
     1,
     [2, 1]
   );
-  addPointLayer(map, "drawings-vertices-layer", VERTICES_SOURCE_ID, "#1976d2");
-  addPointLayer(map, "drawings-draft-vertices-layer", DRAFT_VERTICES_SOURCE_ID, "#1976d2");
+  addPointLayer(map, "drawings-vertices-layer", VERTICES_SOURCE_ID, "#ff5b75");
+  addPointLayer(map, "drawings-draft-vertices-layer", DRAFT_VERTICES_SOURCE_ID, "#ff5b75");
 
   // Custom editing affordances must remain above the basemap and vector
   // overlay layers, including after a style diff preserves an older layer.

@@ -90,7 +90,7 @@ function ensureMeasureLayers(
       type: "fill",
       source: "measure-area",
       paint: {
-        "fill-color": "#1976d2",
+        "fill-color": "#e0002b",
         "fill-opacity": 0.18,
       },
     });
@@ -106,7 +106,7 @@ function ensureMeasureLayers(
         "line-cap": "round",
       },
       paint: {
-        "line-color": "#1976d2",
+        "line-color": "#e0002b",
         "line-width": 3,
         "line-opacity": 0.9,
       },
@@ -121,7 +121,7 @@ function ensureMeasureLayers(
       paint: {
         "circle-radius": 6,
         "circle-color": "#ffffff",
-        "circle-stroke-color": "#1976d2",
+        "circle-stroke-color": "#e0002b",
         "circle-stroke-width": 3,
       },
     });
