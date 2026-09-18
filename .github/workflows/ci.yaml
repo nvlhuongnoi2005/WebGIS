@@ -7,8 +7,8 @@ on:
     branches: [main]
   workflow_dispatch:
 
-# This initial CI workflow only validates code. Image publishing and Kubernetes
-# deployment remain the responsibility of later, explicitly reviewed workflows.
+# Pull requests only validate code. A successful push to main publishes immutable
+# images and records their SHA tags in the GitOps manifests for Argo CD.
 permissions:
   contents: read
 
@@ -104,3 +104,43 @@ jobs:
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
+
+  update-deployment-images:
+    name: Update GitOps image tags
+    needs: publish-images
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Ensure main has not advanced during the build
+        run: test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+
+      - name: Set immutable image tags in manifests
+        env:
+          IMAGE_TAG: sha-${{ github.sha }}
+          IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/webgis
+        run: |
+          sed -i -E "s|(image: ${IMAGE_PREFIX}/frontend):sha-[0-9a-f]{40}|\\1:${IMAGE_TAG}|" deployment/frontend.yaml
+          sed -i -E "s|(image: ${IMAGE_PREFIX}/controller):sha-[0-9a-f]{40}|\\1:${IMAGE_TAG}|" deployment/controller.yaml
+          grep -F "image: ${IMAGE_PREFIX}/frontend:${IMAGE_TAG}" deployment/frontend.yaml
+          grep -F "image: ${IMAGE_PREFIX}/controller:${IMAGE_TAG}" deployment/controller.yaml
+
+      - name: Commit manifest update
+        run: |
+          if git diff --quiet -- deployment/frontend.yaml deployment/controller.yaml; then
+            echo "Image tags already match this build."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add deployment/frontend.yaml deployment/controller.yaml
+          git commit -m "chore(deploy): use images for ${GITHUB_SHA} [skip ci]"
+          git push origin HEAD:main
