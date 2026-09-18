@@ -216,7 +216,7 @@
     "loginTitle": "Welcome back",
     "loginDescription": "Sign in to open your map workspace.",
     "registerTitle": "Create an account",
-    "registerDescription": "Register to save a local session and start mapping.",
+    "registerDescription": "Register to open your map workspace.",
     "name": "Full name",
     "dateOfBirth": "Date of birth",
     "phone": "Phone number",
