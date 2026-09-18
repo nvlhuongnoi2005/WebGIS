@@ -82,6 +82,13 @@ func suggestionRank(category string, importance float64) float64 {
 	return rank
 }
 
+func suggestionIsArea(category string) bool {
+	if strings.HasPrefix(category, "boundary:") || strings.HasPrefix(category, "place:") {
+		return true
+	}
+	return category == "water:lake" || category == "water:reservoir"
+}
+
 func suggestionPlaceName(name, address string) string {
 	address = strings.TrimSpace(address)
 	if address == "" {
@@ -200,7 +207,7 @@ func (server *Server) suggestions(response http.ResponseWriter, request *http.Re
 		}
 		results = append(results, map[string]any{
 			"id": "es-" + hit.ID, "type": "Feature", "place_name": suggestionPlaceName(hit.Source.Name, hit.Source.Address), "text": hit.Source.Name, "context": hit.Source.Address,
-			"category": hit.Source.Category,
+			"is_area": suggestionIsArea(hit.Source.Category),
 			"center": hit.Source.Location, "geometry": map[string]any{"type": "Point", "coordinates": hit.Source.Location},
 		})
 	}

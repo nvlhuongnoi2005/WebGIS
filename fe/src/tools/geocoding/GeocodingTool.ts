@@ -16,8 +16,6 @@ export interface GeocodingFeature {
   nominatim: {
     osmType?: string;
     osmId?: number;
-    category?: string;
-    type?: string;
     address?: Record<string, string>;
     namedetails?: Record<string, string>;
     extratags?: Record<string, string>;
@@ -30,8 +28,8 @@ export interface GeocodingSuggestion {
   place_name: string;
   text: string;
   context?: string;
-  category?: string;
   center: MapCoordinates;
+  isArea: boolean;
   resolveQuery: string;
 }
 
@@ -44,9 +42,6 @@ interface NominatimResult {
   display_name: string;
   name?: string;
   boundingbox?: [string, string, string, string];
-  category?: string;
-  type?: string;
-  addresstype?: string;
   address?: Record<string, string>;
   namedetails?: Record<string, string>;
   extratags?: Record<string, string>;
@@ -58,8 +53,8 @@ interface SuggestionResult {
   place_name?: string;
   text?: string;
   context?: string;
-  category?: string;
   center?: unknown;
+  is_area?: boolean;
 }
 
 const NOMINATIM_URL = "/api/nominatim";
@@ -150,8 +145,8 @@ export async function fetchGeocodingSuggestions(
       place_name: placeName,
       text: result.text?.trim() || placeName,
       context: result.context?.trim(),
-      category: result.category?.trim(),
       center: result.center,
+      isArea: result.is_area === true,
       resolveQuery: placeName,
     }];
   });
@@ -221,8 +216,6 @@ export async function fetchGeocoding(
       nominatim: {
         osmType: result.osm_type,
         osmId: result.osm_id,
-        category: result.category,
-        type: result.type || result.addresstype,
         address: result.address,
         namedetails: result.namedetails,
         extratags: result.extratags,

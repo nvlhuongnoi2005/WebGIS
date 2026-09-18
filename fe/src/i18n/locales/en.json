@@ -6,7 +6,6 @@
     "coordinates": "Coordinates",
     "area": "Area",
     "address": "Address",
-    "type": "Type",
     "directions": "Directions to here"
   },
   "tools": {

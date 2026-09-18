@@ -60,34 +60,6 @@ function isGeocodingFeature(result: SearchResult): result is GeocodingFeature {
   return "geometry" in result;
 }
 
-function getPlaceType(type: string | undefined, category: string | undefined, language: string) {
-  const placeType = type || category?.split(":")[1];
-  if (!placeType) return "";
-
-  const vietnameseTypes: Record<string, string> = {
-    administrative: "Ranh giới hành chính",
-    city: "Thành phố",
-    town: "Thị trấn",
-    village: "Làng / xã",
-    suburb: "Phường / khu vực",
-    neighbourhood: "Khu dân cư",
-    lake: "Hồ",
-    reservoir: "Hồ chứa",
-    river: "Sông",
-    restaurant: "Nhà hàng",
-    school: "Trường học",
-    hospital: "Bệnh viện",
-  };
-  const normalizedType = placeType.replaceAll("_", " ");
-  return language.toLowerCase().startsWith("vi")
-    ? (vietnameseTypes[placeType] || normalizedType)
-    : normalizedType;
-}
-
-function isAreaCategory(category?: string) {
-  return /^(boundary:|place:(city|town|village|suburb|neighbourhood|county|state)|water:(lake|reservoir))/.test(category || "");
-}
-
 interface SearchBarProps {
   activeTool: MapTool;
   map: MutableRefObject<maplibregl.Map | null>;
@@ -115,15 +87,11 @@ function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) 
       return feature.context || feature.place_name;
     }
 
-    const language = i18n.resolvedLanguage || i18n.language;
-    const locationLabel = isAreaCategory(feature.category)
+    const locationLabel = feature.isArea
       ? t("search.area")
       : t("search.address");
     const location = feature.context?.trim();
-    const placeType = getPlaceType(undefined, feature.category, language);
-    const details = location ? `${locationLabel}: ${location}` : locationLabel;
-
-    return placeType ? `${details} · ${t("search.type")}: ${placeType}` : details;
+    return location ? `${locationLabel}: ${location}` : locationLabel;
   };
 
   const clearMarker = () => {
@@ -558,11 +526,6 @@ function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) 
             </Typography>
             {(() => {
               const address = formatGeocodingAddress(selectedFeature.nominatim.address);
-              const featureType = getPlaceType(
-                selectedFeature.nominatim.type,
-                selectedFeature.nominatim.category,
-                i18n.resolvedLanguage || i18n.language
-              );
               const locationLabel = selectedFeature.isArea
                 ? t("search.area")
                 : t("search.address");
@@ -575,14 +538,6 @@ function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) 
                     </Box>{" "}
                     {address || selectedFeature.context || selectedFeature.place_name}
                   </Typography>
-                  {featureType && (
-                    <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.35 }}>
-                      <Box component="span" sx={{ color: "text.primary", fontWeight: 600 }}>
-                        {t("search.type")}:
-                      </Box>{" "}
-                      {featureType}
-                    </Typography>
-                  )}
                 </Stack>
               );
             })()}
