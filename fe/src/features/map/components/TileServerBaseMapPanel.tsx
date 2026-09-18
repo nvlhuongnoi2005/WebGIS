@@ -1,4 +1,4 @@
-import { Layers3, X } from "lucide-react";
+import { Layers3, RefreshCw, X } from "lucide-react";
 import type { ReactNode } from "react";
 import {
   Box,
@@ -74,9 +74,20 @@ function TileServerBaseMapPanel({
                 : t("layers.tileServerLayerDescription")}
             </Typography>
           </Box>
-          <IconButton size="small" onClick={onClose} aria-label={t("layers.closeBaseMapPanel")}>
-            <X size={18} />
-          </IconButton>
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<RefreshCw size={15} />}
+              disabled={status === "loading"}
+              onClick={onReload}
+            >
+              {t("layers.reloadTileServer")}
+            </Button>
+            <IconButton size="small" onClick={onClose} aria-label={t("layers.closeBaseMapPanel")}>
+              <X size={18} />
+            </IconButton>
+          </Stack>
         </Stack>
 
         {status === "loading" && (

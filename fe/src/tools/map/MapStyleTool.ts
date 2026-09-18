@@ -193,7 +193,9 @@ async function fetchTileServerRootCatalog(
 export async function fetchTileServerBaseMaps(
   signal?: AbortSignal
 ): Promise<TileServerBaseMap[]> {
-  const response = await fetch(TILE_SERVER_CATALOG_URL, { signal });
+  // This action is explicitly triggered by the user from the layer panel, so
+  // bypass browser caches and inspect the Tile Server's current datasets.
+  const response = await fetch(TILE_SERVER_CATALOG_URL, { signal, cache: "no-store" });
 
   if (response.ok && response.headers.get("content-type")?.includes("json")) {
     const payload = await response.json() as unknown;
