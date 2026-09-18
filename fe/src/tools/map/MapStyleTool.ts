@@ -7,6 +7,7 @@ export interface TileServerBaseMap {
   maxzoom: number;
   tileSize: number;
   kind: "raster" | "vector";
+  role: "basemap" | "overlay";
   sourceLayer?: string;
 }
 
@@ -17,6 +18,7 @@ export const DEFAULT_TILE_SERVER_BASE_MAP: TileServerBaseMap = {
   maxzoom: 7,
   tileSize: 256,
   kind: "raster",
+  role: "basemap",
 };
 
 const TILE_SERVER_URL = "/api/tiles";
@@ -59,16 +61,6 @@ type TileServerCatalogItem = {
   source_layer?: unknown;
 };
 
-const TILE_SERVER_OVERLAY_IDS = new Set(
-  // vietnam_osm is a vector overlay. Keep this safe default for production
-  // images too; Vite environment variables are baked in while building and
-  // may be absent from a deployment environment.
-  (import.meta.env.VITE_TILE_SERVER_OVERLAY_IDS || "vietnam_osm")
-    .split(",")
-    .map((id: string) => id.trim())
-    .filter(Boolean)
-);
-
 function getCatalogItems(payload: unknown): unknown[] {
   if (Array.isArray(payload)) {
     return payload;
@@ -103,6 +95,7 @@ function normalizeCatalogItem(item: unknown, index: number): TileServerBaseMap {
       maxzoom: 7,
       tileSize: 256,
       kind: "raster",
+      role: "basemap",
     };
   }
 
@@ -125,6 +118,9 @@ function normalizeCatalogItem(item: unknown, index: number): TileServerBaseMap {
     ? "vector"
     : "raster";
   const sourceLayer = record.sourceLayer ?? record.source_layer;
+  const role = String(record.type ?? "").trim().toLowerCase() === "overlay"
+    ? "overlay"
+    : "basemap";
 
   return {
     id,
@@ -133,6 +129,7 @@ function normalizeCatalogItem(item: unknown, index: number): TileServerBaseMap {
     maxzoom: positiveNumber(record.maxzoom ?? record.maxZoom, 7),
     tileSize: positiveNumber(record.tileSize, 256),
     kind,
+    role,
     sourceLayer: typeof sourceLayer === "string" && sourceLayer.trim()
       ? sourceLayer.trim()
       : undefined,
@@ -140,7 +137,7 @@ function normalizeCatalogItem(item: unknown, index: number): TileServerBaseMap {
 }
 
 export function isTileServerOverlay(dataset: TileServerBaseMap) {
-  return TILE_SERVER_OVERLAY_IDS.has(dataset.id);
+  return dataset.role === "overlay";
 }
 
 export function splitTileServerDatasets(datasets: TileServerBaseMap[]) {
@@ -176,6 +173,7 @@ async function fetchTileServerRootCatalog(
           id,
           name: tileJson.name,
           tilePath: Array.isArray(tileJson.tiles) ? tileJson.tiles[0] : undefined,
+          type: tileJson.type,
           maxzoom: tileJson.maxzoom,
           tileSize: tileJson.tileSize,
         }, index);

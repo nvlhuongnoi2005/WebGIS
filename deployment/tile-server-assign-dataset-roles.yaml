@@ -1,0 +1,49 @@
+# This one-shot Job writes the TileJSON role into MBTiles metadata. The
+# frontend uses type=overlay dynamically after refreshing the tile catalog.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: tile-server-assign-dataset-roles
+  namespace: webgis
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 86400
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: assign-roles
+          image: ghcr.io/osgeo/gdal:ubuntu-small-latest
+          command: ["/bin/bash", "-ec"]
+          args:
+            - |
+              python3 - <<'PY'
+              import sqlite3
+
+              datasets = {
+                  "/tile-data/mbtiles/asia_full/asia_full.mbtiles": "baselayer",
+                  "/tile-data/mbtiles/vietnam_osm/vietnam_osm.mbtiles": "overlay",
+              }
+
+              for path, role in datasets.items():
+                  connection = sqlite3.connect(path)
+                  try:
+                      # MBTiles metadata is not required to make `name`
+                      # unique. Remove legacy values so Tile Server receives
+                      # one authoritative TileJSON type per dataset.
+                      connection.execute("DELETE FROM metadata WHERE name='type'")
+                      connection.execute(
+                          "INSERT INTO metadata(name, value) VALUES('type', ?)",
+                          (role,),
+                      )
+                      connection.commit()
+                  finally:
+                      connection.close()
+              PY
+          volumeMounts:
+            - name: tile-data
+              mountPath: /tile-data
+      volumes:
+        - name: tile-data
+          persistentVolumeClaim:
+            claimName: tile-data
