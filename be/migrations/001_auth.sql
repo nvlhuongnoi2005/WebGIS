@@ -2,6 +2,10 @@
 -- alter spatial tables. pgcrypto is used only for UUID defaults.
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
+-- Keep timestamptz values as absolute instants, but present them in Vietnam time
+-- for connections to the authentication database.
+ALTER DATABASE webgis SET timezone TO 'Asia/Ho_Chi_Minh';
+
 CREATE TABLE IF NOT EXISTS users (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   email text NOT NULL,
