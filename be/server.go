@@ -7,6 +7,7 @@ import (
 	"errors"
 	"io"
 	"log/slog"
+	"math"
 	"net"
 	"net/http"
 	"net/mail"
@@ -29,6 +30,14 @@ type profileInput struct {
 	Email     *string `json:"email"`
 	Phone     *string `json:"phone"`
 	AvatarURL *string `json:"avatarUrl"`
+}
+type elevationLocation struct {
+	Latitude  float64 `json:"lat"`
+	Longitude float64 `json:"lon"`
+}
+type elevationInput struct {
+	Shape            []elevationLocation `json:"shape"`
+	ResampleDistance float64             `json:"resample_distance"`
 }
 
 type Server struct {
@@ -551,6 +560,56 @@ func (server *Server) route(response http.ResponseWriter, request *http.Request)
 	_, _ = io.Copy(response, io.LimitReader(workerResponse.Body, 10*1024*1024))
 }
 
+// elevation keeps the Valhalla height service private while returning a bounded,
+// uniformly sampled profile for an authenticated route request.
+func (server *Server) elevation(response http.ResponseWriter, request *http.Request) {
+	claims, ok := server.authenticate(response, request, "route:calculate")
+	if !ok {
+		return
+	}
+	var input elevationInput
+	if err := decodeJSON(request, &input); err != nil || len(input.Shape) < 2 || len(input.Shape) > 1000 || input.ResampleDistance < 25 || input.ResampleDistance > 1000 {
+		clientError(response, 400, "Invalid elevation request")
+		return
+	}
+	for _, location := range input.Shape {
+		if math.IsNaN(location.Latitude) || math.IsInf(location.Latitude, 0) || math.IsNaN(location.Longitude) || math.IsInf(location.Longitude, 0) || location.Latitude < -90 || location.Latitude > 90 || location.Longitude < -180 || location.Longitude > 180 {
+			clientError(response, 400, "Invalid elevation request")
+			return
+		}
+	}
+	body, err := json.Marshal(map[string]any{
+		"shape":             input.Shape,
+		"range":             true,
+		"resample_distance": input.ResampleDistance,
+		"height_precision":  1,
+	})
+	if err != nil {
+		clientError(response, 500, "Internal server error")
+		return
+	}
+	workerRequest, err := http.NewRequestWithContext(request.Context(), http.MethodPost, server.config.ValhallaURL+"/height", strings.NewReader(string(body)))
+	if err != nil {
+		clientError(response, 502, "Worker unavailable")
+		return
+	}
+	workerRequest.Header.Set("Content-Type", "application/json")
+	workerRequest.Header.Set("X-Internal-User-Id", claims.Subject)
+	workerRequest.Header.Set("X-Internal-Session-Id", claims.SessionID)
+	workerRequest.Header.Set("X-Internal-Scopes", strings.Join(claims.Scopes, " "))
+	workerRequest.Header.Set("X-Internal-Plan", claims.Plan)
+	workerRequest.Header.Set("X-Request-Id", request.Header.Get("X-Request-Id"))
+	workerResponse, err := server.workerClient.Do(workerRequest)
+	if err != nil {
+		clientError(response, 502, "Worker unavailable")
+		return
+	}
+	defer workerResponse.Body.Close()
+	response.Header().Set("Content-Type", workerResponse.Header.Get("Content-Type"))
+	response.WriteHeader(workerResponse.StatusCode)
+	_, _ = io.Copy(response, io.LimitReader(workerResponse.Body, 2*1024*1024))
+}
+
 // tileProxy keeps the worker private: browser requests always enter through the
 // Controller, while the Controller is the only workload allowed to reach Tile Server.
 // Basemap files are public, cacheable map assets; protected operations remain under
@@ -756,6 +815,8 @@ func (server *Server) ServeHTTP(response http.ResponseWriter, request *http.Requ
 		server.profile(response, request, true)
 	case request.Method == http.MethodPost && request.URL.Path == "/api/gateway/route":
 		server.route(response, request)
+	case request.Method == http.MethodPost && request.URL.Path == "/api/gateway/elevation":
+		server.elevation(response, request)
 	case request.Method == http.MethodGet && request.URL.Path == "/api/gateway/map":
 		if claims, ok := server.authenticate(response, request, "map:read"); ok {
 			writeJSON(response, 200, map[string]any{"user_id": claims.Subject, "plan": claims.Plan, "request_id": request.Header.Get("X-Request-Id")})

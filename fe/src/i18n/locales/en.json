@@ -70,6 +70,16 @@
     "distanceUnit": "km",
     "durationMinutes": "{{count}} min",
     "durationHoursMinutes": "{{hours}} hr {{minutes}} min",
+    "elevation": {
+      "title": "Elevation profile",
+      "loading": "Loading elevation data…",
+      "unavailable": "Elevation data is unavailable for this route.",
+      "chartLabel": "Elevation profile along the route",
+      "highest": "Highest",
+      "lowest": "Lowest",
+      "ascent": "Ascent",
+      "descent": "Descent"
+    },
     "vehicles": {
       "auto": "Car",
       "motorcycle": "Motorcycle",

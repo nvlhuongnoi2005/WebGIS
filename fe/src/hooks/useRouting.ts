@@ -10,6 +10,10 @@ import {
   type RouteResult,
   type RoutingVehicle,
 } from "../tools/routing/RoutingTool";
+import {
+  fetchRouteElevation,
+  type ElevationPoint,
+} from "../tools/routing/ElevationTool";
 import type { MapCoordinates } from "../types/map";
 
 interface UseRoutingOptions {
@@ -31,6 +35,8 @@ export function useRouting({ map, mapLoaded, mapStyleVersion }: UseRoutingOption
   const [destination, setDestination] = useState<MapCoordinates | null>(null);
   const [vehicle, setVehicle] = useState<RoutingVehicle>("auto");
   const [route, setRoute] = useState<RouteResult | null>(null);
+  const [elevation, setElevation] = useState<ElevationPoint[]>([]);
+  const [isElevationLoading, setIsElevationLoading] = useState(false);
   const [status, setStatus] = useState<RoutingStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const requestController = useRef<AbortController | null>(null);
@@ -41,6 +47,8 @@ export function useRouting({ map, mapLoaded, mapStyleVersion }: UseRoutingOption
     setOrigin(null);
     setDestination(null);
     setRoute(null);
+    setElevation([]);
+    setIsElevationLoading(false);
     setStatus("idle");
     setError(null);
   }, []);
@@ -49,6 +57,8 @@ export function useRouting({ map, mapLoaded, mapStyleVersion }: UseRoutingOption
     requestController.current?.abort();
     setOrigin(point);
     setRoute(null);
+    setElevation([]);
+    setIsElevationLoading(false);
     setStatus("idle");
     setError(null);
   }, []);
@@ -57,6 +67,8 @@ export function useRouting({ map, mapLoaded, mapStyleVersion }: UseRoutingOption
     requestController.current?.abort();
     setDestination(point);
     setRoute(null);
+    setElevation([]);
+    setIsElevationLoading(false);
     setStatus("idle");
     setError(null);
   }, []);
@@ -72,6 +84,8 @@ export function useRouting({ map, mapLoaded, mapStyleVersion }: UseRoutingOption
     lastRequestedLanguage.current = valhallaLanguage;
     setStatus("loading");
     setError(null);
+    setElevation([]);
+    setIsElevationLoading(false);
 
     try {
       const result = await fetchValhallaRoute(
@@ -84,6 +98,27 @@ export function useRouting({ map, mapLoaded, mapStyleVersion }: UseRoutingOption
       if (!controller.signal.aborted) {
         setRoute(result);
         setStatus("success");
+        setIsElevationLoading(true);
+        try {
+          const profile = await fetchRouteElevation(
+            result.geometry.geometry.coordinates.map(([longitude, latitude]) => [longitude, latitude] as MapCoordinates),
+            result.summary.distanceKm,
+            controller.signal
+          );
+          if (!controller.signal.aborted) {
+            setElevation(profile);
+          }
+        } catch {
+          if (controller.signal.aborted) {
+            return;
+          }
+          // A route remains useful even if a DEM tile is unavailable.
+          setElevation([]);
+        } finally {
+          if (!controller.signal.aborted) {
+            setIsElevationLoading(false);
+          }
+        }
       }
     } catch (requestError) {
       if (controller.signal.aborted) {
@@ -115,6 +150,8 @@ export function useRouting({ map, mapLoaded, mapStyleVersion }: UseRoutingOption
     }
 
     setRoute(null);
+    setElevation([]);
+    setIsElevationLoading(false);
     setStatus("idle");
     setError(null);
   }, [destination, origin, requestRoute, status]);
@@ -150,6 +187,8 @@ export function useRouting({ map, mapLoaded, mapStyleVersion }: UseRoutingOption
     setDestination: setRoutingDestination,
     vehicle,
     route,
+    elevation,
+    isElevationLoading,
     status,
     error,
     setVehicle: changeVehicle,

@@ -70,6 +70,16 @@
     "distanceUnit": "km",
     "durationMinutes": "{{count}} phút",
     "durationHoursMinutes": "{{hours}} giờ {{minutes}} phút",
+    "elevation": {
+      "title": "Mặt cắt độ cao",
+      "loading": "Đang tải dữ liệu độ cao…",
+      "unavailable": "Chưa có dữ liệu độ cao cho tuyến này.",
+      "chartLabel": "Mặt cắt độ cao theo tuyến đường",
+      "highest": "Cao nhất",
+      "lowest": "Thấp nhất",
+      "ascent": "Tổng leo dốc",
+      "descent": "Tổng xuống dốc"
+    },
     "vehicles": {
       "auto": "Ô tô",
       "motorcycle": "Xe máy",

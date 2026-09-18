@@ -255,9 +255,11 @@ function MapView() {
           vehicle={routing.vehicle}
           status={routing.status}
           error={routing.error}
-          distanceKm={routing.route?.summary.distanceKm}
-          timeSeconds={routing.route?.summary.timeSeconds}
-          instructions={routing.route?.instructions}
+            distanceKm={routing.route?.summary.distanceKm}
+            timeSeconds={routing.route?.summary.timeSeconds}
+            instructions={routing.route?.instructions}
+            elevation={routing.elevation}
+            isElevationLoading={routing.isElevationLoading}
           onOriginChange={routing.setOrigin}
           onDestinationChange={routing.setDestination}
           onVehicleChange={routing.setVehicle}

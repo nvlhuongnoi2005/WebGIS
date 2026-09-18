@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-import type { ChangeEvent } from "react";
+import type { ChangeEvent, ReactNode } from "react";
 
 import {
   Alert,
@@ -32,6 +32,8 @@ import {
   RotateCcw,
   Route as RouteIcon,
   Search,
+  TrendingDown,
+  TrendingUp,
   Truck,
   X,
 } from "lucide-react";
@@ -47,6 +49,7 @@ import {
   type RouteInstruction,
   type RoutingVehicle,
 } from "../../../tools/routing/RoutingTool";
+import type { ElevationPoint } from "../../../tools/routing/ElevationTool";
 import { formatDmsCoordinates } from "../../../tools/coordinate/CoordinateTool";
 import type { MapCoordinates } from "../../../types/map";
 import type { RoutingStatus } from "../../../hooks/useRouting";
@@ -60,6 +63,8 @@ interface RoutingPanelProps {
   distanceKm?: number;
   timeSeconds?: number;
   instructions?: RouteInstruction[];
+  elevation?: ElevationPoint[];
+  isElevationLoading?: boolean;
   onOriginChange: (point: MapCoordinates | null) => void;
   onDestinationChange: (point: MapCoordinates | null) => void;
   onVehicleChange: (vehicle: RoutingVehicle) => void;
@@ -90,6 +95,8 @@ function RoutingPanel({
   distanceKm,
   timeSeconds,
   instructions = [],
+  elevation = [],
+  isElevationLoading = false,
   onOriginChange,
   onDestinationChange,
   onVehicleChange,
@@ -220,6 +227,10 @@ function RoutingPanel({
           </Stack>
         )}
 
+        {status === "success" && (
+          <ElevationProfile points={elevation} isLoading={isElevationLoading} />
+        )}
+
         {status === "success" && instructions.length > 0 && (
           <Box>
             <Divider sx={{ mb: 1 }} />
@@ -296,6 +307,67 @@ function RoutingPanel({
         )}
       </Stack>
     </Paper>
+  );
+}
+
+function ElevationProfile({ points, isLoading }: { points: ElevationPoint[]; isLoading: boolean }) {
+  const { t } = useTranslation();
+  const knownPoints = points.filter((point): point is ElevationPoint & { elevationM: number } => point.elevationM !== null);
+  if (isLoading) {
+    return (
+      <Stack direction="row" spacing={1} sx={{ alignItems: "center", color: "text.secondary" }}>
+        <CircularProgress size={15} />
+        <Typography variant="caption">{t("routing.elevation.loading")}</Typography>
+      </Stack>
+    );
+  }
+  if (knownPoints.length < 2) {
+    return <Typography variant="caption" color="text.secondary">{t("routing.elevation.unavailable")}</Typography>;
+  }
+
+  const elevations = knownPoints.map(point => point.elevationM);
+  const highest = Math.max(...elevations);
+  const lowest = Math.min(...elevations);
+  let ascent = 0;
+  let descent = 0;
+  for (let index = 1; index < knownPoints.length; index += 1) {
+    const change = knownPoints[index].elevationM - knownPoints[index - 1].elevationM;
+    if (change > 0) ascent += change;
+    if (change < 0) descent += Math.abs(change);
+  }
+  const endDistance = Math.max(knownPoints[knownPoints.length - 1].distanceM, 1);
+  const elevationRange = Math.max(highest - lowest, 1);
+  const chartPoints = knownPoints.map(point => {
+    const x = 4 + (point.distanceM / endDistance) * 312;
+    const y = 68 - ((point.elevationM - lowest) / elevationRange) * 56;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(" ");
+
+  return (
+    <Box sx={{ p: 1.25, border: "1px solid", borderColor: "divider", borderRadius: 2 }}>
+      <Typography variant="caption" sx={{ display: "block", mb: 0.75, fontWeight: 700, color: "text.secondary", textTransform: "uppercase", letterSpacing: 0.5 }}>
+        {t("routing.elevation.title")}
+      </Typography>
+      <Box component="svg" viewBox="0 0 320 72" role="img" aria-label={t("routing.elevation.chartLabel")} sx={{ display: "block", width: "100%", height: 76, mb: 0.75 }}>
+        <path d="M4 68H316" stroke="currentColor" strokeOpacity="0.16" />
+        <polyline points={chartPoints} fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+      </Box>
+      <Stack direction="row" spacing={1.25} useFlexGap sx={{ flexWrap: "wrap" }}>
+        <ElevationMetric label={t("routing.elevation.highest")} value={highest} />
+        <ElevationMetric label={t("routing.elevation.lowest")} value={lowest} />
+        <ElevationMetric label={t("routing.elevation.ascent")} value={ascent} icon={<TrendingUp size={14} />} />
+        <ElevationMetric label={t("routing.elevation.descent")} value={descent} icon={<TrendingDown size={14} />} />
+      </Stack>
+    </Box>
+  );
+}
+
+function ElevationMetric({ label, value, icon }: { label: string; value: number; icon?: ReactNode }) {
+  return (
+    <Stack direction="row" spacing={0.35} sx={{ alignItems: "center", color: "text.secondary" }}>
+      {icon}
+      <Typography variant="caption">{label}: <Box component="span" sx={{ fontWeight: 700, color: "text.primary" }}>{Math.round(value)} m</Box></Typography>
+    </Stack>
   );
 }
 
