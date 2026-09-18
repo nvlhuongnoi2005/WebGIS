@@ -4,6 +4,9 @@
     "button": "Tìm kiếm",
     "clearTitle": "Xóa tìm kiếm",
     "coordinates": "Tọa độ",
+    "area": "Khu vực",
+    "address": "Địa chỉ",
+    "type": "Loại",
     "directions": "Chỉ đường đến đây"
   },
   "tools": {

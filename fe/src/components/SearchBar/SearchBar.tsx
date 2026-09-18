@@ -38,6 +38,7 @@ import { formatDmsCoordinates } from "../../tools/coordinate/CoordinateTool";
 import {
   fetchGeocoding as fetchGeocodingResults,
   fetchGeocodingSuggestions,
+  formatGeocodingAddress,
   getGeocodingLanguage,
 } from "../../tools/geocoding/GeocodingTool";
 import type {
@@ -57,6 +58,30 @@ type SearchResult = GeocodingFeature | GeocodingSuggestion;
 
 function isGeocodingFeature(result: SearchResult): result is GeocodingFeature {
   return "geometry" in result;
+}
+
+function getFeatureType(feature: GeocodingFeature, language: string) {
+  const type = feature.nominatim.type || feature.nominatim.category?.split(":")[1];
+  if (!type) return "";
+
+  const vietnameseTypes: Record<string, string> = {
+    administrative: "Ranh giới hành chính",
+    city: "Thành phố",
+    town: "Thị trấn",
+    village: "Làng / xã",
+    suburb: "Phường / khu vực",
+    neighbourhood: "Khu dân cư",
+    lake: "Hồ",
+    reservoir: "Hồ chứa",
+    river: "Sông",
+    restaurant: "Nhà hàng",
+    school: "Trường học",
+    hospital: "Bệnh viện",
+  };
+  const normalizedType = type.replaceAll("_", " ");
+  return language.toLowerCase().startsWith("vi")
+    ? (vietnameseTypes[type] || normalizedType)
+    : normalizedType;
 }
 
 interface SearchBarProps {
@@ -511,13 +536,35 @@ function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) 
             <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
               {selectedFeature.text || selectedFeature.place_name}
             </Typography>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ lineHeight: 1.35 }}
-            >
-              {selectedFeature.context || selectedFeature.place_name}
-            </Typography>
+            {(() => {
+              const address = formatGeocodingAddress(selectedFeature.nominatim.address);
+              const featureType = getFeatureType(
+                selectedFeature,
+                i18n.resolvedLanguage || i18n.language
+              );
+              const locationLabel = selectedFeature.isArea
+                ? t("search.area")
+                : t("search.address");
+
+              return (
+                <Stack spacing={0.4}>
+                  <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.35 }}>
+                    <Box component="span" sx={{ color: "text.primary", fontWeight: 600 }}>
+                      {locationLabel}:
+                    </Box>{" "}
+                    {address || selectedFeature.context || selectedFeature.place_name}
+                  </Typography>
+                  {featureType && (
+                    <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.35 }}>
+                      <Box component="span" sx={{ color: "text.primary", fontWeight: 600 }}>
+                        {t("search.type")}:
+                      </Box>{" "}
+                      {featureType}
+                    </Typography>
+                  )}
+                </Stack>
+              );
+            })()}
             <Typography variant="caption" color="text.secondary">
               {t("search.coordinates")}: {formatDmsCoordinates(
                 selectedFeature.center[0],

@@ -96,7 +96,10 @@ function isVietnameseLanguage(acceptLanguage: string) {
   return acceptLanguage.toLowerCase().split(",").some(language => language.trim().startsWith("vi"));
 }
 
-function formatAddress(address: Record<string, string> | undefined, fallback: string) {
+export function formatGeocodingAddress(
+  address: Record<string, string> | undefined,
+  fallback = ""
+) {
   if (!address) return fallback;
 
   const seen = new Set<string>();
@@ -191,7 +194,7 @@ export async function fetchGeocoding(
       ? result.geojson
       : fallbackGeometry;
     const isArea = isAreaGeometry(geometry);
-    const address = formatAddress(result.address, result.display_name);
+    const address = formatGeocodingAddress(result.address, result.display_name);
     const label = isArea
       ? (isVietnameseLanguage(acceptLanguage) ? "Khu vực" : "Area")
       : (isVietnameseLanguage(acceptLanguage) ? "Địa chỉ" : "Address");
