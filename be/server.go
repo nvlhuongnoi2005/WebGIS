@@ -296,7 +296,20 @@ func (server *Server) login(response http.ResponseWriter, request *http.Request)
 		hash = user.PasswordHash
 	}
 	validPassword := server.passwords.Verify(hash, input.Password)
-	if err != nil || !validPassword || user.Status != "ACTIVE" {
+	if err != nil || !validPassword {
+		clientError(response, 401, "Invalid credentials")
+		return
+	}
+	switch user.Status {
+	case "DISABLED":
+		writeJSON(response, http.StatusForbidden, map[string]string{"error": "Account is disabled", "code": "accountDisabled"})
+		return
+	case "LOCKED":
+		writeJSON(response, http.StatusLocked, map[string]string{"error": "Account is locked", "code": "accountLocked"})
+		return
+	case "ACTIVE":
+		// The account may continue with session creation below.
+	default:
 		clientError(response, 401, "Invalid credentials")
 		return
 	}
@@ -884,7 +897,7 @@ func (server *Server) route(response http.ResponseWriter, request *http.Request)
 	}
 	workerRequest, err := http.NewRequestWithContext(ctx, http.MethodPost, server.config.ValhallaURL+"/route", strings.NewReader(string(body)))
 	if err != nil {
-		clientError(response, 502, "Worker unavailable")
+		clientError(response, 502, "Server unavailable")
 		return
 	}
 	workerRequest.Header.Set("Content-Type", "application/json")
@@ -895,7 +908,7 @@ func (server *Server) route(response http.ResponseWriter, request *http.Request)
 	workerRequest.Header.Set("X-Request-Id", request.Header.Get("X-Request-Id"))
 	workerResponse, err := server.workerClient.Do(workerRequest)
 	if err != nil {
-		clientError(response, 502, "Worker unavailable")
+		clientError(response, 502, "Server unavailable")
 		return
 	}
 	defer workerResponse.Body.Close()
@@ -934,7 +947,7 @@ func (server *Server) elevation(response http.ResponseWriter, request *http.Requ
 	}
 	workerRequest, err := http.NewRequestWithContext(request.Context(), http.MethodPost, server.config.ValhallaURL+"/height", strings.NewReader(string(body)))
 	if err != nil {
-		clientError(response, 502, "Worker unavailable")
+		clientError(response, 502, "Server unavailable")
 		return
 	}
 	workerRequest.Header.Set("Content-Type", "application/json")
@@ -945,7 +958,7 @@ func (server *Server) elevation(response http.ResponseWriter, request *http.Requ
 	workerRequest.Header.Set("X-Request-Id", request.Header.Get("X-Request-Id"))
 	workerResponse, err := server.workerClient.Do(workerRequest)
 	if err != nil {
-		clientError(response, 502, "Worker unavailable")
+		clientError(response, 502, "Server unavailable")
 		return
 	}
 	defer workerResponse.Body.Close()
@@ -1036,7 +1049,7 @@ func (server *Server) nominatimProxy(response http.ResponseWriter, request *http
 	}
 	workerRequest, err := http.NewRequestWithContext(request.Context(), request.Method, target, nil)
 	if err != nil {
-		clientError(response, http.StatusBadGateway, "Geocoding service unavailable")
+		clientError(response, http.StatusBadGateway, "Server unavailable")
 		return
 	}
 	for _, header := range []string{"Accept", "Accept-Encoding", "If-Modified-Since", "If-None-Match"} {
@@ -1047,7 +1060,7 @@ func (server *Server) nominatimProxy(response http.ResponseWriter, request *http
 	workerRequest.Header.Set("X-Request-Id", request.Header.Get("X-Request-Id"))
 	workerResponse, err := server.workerClient.Do(workerRequest)
 	if err != nil {
-		clientError(response, http.StatusBadGateway, "Geocoding service unavailable")
+		clientError(response, http.StatusBadGateway, "Server unavailable")
 		return
 	}
 	defer workerResponse.Body.Close()

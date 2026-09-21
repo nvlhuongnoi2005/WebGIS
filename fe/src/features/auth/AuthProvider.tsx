@@ -42,7 +42,11 @@ export function AuthProvider({ children }: PropsWithChildren) {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, password }),
       });
       if (response.status >= 500) return { ok: false, code: "serviceUnavailable" };
-      if (!response.ok) return { ok: false, code: "invalidCredentials" };
+      if (!response.ok) {
+        const payload = await parseResponse(response) as { code?: string } | null;
+        if (payload?.code === "accountDisabled" || payload?.code === "accountLocked") return { ok: false, code: payload.code };
+        return { ok: false, code: "invalidCredentials" };
+      }
       acceptTokenResponse(await parseResponse(response) as TokenResponse);
       return { ok: true };
     } catch { return { ok: false, code: "serviceUnavailable" }; }

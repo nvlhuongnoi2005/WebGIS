@@ -90,9 +90,9 @@
       "taxi": "Taxi"
     },
     "errors": {
-      "requestFailed": "Could not connect to Valhalla.",
-      "noRoute": "Valhalla could not find a suitable route.",
-      "invalidGeometry": "Valhalla returned invalid route geometry.",
+      "requestFailed": "Could not connect to the server.",
+      "noRoute": "No suitable route was found.",
+      "invalidGeometry": "Route data is invalid.",
       "unknown": "Could not find a route."
     }
   },
@@ -247,6 +247,8 @@
     "passwordMismatch": "Passwords do not match.",
     "emailInUse": "This email address is already registered.",
     "invalidCredentials": "Email or password is incorrect.",
+    "accountDisabled": "This account has been disabled. Please contact an administrator.",
+    "accountLocked": "This account has been locked. Please contact an administrator.",
     "registrationFailed": "Unable to create the account. Check the information and try again.",
     "serviceUnavailable": "Authentication service is unavailable. Please try again shortly.",
     "storageFailed": "Could not save your changes. Please try again."

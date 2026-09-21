@@ -175,7 +175,7 @@ export async function fetchGeocoding(
   });
 
   if (!response.ok) {
-    throw new Error(`Geocoding failed with status: ${response.status}`);
+    throw new Error("Could not connect to the server.");
   }
 
   const data = (await response.json()) as NominatimResult[];

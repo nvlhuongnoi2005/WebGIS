@@ -26,7 +26,7 @@ export type AuthResult =
   | { ok: true }
   | {
     ok: false;
-    code: "emailInUse" | "invalidCredentials" | "registrationFailed" | "serviceUnavailable" | "storageFailed";
+    code: "emailInUse" | "invalidCredentials" | "accountDisabled" | "accountLocked" | "registrationFailed" | "serviceUnavailable" | "storageFailed";
   };
 
 export interface AuthContextValue {

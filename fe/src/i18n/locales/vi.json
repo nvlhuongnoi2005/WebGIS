@@ -90,9 +90,9 @@
       "taxi": "Taxi"
     },
     "errors": {
-      "requestFailed": "Không thể kết nối đến Valhalla.",
-      "noRoute": "Valhalla không tìm thấy tuyến đường phù hợp.",
-      "invalidGeometry": "Valhalla trả về hình học tuyến đường không hợp lệ.",
+      "requestFailed": "Không thể kết nối đến server.",
+      "noRoute": "Không tìm thấy tuyến đường phù hợp.",
+      "invalidGeometry": "Dữ liệu tuyến đường không hợp lệ.",
       "unknown": "Không thể tìm đường đi."
     }
   },
@@ -225,6 +225,8 @@
     "passwordMismatch": "Mật khẩu xác nhận không khớp.",
     "emailInUse": "Địa chỉ email này đã được đăng ký.",
     "invalidCredentials": "Email hoặc mật khẩu không đúng.",
+    "accountDisabled": "Tài khoản này đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên.",
+    "accountLocked": "Tài khoản này đã bị khóa. Vui lòng liên hệ quản trị viên.",
     "registrationFailed": "Không thể tạo tài khoản. Hãy kiểm tra thông tin và thử lại.",
     "serviceUnavailable": "Dịch vụ xác thực chưa sẵn sàng. Vui lòng thử lại sau ít phút.",
     "storageFailed": "Không thể lưu thay đổi. Vui lòng thử lại."
