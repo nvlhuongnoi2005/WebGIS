@@ -39,6 +39,20 @@ type elevationInput struct {
 	Shape            []elevationLocation `json:"shape"`
 	ResampleDistance float64             `json:"resample_distance"`
 }
+type billingRecord struct {
+	UserID      string     `json:"userId"`
+	Name        string     `json:"name"`
+	Email       string     `json:"email"`
+	Plan        string     `json:"plan"`
+	PeriodStart *time.Time `json:"periodStart"`
+	PeriodEnd   *time.Time `json:"periodEnd"`
+	LimitUnits  int        `json:"limitUnits"`
+	UsedUnits   int        `json:"usedUnits"`
+}
+type ageGroup struct {
+	Label string `json:"label"`
+	Count int    `json:"count"`
+}
 
 type Server struct {
 	config       Config
@@ -116,6 +130,8 @@ func hasScope(claims Claims, scope string) bool {
 	}
 	return false
 }
+
+func isAdmin(claims Claims) bool { return claims.Role == "admin" }
 
 func (server *Server) authenticate(response http.ResponseWriter, request *http.Request, scopes ...string) (Claims, bool) {
 	if !server.revocations.Ready() {
@@ -518,6 +534,128 @@ func (server *Server) profile(response http.ResponseWriter, request *http.Reques
 	writeJSON(response, 200, map[string]any{"user": publicUser(user)})
 }
 
+func (server *Server) billingForUser(ctx context.Context, userID string) (billingRecord, error) {
+	var billing billingRecord
+	err := server.repository.pool.QueryRow(ctx, `
+		SELECT u.id, COALESCE(u.full_name, u.email), u.email, u.plan,
+			q.period_start, q.period_end, COALESCE(q.limit_units, 0), COALESCE(q.used_units, 0)
+		FROM users u
+		LEFT JOIN LATERAL (
+			SELECT period_start, period_end, limit_units, used_units
+			FROM user_quotas
+			WHERE user_id = u.id AND period_start <= now() AND period_end > now()
+			ORDER BY period_end DESC
+			LIMIT 1
+		) q ON true
+		WHERE u.id = $1`, userID).Scan(
+		&billing.UserID, &billing.Name, &billing.Email, &billing.Plan,
+		&billing.PeriodStart, &billing.PeriodEnd, &billing.LimitUnits, &billing.UsedUnits,
+	)
+	return billing, err
+}
+
+// billing only returns the signed-in user's subscription and current quota.
+func (server *Server) billing(response http.ResponseWriter, request *http.Request) {
+	claims, ok := server.authenticate(response, request)
+	if !ok {
+		return
+	}
+	billing, err := server.billingForUser(request.Context(), claims.Subject)
+	if errors.Is(err, pgx.ErrNoRows) {
+		unauthorized(response)
+		return
+	}
+	if err != nil {
+		clientError(response, 500, "Internal server error")
+		return
+	}
+	writeJSON(response, 200, billing)
+}
+
+func (server *Server) adminDashboard(response http.ResponseWriter, request *http.Request) {
+	claims, ok := server.authenticate(response, request)
+	if !ok {
+		return
+	}
+	if !isAdmin(claims) {
+		clientError(response, http.StatusForbidden, "Forbidden")
+		return
+	}
+	var totalAccounts, onlineUsers, unknownAge, under18, age18To24, age25To34, age35To44, age45Plus int
+	err := server.repository.pool.QueryRow(request.Context(), `
+		SELECT
+			COUNT(DISTINCT u.id),
+			COUNT(DISTINCT s.user_id) FILTER (WHERE s.last_used_at > now() - interval '5 minutes' AND s.revoked_at IS NULL AND s.expires_at > now()),
+			COUNT(DISTINCT u.id) FILTER (WHERE u.date_of_birth IS NULL),
+			COUNT(DISTINCT u.id) FILTER (WHERE u.date_of_birth > current_date - interval '18 years'),
+			COUNT(DISTINCT u.id) FILTER (WHERE u.date_of_birth <= current_date - interval '18 years' AND u.date_of_birth > current_date - interval '25 years'),
+			COUNT(DISTINCT u.id) FILTER (WHERE u.date_of_birth <= current_date - interval '25 years' AND u.date_of_birth > current_date - interval '35 years'),
+			COUNT(DISTINCT u.id) FILTER (WHERE u.date_of_birth <= current_date - interval '35 years' AND u.date_of_birth > current_date - interval '45 years'),
+			COUNT(DISTINCT u.id) FILTER (WHERE u.date_of_birth <= current_date - interval '45 years')
+		FROM users u
+		LEFT JOIN sessions s ON s.user_id = u.id`).Scan(
+		&totalAccounts, &onlineUsers, &unknownAge, &under18, &age18To24, &age25To34, &age35To44, &age45Plus,
+	)
+	if err != nil {
+		clientError(response, 500, "Internal server error")
+		return
+	}
+	writeJSON(response, 200, map[string]any{
+		"totalAccounts": totalAccounts,
+		"onlineUsers":   onlineUsers,
+		"ageGroups": []ageGroup{
+			{Label: "<18", Count: under18},
+			{Label: "18–24", Count: age18To24},
+			{Label: "25–34", Count: age25To34},
+			{Label: "35–44", Count: age35To44},
+			{Label: "45+", Count: age45Plus},
+			{Label: "Unknown", Count: unknownAge},
+		},
+	})
+}
+
+func (server *Server) adminBilling(response http.ResponseWriter, request *http.Request) {
+	claims, ok := server.authenticate(response, request)
+	if !ok {
+		return
+	}
+	if !isAdmin(claims) {
+		clientError(response, http.StatusForbidden, "Forbidden")
+		return
+	}
+	rows, err := server.repository.pool.Query(request.Context(), `
+		SELECT u.id, COALESCE(u.full_name, u.email), u.email, u.plan,
+			q.period_start, q.period_end, COALESCE(q.limit_units, 0), COALESCE(q.used_units, 0)
+		FROM users u
+		LEFT JOIN LATERAL (
+			SELECT period_start, period_end, limit_units, used_units
+			FROM user_quotas
+			WHERE user_id = u.id AND period_start <= now() AND period_end > now()
+			ORDER BY period_end DESC
+			LIMIT 1
+		) q ON true
+		ORDER BY u.created_at DESC`)
+	if err != nil {
+		clientError(response, 500, "Internal server error")
+		return
+	}
+	defer rows.Close()
+	billings := make([]billingRecord, 0)
+	for rows.Next() {
+		var billing billingRecord
+		if err := rows.Scan(&billing.UserID, &billing.Name, &billing.Email, &billing.Plan, &billing.PeriodStart, &billing.PeriodEnd, &billing.LimitUnits, &billing.UsedUnits); err != nil {
+			clientError(response, 500, "Internal server error")
+			return
+		}
+		billings = append(billings, billing)
+	}
+	if rows.Err() != nil {
+		clientError(response, 500, "Internal server error")
+		return
+	}
+	writeJSON(response, 200, map[string]any{"billings": billings})
+}
+
 func (server *Server) route(response http.ResponseWriter, request *http.Request) {
 	claims, ok := server.authenticate(response, request, "route:calculate")
 	if !ok {
@@ -813,6 +951,12 @@ func (server *Server) ServeHTTP(response http.ResponseWriter, request *http.Requ
 		server.profile(response, request, false)
 	case request.Method == http.MethodPatch && request.URL.Path == "/auth/me":
 		server.profile(response, request, true)
+	case request.Method == http.MethodGet && request.URL.Path == "/api/billing":
+		server.billing(response, request)
+	case request.Method == http.MethodGet && request.URL.Path == "/api/admin/dashboard":
+		server.adminDashboard(response, request)
+	case request.Method == http.MethodGet && request.URL.Path == "/api/admin/billing":
+		server.adminBilling(response, request)
 	case request.Method == http.MethodPost && request.URL.Path == "/api/gateway/route":
 		server.route(response, request)
 	case request.Method == http.MethodPost && request.URL.Path == "/api/gateway/elevation":

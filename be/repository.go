@@ -35,11 +35,11 @@ func NewRepository(ctx context.Context, config Config) (*Repository, error) {
 
 func (repository *Repository) Close() { repository.pool.Close() }
 
-const userColumns = `id, email, password_hash, status, auth_version, scopes, plan, full_name, date_of_birth::text, phone, organization, avatar_url`
+const userColumns = `id, email, password_hash, status, auth_version, scopes, plan, role, full_name, date_of_birth::text, phone, organization, avatar_url`
 
 func scanUser(row pgx.Row) (User, error) {
 	var user User
-	err := row.Scan(&user.ID, &user.Email, &user.PasswordHash, &user.Status, &user.AuthVersion, &user.Scopes, &user.Plan, &user.Name, &user.DateOfBirth, &user.Phone, &user.Organization, &user.AvatarURL)
+	err := row.Scan(&user.ID, &user.Email, &user.PasswordHash, &user.Status, &user.AuthVersion, &user.Scopes, &user.Plan, &user.Role, &user.Name, &user.DateOfBirth, &user.Phone, &user.Organization, &user.AvatarURL)
 	return user, err
 }
 
@@ -141,7 +141,7 @@ func nullable(value string) any {
 }
 
 func publicUser(user User) map[string]any {
-	result := map[string]any{"id": user.ID, "email": user.Email, "plan": user.Plan, "scopes": user.Scopes}
+	result := map[string]any{"id": user.ID, "email": user.Email, "plan": user.Plan, "role": user.Role, "scopes": user.Scopes}
 	if user.Name != nil {
 		result["name"] = *user.Name
 	} else {

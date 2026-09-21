@@ -254,5 +254,23 @@
   "data": {
     "asia": "Châu Á",
     "tileServer": "Tile server"
+  },
+  "billing": {
+    "title": "Thanh toán",
+    "plan": "Gói dịch vụ",
+    "usage": "Lượt tìm tuyến trong tháng",
+    "period": "Kỳ thanh toán",
+    "backToMap": "Quay lại bản đồ",
+    "loadError": "Không thể tải thông tin thanh toán."
+  },
+  "admin": {
+    "title": "Bảng điều khiển quản trị",
+    "openDashboard": "Mở bảng điều khiển quản trị",
+    "totalAccounts": "Tổng số tài khoản",
+    "onlineUsers": "Người đang trực tuyến",
+    "ageDistribution": "Phân bố độ tuổi",
+    "billingDetails": "Chi tiết thanh toán",
+    "account": "Tài khoản",
+    "loadError": "Không thể tải dữ liệu quản trị."
   }
 }

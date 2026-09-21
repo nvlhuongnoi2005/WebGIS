@@ -9,6 +9,7 @@ export interface AuthUser {
   organization?: string;
   avatarUrl?: string;
   plan: string;
+  role: "user" | "admin";
   scopes: string[];
 }
 

@@ -6,7 +6,7 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { Accessibility, Building2, Camera, LogOut, Mail, UserRound } from "lucide-react";
+import { Accessibility, Building2, Camera, LogOut, Mail, ReceiptText, UserRound } from "lucide-react";
 import {
   type ChangeEvent,
   useRef,
@@ -171,6 +171,16 @@ export default function ProfilePanel({
         fullWidth
       >
         {t("profile.viewProfile")}
+      </Button>
+
+      <Button
+        component="a"
+        href="/billing"
+        variant="outlined"
+        startIcon={<ReceiptText size={17} />}
+        fullWidth
+      >
+        {t("billing.title")}
       </Button>
 
       <Button

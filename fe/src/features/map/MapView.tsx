@@ -1,11 +1,14 @@
 import { useMemo, useState } from "react";
-import { Box, Stack } from "@mui/material";
+import { Box, IconButton, Stack, Tooltip } from "@mui/material";
+import { LayoutDashboard } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 import LanguageSwitcher from "../../components/LanguageSwitcher/LanguageSwitcher";
 import Profile from "../../components/Profile/Profile";
 import SearchBar from "../../components/SearchBar/SearchBar";
 import { ThemeModeSwitcher } from "../accessibility";
+import { useAuth } from "../auth";
 import { useBaseMapStyle } from "../../hooks/useBaseMapStyle";
 import { useDrawLayers } from "../../hooks/useDrawLayers";
 import { useDrawTool } from "../../hooks/useDrawTool";
@@ -35,7 +38,13 @@ import TileServerBaseMapPanel from "./components/TileServerBaseMapPanel";
 import RoutingPanel from "./components/RoutingPanel";
 import "./MapView.css";
 
-function MapView() {
+interface MapViewProps {
+  onNavigate?: (to: "/admin") => void;
+}
+
+function MapView({ onNavigate }: MapViewProps) {
+  const { t } = useTranslation();
+  const { user } = useAuth();
   const [activeTool, setActiveTool] = useState<MapTool>(null);
   const [tileServerPanelMode, setTileServerPanelMode] = useState<"base-map" | "layers" | null>(null);
   const [coordinateReferenceSystem, setCoordinateReferenceSystem] =
@@ -204,6 +213,27 @@ function MapView() {
         }}
       >
         <ThemeModeSwitcher />
+        {user?.role === "admin" && (
+          <Tooltip title={t("admin.openDashboard")}>
+            <IconButton
+              type="button"
+              aria-label={t("admin.openDashboard")}
+              onClick={() => onNavigate ? onNavigate("/admin") : window.location.assign("/admin")}
+              sx={{
+                width: 44,
+                height: 44,
+                color: "text.primary",
+                border: "2px solid",
+                borderColor: "background.paper",
+                bgcolor: "background.paper",
+                boxShadow: "0 8px 20px rgb(20 45 82 / 16%)",
+                "&:hover": { bgcolor: "action.hover", boxShadow: "0 10px 24px rgb(20 45 82 / 20%)" },
+              }}
+            >
+              <LayoutDashboard size={20} />
+            </IconButton>
+          </Tooltip>
+        )}
         <LanguageSwitcher />
         <Profile />
       </Stack>

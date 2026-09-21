@@ -101,7 +101,7 @@ func (service *TokenService) Issue(user User, sessionID string) (string, int, er
 		return "", 0, err
 	}
 	claims := jwt.MapClaims{
-		"sub": user.ID, "sid": sessionID, "av": user.AuthVersion, "scope": user.Scopes, "plan": user.Plan,
+		"sub": user.ID, "sid": sessionID, "av": user.AuthVersion, "scope": user.Scopes, "plan": user.Plan, "role": normalizedRole(user.Role),
 		"iss": service.config.Issuer, "aud": service.config.Audience, "iat": now.Unix(), "exp": now.Add(time.Duration(service.config.AccessTTL) * time.Second).Unix(), "jti": jti,
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
@@ -181,7 +181,22 @@ func (service *TokenService) Verify(encoded string) (Claims, error) {
 	if !ok {
 		return Claims{}, fmt.Errorf("invalid access token")
 	}
-	return Claims{Subject: sub, SessionID: sid, TokenID: jti, AuthVersion: version, Scopes: scopes, Plan: plan}, nil
+	role := "user"
+	if _, exists := claims["role"]; exists {
+		var valid bool
+		role, valid = stringClaim(claims, "role")
+		if !valid || role != "user" && role != "admin" {
+			return Claims{}, fmt.Errorf("invalid access token")
+		}
+	}
+	return Claims{Subject: sub, SessionID: sid, TokenID: jti, AuthVersion: version, Scopes: scopes, Plan: plan, Role: role}, nil
+}
+
+func normalizedRole(role string) string {
+	if role == "admin" {
+		return "admin"
+	}
+	return "user"
 }
 
 func (service *TokenService) CreateRefreshToken() (string, error) { return randomURLToken(48) }

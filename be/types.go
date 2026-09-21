@@ -6,7 +6,7 @@ type User struct {
 	ID, Email, PasswordHash, Status string
 	AuthVersion                     int
 	Scopes                          []string
-	Plan                            string
+	Plan, Role                      string
 	Name, DateOfBirth               *string
 	Phone, Organization, AvatarURL  *string
 }
@@ -21,7 +21,7 @@ type Claims struct {
 	Subject, SessionID, TokenID string
 	AuthVersion                 int
 	Scopes                      []string
-	Plan                        string
+	Plan, Role                  string
 }
 
 type RevocationEvent struct {

@@ -88,7 +88,7 @@ func TestEdDSAAccessToken(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	user := User{ID: "user-1", AuthVersion: 1, Scopes: []string{"map:read"}, Plan: "free"}
+	user := User{ID: "user-1", AuthVersion: 1, Scopes: []string{"map:read"}, Plan: "free", Role: "admin"}
 	token, _, err := service.Issue(user, "session-1")
 	if err != nil {
 		t.Fatal(err)
@@ -97,7 +97,7 @@ func TestEdDSAAccessToken(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if claims.Subject != user.ID || claims.SessionID != "session-1" || !hasScope(claims, "map:read") {
+	if claims.Subject != user.ID || claims.SessionID != "session-1" || claims.Role != "admin" || !hasScope(claims, "map:read") {
 		t.Fatal("token claims did not round-trip")
 	}
 }

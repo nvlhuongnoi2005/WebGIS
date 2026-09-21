@@ -4,6 +4,8 @@ import { setWorkerUrl } from "maplibre-gl";
 import maplibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import { AccessibilitySettingsButton } from "./features/accessibility";
 import { AuthProvider, LoginPage, useAuth } from "./features/auth";
+import AdminDashboard from "./features/billing/AdminDashboard";
+import BillingPage from "./features/billing/BillingPage";
 import { MapView } from "./features/map";
 
 // Register the Vite-emitted worker before any map instance is created.
@@ -28,7 +30,7 @@ function AppRoutes() {
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
-  const navigate = (to: "/login" | "/map", replace = false) => {
+  const navigate = (to: AppPath, replace = false) => {
     if (window.location.pathname !== to) {
       window.history[replace ? "replaceState" : "pushState"]({}, "", to);
       setPathname(to);
@@ -44,8 +46,16 @@ function AppRoutes() {
       : <LoginPage onAuthenticated={() => navigate("/map", true)} />;
   } else if (pathname === "/map") {
     content = user
-      ? <MapView />
+      ? <MapView onNavigate={navigate} />
       : <Redirect to="/login" navigate={navigate} />;
+  } else if (pathname === "/billing") {
+    content = user
+      ? <BillingPage />
+      : <Redirect to="/login" navigate={navigate} />;
+  } else if (pathname === "/admin") {
+    content = user?.role === "admin"
+      ? <AdminDashboard />
+      : <Redirect to={user ? "/map" : "/login"} navigate={navigate} />;
   } else {
     content = <Redirect to={user ? "/map" : "/login"} navigate={navigate} />;
   }
@@ -60,8 +70,8 @@ function AppRoutes() {
 }
 
 interface RedirectProps {
-  to: "/login" | "/map";
-  navigate: (to: "/login" | "/map", replace?: boolean) => void;
+  to: AppPath;
+  navigate: (to: AppPath, replace?: boolean) => void;
 }
 
 function Redirect({ to, navigate }: RedirectProps) {
@@ -75,5 +85,7 @@ function Redirect({ to, navigate }: RedirectProps) {
 function getPathname(): string {
   return window.location.pathname.replace(/\/+$/, "") || "/";
 }
+
+type AppPath = "/login" | "/map" | "/admin" | "/billing";
 
 export default App;

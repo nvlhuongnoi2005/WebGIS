@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS users (
   auth_version integer NOT NULL DEFAULT 1 CHECK (auth_version >= 1),
   scopes text[] NOT NULL DEFAULT ARRAY['map:read', 'route:calculate', 'service-a:use'],
   plan text NOT NULL DEFAULT 'free',
+  role text NOT NULL DEFAULT 'user',
   full_name text,
   date_of_birth date,
   phone text,
@@ -23,6 +24,23 @@ CREATE TABLE IF NOT EXISTS users (
   updated_at timestamptz NOT NULL DEFAULT now(),
   last_login_at timestamptz
 );
+
+-- Existing installations run this migration again, so keep the new role
+-- column backwards-compatible with databases created before role support.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS role text;
+UPDATE users SET role = 'user' WHERE role IS NULL;
+ALTER TABLE users ALTER COLUMN role SET DEFAULT 'user';
+ALTER TABLE users ALTER COLUMN role SET NOT NULL;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'users_role_check'
+  ) THEN
+    ALTER TABLE users
+      ADD CONSTRAINT users_role_check CHECK (role IN ('user', 'admin'));
+  END IF;
+END;
+$$;
 
 CREATE UNIQUE INDEX IF NOT EXISTS users_email_lower_unique ON users (lower(email));
 

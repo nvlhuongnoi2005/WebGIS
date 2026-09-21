@@ -254,5 +254,23 @@
   "data": {
     "asia": "Asia",
     "tileServer": "Tile server"
+  },
+  "billing": {
+    "title": "Billing",
+    "plan": "Plan",
+    "usage": "Monthly route usage",
+    "period": "Billing period",
+    "backToMap": "Back to map",
+    "loadError": "Billing information could not be loaded."
+  },
+  "admin": {
+    "title": "Administration dashboard",
+    "openDashboard": "Open administration dashboard",
+    "totalAccounts": "Total accounts",
+    "onlineUsers": "Users online",
+    "ageDistribution": "Age distribution",
+    "billingDetails": "Billing details",
+    "account": "Account",
+    "loadError": "Dashboard data could not be loaded."
   }
 }
