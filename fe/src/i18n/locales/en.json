@@ -258,10 +258,19 @@
   "billing": {
     "title": "Billing",
     "plan": "Plan",
-    "usage": "Monthly route usage",
     "period": "Billing period",
     "backToMap": "Back to map",
-    "loadError": "Billing information could not be loaded."
+    "loadError": "Billing information could not be loaded.",
+    "requestsInRange": "Requests in range",
+    "monthlyUsage": "Monthly quota",
+    "requestChart": "Route requests",
+    "routeRequestsDescription": "Accepted route requests counted toward your quota.",
+    "range": "Reporting range",
+    "today": "Today",
+    "last7Days": "7 days",
+    "last30Days": "30 days",
+    "chartLabel": "{{count}} route requests in the selected period",
+    "dailyTrackingNote": "Daily usage is recorded from the time this reporting feature is deployed."
   },
   "admin": {
     "title": "Administration dashboard",

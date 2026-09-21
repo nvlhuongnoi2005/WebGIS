@@ -9,6 +9,7 @@ export interface BillingDetails {
   periodEnd: string | null;
   limitUnits: number;
   usedUnits: number;
+  dailyRequests: Array<{ date: string; requests: number }>;
 }
 
 export interface AdminDashboardMetrics {
@@ -25,8 +26,8 @@ async function getJson<T>(path: string): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-export function fetchMyBilling() {
-  return getJson<BillingDetails>("/api/billing");
+export function fetchMyBilling(range: 1 | 7 | 30) {
+  return getJson<BillingDetails>(`/api/billing?range=${range}`);
 }
 
 export function fetchAdminDashboard() {

@@ -130,17 +130,19 @@ jobs:
         run: |
           sed -i -E "s|(image: ${IMAGE_PREFIX}/frontend):sha-[0-9a-f]{40}|\\1:${IMAGE_TAG}|" deployment/frontend.yaml
           sed -i -E "s|(image: ${IMAGE_PREFIX}/controller):sha-[0-9a-f]{40}|\\1:${IMAGE_TAG}|" deployment/controller.yaml
+          sed -i -E "s|(image: ${IMAGE_PREFIX}/controller):sha-[0-9a-f]{40}|\\1:${IMAGE_TAG}|" deployment/migration-job.yaml
           grep -F "image: ${IMAGE_PREFIX}/frontend:${IMAGE_TAG}" deployment/frontend.yaml
           grep -F "image: ${IMAGE_PREFIX}/controller:${IMAGE_TAG}" deployment/controller.yaml
+          grep -F "image: ${IMAGE_PREFIX}/controller:${IMAGE_TAG}" deployment/migration-job.yaml
 
       - name: Commit manifest update
         run: |
-          if git diff --quiet -- deployment/frontend.yaml deployment/controller.yaml; then
+          if git diff --quiet -- deployment/frontend.yaml deployment/controller.yaml deployment/migration-job.yaml; then
             echo "Image tags already match this build."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add deployment/frontend.yaml deployment/controller.yaml
+          git add deployment/frontend.yaml deployment/controller.yaml deployment/migration-job.yaml
           git commit -m "chore(deploy): use images for ${GITHUB_SHA} [skip ci]"
           git push origin HEAD:main

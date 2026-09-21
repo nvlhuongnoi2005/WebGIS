@@ -99,6 +99,16 @@ CREATE TABLE IF NOT EXISTS user_quotas (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
+-- One aggregate row per account and calendar day keeps request reporting
+-- compact while preserving the exact units counted toward the route quota.
+CREATE TABLE IF NOT EXISTS user_daily_usage (
+  user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  usage_date date NOT NULL,
+  request_count integer NOT NULL DEFAULT 0 CHECK (request_count >= 0),
+  PRIMARY KEY (user_id, usage_date)
+);
+CREATE INDEX IF NOT EXISTS user_daily_usage_date_idx ON user_daily_usage (usage_date);
+
 CREATE OR REPLACE FUNCTION set_auth_updated_at() RETURNS trigger AS $$
 BEGIN
   NEW.updated_at = now();

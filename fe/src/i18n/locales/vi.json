@@ -258,10 +258,19 @@
   "billing": {
     "title": "Thanh toán",
     "plan": "Gói dịch vụ",
-    "usage": "Lượt tìm tuyến trong tháng",
     "period": "Kỳ thanh toán",
     "backToMap": "Quay lại bản đồ",
-    "loadError": "Không thể tải thông tin thanh toán."
+    "loadError": "Không thể tải thông tin thanh toán.",
+    "requestsInRange": "Yêu cầu trong khoảng chọn",
+    "monthlyUsage": "Hạn mức tháng",
+    "requestChart": "Yêu cầu tìm tuyến",
+    "routeRequestsDescription": "Các yêu cầu tìm tuyến được chấp nhận và tính vào hạn mức.",
+    "range": "Khoảng thời gian báo cáo",
+    "today": "Hôm nay",
+    "last7Days": "7 ngày",
+    "last30Days": "30 ngày",
+    "chartLabel": "{{count}} yêu cầu tìm tuyến trong khoảng đã chọn",
+    "dailyTrackingNote": "Dữ liệu theo ngày được ghi từ thời điểm triển khai tính năng báo cáo này."
   },
   "admin": {
     "title": "Bảng điều khiển quản trị",

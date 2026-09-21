@@ -42,7 +42,7 @@ export default function AdminDashboard() {
           <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>{t("admin.billingDetails")}</Typography>
           <TableContainer component={Paper} sx={{ borderRadius: 3 }}>
             <Table size="small" aria-label={t("admin.billingDetails")}>
-              <TableHead><TableRow><TableCell>{t("admin.account")}</TableCell><TableCell>{t("billing.plan")}</TableCell><TableCell>{t("billing.usage")}</TableCell><TableCell>{t("billing.period")}</TableCell></TableRow></TableHead>
+              <TableHead><TableRow><TableCell>{t("admin.account")}</TableCell><TableCell>{t("billing.plan")}</TableCell><TableCell>{t("billing.monthlyUsage")}</TableCell><TableCell>{t("billing.period")}</TableCell></TableRow></TableHead>
               <TableBody>
                 {billings.map(billing => <TableRow key={billing.userId} hover>
                   <TableCell><Typography variant="body2" sx={{ fontWeight: 700 }}>{billing.name}</Typography><Typography variant="caption" color="text.secondary">{billing.email}</Typography></TableCell>

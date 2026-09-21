@@ -40,14 +40,19 @@ type elevationInput struct {
 	ResampleDistance float64             `json:"resample_distance"`
 }
 type billingRecord struct {
-	UserID      string     `json:"userId"`
-	Name        string     `json:"name"`
-	Email       string     `json:"email"`
-	Plan        string     `json:"plan"`
-	PeriodStart *time.Time `json:"periodStart"`
-	PeriodEnd   *time.Time `json:"periodEnd"`
-	LimitUnits  int        `json:"limitUnits"`
-	UsedUnits   int        `json:"usedUnits"`
+	UserID        string       `json:"userId"`
+	Name          string       `json:"name"`
+	Email         string       `json:"email"`
+	Plan          string       `json:"plan"`
+	PeriodStart   *time.Time   `json:"periodStart"`
+	PeriodEnd     *time.Time   `json:"periodEnd"`
+	LimitUnits    int          `json:"limitUnits"`
+	UsedUnits     int          `json:"usedUnits"`
+	DailyRequests []dailyUsage `json:"dailyRequests,omitempty"`
+}
+type dailyUsage struct {
+	Date     string `json:"date"`
+	Requests int    `json:"requests"`
 }
 type ageGroup struct {
 	Label string `json:"label"`
@@ -534,7 +539,18 @@ func (server *Server) profile(response http.ResponseWriter, request *http.Reques
 	writeJSON(response, 200, map[string]any{"user": publicUser(user)})
 }
 
-func (server *Server) billingForUser(ctx context.Context, userID string) (billingRecord, error) {
+func billingDays(request *http.Request) int {
+	switch request.URL.Query().Get("range") {
+	case "1":
+		return 1
+	case "30":
+		return 30
+	default:
+		return 7
+	}
+}
+
+func (server *Server) billingForUser(ctx context.Context, userID string, days int) (billingRecord, error) {
 	var billing billingRecord
 	err := server.repository.pool.QueryRow(ctx, `
 		SELECT u.id, COALESCE(u.full_name, u.email), u.email, u.plan,
@@ -551,16 +567,38 @@ func (server *Server) billingForUser(ctx context.Context, userID string) (billin
 		&billing.UserID, &billing.Name, &billing.Email, &billing.Plan,
 		&billing.PeriodStart, &billing.PeriodEnd, &billing.LimitUnits, &billing.UsedUnits,
 	)
-	return billing, err
+	if err != nil {
+		return billing, err
+	}
+	rows, err := server.repository.pool.Query(ctx, `
+		SELECT day::date::text, COALESCE(usage.request_count, 0)
+		FROM generate_series(current_date - ($2::integer - 1), current_date, interval '1 day') AS days(day)
+		LEFT JOIN user_daily_usage usage
+			ON usage.user_id = $1 AND usage.usage_date = days.day::date
+		ORDER BY days.day`, userID, days)
+	if err != nil {
+		return billing, err
+	}
+	defer rows.Close()
+	billing.DailyRequests = make([]dailyUsage, 0, days)
+	for rows.Next() {
+		var usage dailyUsage
+		if err := rows.Scan(&usage.Date, &usage.Requests); err != nil {
+			return billing, err
+		}
+		billing.DailyRequests = append(billing.DailyRequests, usage)
+	}
+	return billing, rows.Err()
 }
 
-// billing only returns the signed-in user's subscription and current quota.
+// billing only returns the signed-in user's subscription, quota, and route
+// requests counted in the selected reporting window.
 func (server *Server) billing(response http.ResponseWriter, request *http.Request) {
 	claims, ok := server.authenticate(response, request)
 	if !ok {
 		return
 	}
-	billing, err := server.billingForUser(request.Context(), claims.Subject)
+	billing, err := server.billingForUser(request.Context(), claims.Subject, billingDays(request))
 	if errors.Is(err, pgx.ErrNoRows) {
 		unauthorized(response)
 		return
@@ -662,7 +700,20 @@ func (server *Server) route(response http.ResponseWriter, request *http.Request)
 		return
 	}
 	ctx := request.Context()
-	quota, err := server.repository.pool.Exec(ctx, `UPDATE user_quotas SET used_units=used_units+1,updated_at=now() WHERE user_id=$1 AND period_start<=now() AND period_end>now() AND used_units+1<=limit_units`, claims.Subject)
+	quota, err := server.repository.pool.Exec(ctx, `
+		WITH consumed_quota AS (
+			UPDATE user_quotas
+			SET used_units = used_units + 1, updated_at = now()
+			WHERE user_id = $1
+				AND period_start <= now()
+				AND period_end > now()
+				AND used_units + 1 <= limit_units
+			RETURNING user_id
+		)
+		INSERT INTO user_daily_usage (user_id, usage_date, request_count)
+		SELECT user_id, current_date, 1 FROM consumed_quota
+		ON CONFLICT (user_id, usage_date) DO UPDATE
+		SET request_count = user_daily_usage.request_count + 1`, claims.Subject)
 	if err != nil {
 		clientError(response, 500, "Internal server error")
 		return
