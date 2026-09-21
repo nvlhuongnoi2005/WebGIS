@@ -21,7 +21,8 @@ const INITIAL_MAP_CENTER: [number, number] = [105.8342, 21.0278];
 
 export function useMapInstance(
   coordinateReferenceSystem: CoordinateReferenceSystem,
-  coordinatePickingEnabled: boolean
+  coordinatePickingEnabled: boolean,
+  onPositionMarkerClose?: () => void
 ) {
   const mapContainer =
     useRef<HTMLDivElement | null>(null);
@@ -50,13 +51,23 @@ export function useMapInstance(
   const coordinatePickingEnabledRef =
     useRef(coordinatePickingEnabled);
 
+  const clearPositionMarker = () => {
+    const activeMarker = marker.current;
+    const activePopupRoot = popupRoot.current;
+
+    marker.current = null;
+    popupRoot.current = null;
+    lastClickedCoordinate.current = null;
+
+    activePopupRoot?.unmount();
+    activeMarker?.remove();
+  };
+
   const placeMarkerAtCoordinate = (
     mapInstance: maplibregl.Map,
     coordinate: [number, number]
   ) => {
-    marker.current?.remove();
-    popupRoot.current?.unmount();
-    popupRoot.current = null;
+    clearPositionMarker();
     lastClickedCoordinate.current = coordinate;
 
     const transformed = transformFromWgs84(
@@ -84,17 +95,26 @@ export function useMapInstance(
       })
     );
 
-    marker.current = new maplibregl.Marker({
+    const positionMarker = new maplibregl.Marker({
       color: "#e0002b",
       anchor: "bottom",
       offset: [0, 6],
       subpixelPositioning: true,
     })
       .setLngLat(coordinate)
-      .setPopup(popup)
-      .addTo(mapInstance);
+      .setPopup(popup);
 
-    marker.current.togglePopup();
+    popup.on("close", () => {
+      if (marker.current !== positionMarker) {
+        return;
+      }
+
+      clearPositionMarker();
+      onPositionMarkerClose?.();
+    });
+
+    marker.current = positionMarker;
+    positionMarker.addTo(mapInstance).togglePopup();
   };
 
   const placeMarkerAtCurrentLocation = () => {
@@ -164,11 +184,7 @@ export function useMapInstance(
       return;
     }
 
-    marker.current?.remove();
-    marker.current = null;
-    popupRoot.current?.unmount();
-    popupRoot.current = null;
-    lastClickedCoordinate.current = null;
+    clearPositionMarker();
   }, [coordinatePickingEnabled]);
 
   useEffect(() => {
@@ -232,12 +248,8 @@ export function useMapInstance(
     return () => {
       mapInstance.off("load", applyNavigationTooltips);
       mapInstance.off("mousemove", handleMapMouseMove);
-      popupRoot.current?.unmount();
-      popupRoot.current = null;
+      clearPositionMarker();
       mapInstance.remove();
-      marker.current?.remove();
-      marker.current = null;
-      lastClickedCoordinate.current = null;
 
       map.current = null;
 

@@ -57,7 +57,8 @@ function MapView({ onNavigate }: MapViewProps) {
     placeMarkerAtCurrentLocation,
   } = useMapInstance(
     coordinateReferenceSystem,
-    activeTool !== "draw" && activeTool !== "measure"
+    activeTool !== "draw" && activeTool !== "measure",
+    () => setActiveTool(currentTool => currentTool === "marker" ? null : currentTool)
   );
   const {
     tileServerBaseMap,

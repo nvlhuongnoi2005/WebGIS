@@ -46,14 +46,14 @@ export function PageShell({ title, children }: { title: string; children: ReactN
         overflowX: "hidden",
         overscrollBehavior: "contain",
         bgcolor: "background.default",
-        backgroundImage: "radial-gradient(circle at 4% 4%, rgba(224, 0, 43, 0.10), transparent 25rem), radial-gradient(circle at 96% 10%, rgba(50, 94, 210, 0.12), transparent 28rem), radial-gradient(circle at 55% 100%, rgba(0, 138, 126, 0.10), transparent 30rem)",
+        backgroundImage: "radial-gradient(circle at 4% 4%, rgba(224, 0, 43, 0.11), transparent 28rem), radial-gradient(circle at 100% 92%, rgba(169, 0, 32, 0.07), transparent 30rem)",
         p: { xs: 2, sm: 4 },
       }}
     >
       <Stack spacing={3} sx={{ maxWidth: 1180, mx: "auto" }}>
         <Stack direction="row" spacing={2} sx={{ alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
           <Stack direction="row" spacing={1.25} sx={{ alignItems: "center" }}>
-            <Box sx={{ display: "grid", placeItems: "center", width: 42, height: 42, borderRadius: 2.5, color: "#fff", background: "linear-gradient(135deg, #e0002b, #8b3cc7 58%, #2369bf)" }}><ReceiptText size={24} /></Box>
+            <Box sx={{ display: "grid", placeItems: "center", width: 42, height: 42, borderRadius: 2.5, color: "#fff", background: "linear-gradient(135deg, #e0002b, #a90020)" }}><ReceiptText size={24} /></Box>
             <Typography variant="h4" component="h1" sx={{ fontWeight: 750 }}>{title}</Typography>
           </Stack>
           <Button component="a" href="/map" startIcon={<ArrowLeft size={18} />} sx={{ bgcolor: "rgba(224, 0, 43, 0.08)", "&:hover": { bgcolor: "rgba(224, 0, 43, 0.15)" } }}>{t("billing.backToMap")}</Button>
@@ -70,7 +70,7 @@ export function BillingCard({ billing, locale, range, onRangeChange }: { billing
   const maximumRequests = Math.max(...billing.dailyRequests.map(item => item.requests), 1);
   return (
     <Stack spacing={2.5}>
-      <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: 3, border: "1px solid rgba(224, 0, 43, 0.16)", background: "linear-gradient(135deg, rgba(224, 0, 43, 0.17), rgba(139, 60, 199, 0.11) 52%, rgba(34, 149, 139, 0.10))" }}>
+      <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: 3, border: "1px solid rgba(224, 0, 43, 0.18)", background: "linear-gradient(135deg, rgba(224, 0, 43, 0.17), rgba(169, 0, 32, 0.08) 58%, transparent)" }}>
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ justifyContent: "space-between" }}>
           <Box>
             <Typography variant="overline" color="text.secondary">{t("billing.plan")}</Typography>
@@ -78,13 +78,13 @@ export function BillingCard({ billing, locale, range, onRangeChange }: { billing
             <Typography variant="body2" color="text.secondary">{t("billing.period")}: {formatPeriod(billing.periodStart, billing.periodEnd, locale)}</Typography>
           </Box>
           <Stack direction="row" spacing={1.25} sx={{ alignItems: "center", flexWrap: "wrap" }}>
-            <Metric label={t("billing.requestsInRange")} value={totalRequests} tone="blue" />
-            <Metric label={t("billing.monthlyUsage")} value={`${billing.usedUnits} / ${billing.limitUnits}`} tone="orange" />
+            <Metric label={t("billing.requestsInRange")} value={totalRequests} tone="red" />
+            <Metric label={t("billing.monthlyUsage")} value={`${billing.usedUnits} / ${billing.limitUnits}`} tone="rose" />
           </Stack>
         </Stack>
       </Paper>
 
-      <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: 3, border: "1px solid rgba(38, 103, 201, 0.13)", background: "linear-gradient(155deg, rgba(38, 103, 201, 0.08), rgba(255,255,255,0) 42%)" }}>
+      <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: 3, border: "1px solid rgba(224, 0, 43, 0.14)", background: "linear-gradient(155deg, rgba(224, 0, 43, 0.08), transparent 42%)" }}>
         <Stack spacing={2}>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ justifyContent: "space-between", alignItems: { sm: "center" } }}>
             <Box>
@@ -113,12 +113,12 @@ export function BillingCard({ billing, locale, range, onRangeChange }: { billing
   );
 }
 
-function Metric({ label, value, tone }: { label: string; value: string | number; tone: "blue" | "orange" }) {
+function Metric({ label, value, tone }: { label: string; value: string | number; tone: "red" | "rose" }) {
   const tones = {
-    blue: { background: "rgba(38, 103, 201, 0.13)", color: "#164c99" },
-    orange: { background: "rgba(230, 128, 25, 0.15)", color: "#a45100" },
+    red: { background: "rgba(224, 0, 43, 0.12)", color: "#a90020" },
+    rose: { background: "rgba(169, 0, 32, 0.09)", color: "#780017" },
   };
-  return <Box sx={theme => ({ minWidth: 116, px: 1.5, py: 1, borderRadius: 2.5, ...tones[tone], color: theme.palette.mode === "dark" ? tone === "blue" ? "#9dc1ff" : "#ffd28e" : tones[tone].color })}><Typography variant="caption" color="text.secondary">{label}</Typography><Typography variant="h6" sx={{ fontWeight: 800, color: "inherit" }}>{value}</Typography></Box>;
+  return <Box sx={theme => ({ minWidth: 116, px: 1.5, py: 1, borderRadius: 2.5, ...tones[tone], color: theme.palette.mode === "dark" ? "#ffd5dc" : tones[tone].color })}><Typography variant="caption" color="text.secondary">{label}</Typography><Typography variant="h6" sx={{ fontWeight: 800, color: "inherit" }}>{value}</Typography></Box>;
 }
 
 function RequestBar({ item, max, locale, compact, index }: { item: BillingDetails["dailyRequests"][number]; max: number; locale: string; compact: boolean; index: number }) {
@@ -137,11 +137,11 @@ function RequestBar({ item, max, locale, compact, index }: { item: BillingDetail
 }
 
 const BAR_GRADIENTS = [
-  "linear-gradient(180deg, #e0002b 0%, #ff8aa0 100%)",
-  "linear-gradient(180deg, #2563c8 0%, #79a8ff 100%)",
-  "linear-gradient(180deg, #007d75 0%, #6ad6c8 100%)",
-  "linear-gradient(180deg, #8540ba 0%, #c596ed 100%)",
-  "linear-gradient(180deg, #d16a00 0%, #ffc05a 100%)",
+  "linear-gradient(180deg, #e0002b 0%, #ff8a9d 100%)",
+  "linear-gradient(180deg, #c90027 0%, #f05a78 100%)",
+  "linear-gradient(180deg, #a90020 0%, #df526b 100%)",
+  "linear-gradient(180deg, #ec3154 0%, #ff9eae 100%)",
+  "linear-gradient(180deg, #820018 0%, #c94b63 100%)",
 ];
 
 function formatPeriod(start: string | null, end: string | null, locale: string) {
