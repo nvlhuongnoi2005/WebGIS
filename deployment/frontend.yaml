@@ -20,7 +20,7 @@ spec:
         - name: ghcr-pull
       containers:
         - name: frontend
-          image: ghcr.io/nvlhuongnoi2005/webgis/frontend:sha-d620704f6b290fc8caa43eec6b1f03ba6a8f2539
+          image: ghcr.io/nvlhuongnoi2005/webgis/frontend:sha-9245301388a86e10f9fed7e748ac90f68eabde98
           # Docker Desktop shares its local image store with this cluster.
           # Production should use immutable tags/digests and a GHCR pull secret.
           imagePullPolicy: IfNotPresent
