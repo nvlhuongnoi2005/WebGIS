@@ -46,14 +46,13 @@ export function PageShell({ title, children }: { title: string; children: ReactN
         overflowX: "hidden",
         overscrollBehavior: "contain",
         bgcolor: "background.default",
-        backgroundImage: "radial-gradient(circle at 4% 4%, rgba(224, 0, 43, 0.11), transparent 28rem), radial-gradient(circle at 100% 92%, rgba(169, 0, 32, 0.07), transparent 30rem)",
         p: { xs: 2, sm: 4 },
       }}
     >
       <Stack spacing={3} sx={{ maxWidth: 1180, mx: "auto" }}>
         <Stack direction="row" spacing={2} sx={{ alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
           <Stack direction="row" spacing={1.25} sx={{ alignItems: "center" }}>
-            <Box sx={{ display: "grid", placeItems: "center", width: 42, height: 42, borderRadius: 2.5, color: "#fff", background: "linear-gradient(135deg, #e0002b, #a90020)" }}><ReceiptText size={24} /></Box>
+            <Box sx={{ display: "grid", placeItems: "center", width: 42, height: 42, borderRadius: 2.5, color: "#fff", bgcolor: "primary.main" }}><ReceiptText size={24} /></Box>
             <Typography variant="h4" component="h1" sx={{ fontWeight: 750 }}>{title}</Typography>
           </Stack>
           <Button component="a" href="/map" startIcon={<ArrowLeft size={18} />} sx={{ bgcolor: "rgba(224, 0, 43, 0.08)", "&:hover": { bgcolor: "rgba(224, 0, 43, 0.15)" } }}>{t("billing.backToMap")}</Button>
@@ -70,7 +69,7 @@ export function BillingCard({ billing, locale, range, onRangeChange }: { billing
   const maximumRequests = Math.max(...billing.dailyRequests.map(item => item.requests), 1);
   return (
     <Stack spacing={2.5}>
-      <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: 3, border: "1px solid rgba(224, 0, 43, 0.18)", background: "linear-gradient(135deg, rgba(224, 0, 43, 0.17), rgba(169, 0, 32, 0.08) 58%, transparent)" }}>
+      <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: 3, border: "1px solid rgba(224, 0, 43, 0.18)", bgcolor: "rgba(224, 0, 43, 0.06)" }}>
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ justifyContent: "space-between" }}>
           <Box>
             <Typography variant="overline" color="text.secondary">{t("billing.plan")}</Typography>
@@ -84,7 +83,7 @@ export function BillingCard({ billing, locale, range, onRangeChange }: { billing
         </Stack>
       </Paper>
 
-      <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: 3, border: "1px solid rgba(224, 0, 43, 0.14)", background: "linear-gradient(155deg, rgba(224, 0, 43, 0.08), transparent 42%)" }}>
+      <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: 3, border: "1px solid rgba(224, 0, 43, 0.14)", bgcolor: "rgba(224, 0, 43, 0.025)" }}>
         <Stack spacing={2}>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ justifyContent: "space-between", alignItems: { sm: "center" } }}>
             <Box>
@@ -129,20 +128,14 @@ function RequestBar({ item, max, locale, compact, index }: { item: BillingDetail
     <Tooltip title={`${new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(date)}: ${item.requests}`}>
       <Stack spacing={0.75} sx={{ alignItems: "center", justifyContent: "end", flex: 1, minWidth: 0, height: "100%" }}>
         {!compact && <Typography variant="caption" sx={{ fontWeight: 700 }}>{item.requests}</Typography>}
-        <Box sx={{ width: "100%", maxWidth: compact ? 18 : 46, minHeight: 3, height, borderRadius: "8px 8px 2px 2px", background: BAR_GRADIENTS[index % BAR_GRADIENTS.length], boxShadow: "0 5px 10px rgba(42, 66, 128, 0.15)", transition: "height 180ms ease" }} />
+        <Box sx={{ width: "100%", maxWidth: compact ? 18 : 46, minHeight: 3, height, borderRadius: "8px 8px 2px 2px", bgcolor: BAR_COLORS[index % BAR_COLORS.length], boxShadow: "0 5px 10px rgba(42, 66, 128, 0.15)", transition: "height 180ms ease" }} />
         <Typography variant="caption" color="text.secondary" noWrap>{label}</Typography>
       </Stack>
     </Tooltip>
   );
 }
 
-const BAR_GRADIENTS = [
-  "linear-gradient(180deg, #e0002b 0%, #ff8a9d 100%)",
-  "linear-gradient(180deg, #c90027 0%, #f05a78 100%)",
-  "linear-gradient(180deg, #a90020 0%, #df526b 100%)",
-  "linear-gradient(180deg, #ec3154 0%, #ff9eae 100%)",
-  "linear-gradient(180deg, #820018 0%, #c94b63 100%)",
-];
+const BAR_COLORS = ["#e0002b", "#2563c8", "#008b7f", "#8540ba", "#d16a00"];
 
 function formatPeriod(start: string | null, end: string | null, locale: string) {
   if (!start || !end) return "—";
