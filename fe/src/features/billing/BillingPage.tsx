@@ -37,7 +37,18 @@ export default function BillingPage() {
 export function PageShell({ title, children }: { title: string; children: ReactNode }) {
   const { t } = useTranslation();
   return (
-    <Box component="main" id="main-content" sx={{ minHeight: "100dvh", bgcolor: "background.default", p: { xs: 2, sm: 4 } }}>
+    <Box
+      component="main"
+      id="main-content"
+      sx={{
+        height: "100dvh",
+        overflowY: "auto",
+        overflowX: "hidden",
+        overscrollBehavior: "contain",
+        bgcolor: "background.default",
+        p: { xs: 2, sm: 4 },
+      }}
+    >
       <Stack spacing={3} sx={{ maxWidth: 1180, mx: "auto" }}>
         <Stack direction="row" spacing={2} sx={{ alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
           <Stack direction="row" spacing={1.25} sx={{ alignItems: "center" }}>
