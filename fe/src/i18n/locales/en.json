@@ -280,6 +280,13 @@
     "ageDistribution": "Age distribution",
     "billingDetails": "Billing details",
     "account": "Account",
+    "userManagement": "User management",
+    "role": "Role",
+    "status": "Status",
+    "quota": "Monthly quota",
+    "online": "Online",
+    "offline": "Offline",
+    "auditLog": "Administrative audit log",
     "loadError": "Dashboard data could not be loaded."
   }
 }

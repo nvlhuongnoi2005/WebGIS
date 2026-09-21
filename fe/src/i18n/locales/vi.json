@@ -280,6 +280,13 @@
     "ageDistribution": "Phân bố độ tuổi",
     "billingDetails": "Chi tiết thanh toán",
     "account": "Tài khoản",
+    "userManagement": "Quản lý người dùng",
+    "role": "Vai trò",
+    "status": "Trạng thái",
+    "quota": "Hạn mức tháng",
+    "online": "Trực tuyến",
+    "offline": "Ngoại tuyến",
+    "auditLog": "Nhật ký thao tác quản trị",
     "loadError": "Không thể tải dữ liệu quản trị."
   }
 }

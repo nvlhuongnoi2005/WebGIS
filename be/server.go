@@ -58,6 +58,12 @@ type ageGroup struct {
 	Label string `json:"label"`
 	Count int    `json:"count"`
 }
+type adminUserUpdateInput struct {
+	Role       *string `json:"role"`
+	Status     *string `json:"status"`
+	Plan       *string `json:"plan"`
+	LimitUnits *int    `json:"limitUnits"`
+}
 
 type Server struct {
 	config       Config
@@ -694,6 +700,155 @@ func (server *Server) adminBilling(response http.ResponseWriter, request *http.R
 	writeJSON(response, 200, map[string]any{"billings": billings})
 }
 
+func (server *Server) requireAdmin(response http.ResponseWriter, request *http.Request) (Claims, bool) {
+	claims, ok := server.authenticate(response, request)
+	if !ok || isAdmin(claims) {
+		return claims, ok
+	}
+	clientError(response, http.StatusForbidden, "Forbidden")
+	return Claims{}, false
+}
+
+func (server *Server) adminUsers(response http.ResponseWriter, request *http.Request) {
+	if _, ok := server.requireAdmin(response, request); !ok {
+		return
+	}
+	rows, err := server.repository.pool.Query(request.Context(), `SELECT u.id,COALESCE(u.full_name,u.email),u.email,u.role,u.status,u.plan,COALESCE(q.limit_units,0),COALESCE(q.used_units,0),EXISTS(SELECT 1 FROM sessions s WHERE s.user_id=u.id AND s.revoked_at IS NULL AND s.expires_at>now() AND s.last_used_at>now()-interval '5 minutes') FROM users u LEFT JOIN LATERAL (SELECT limit_units,used_units FROM user_quotas WHERE user_id=u.id AND period_start<=now() AND period_end>now() LIMIT 1) q ON true ORDER BY u.created_at DESC`)
+	if err != nil {
+		clientError(response, 500, "Internal server error")
+		return
+	}
+	defer rows.Close()
+	users := make([]map[string]any, 0)
+	for rows.Next() {
+		var id, name, email, role, status, plan string
+		var limit, used int
+		var online bool
+		if err := rows.Scan(&id, &name, &email, &role, &status, &plan, &limit, &used, &online); err != nil {
+			clientError(response, 500, "Internal server error")
+			return
+		}
+		users = append(users, map[string]any{"id": id, "name": name, "email": email, "role": role, "status": status, "plan": plan, "limitUnits": limit, "usedUnits": used, "online": online})
+	}
+	if rows.Err() != nil {
+		clientError(response, 500, "Internal server error")
+		return
+	}
+	writeJSON(response, 200, map[string]any{"users": users})
+}
+
+func (server *Server) adminUpdateUser(response http.ResponseWriter, request *http.Request, userID string) {
+	claims, ok := server.requireAdmin(response, request)
+	if !ok {
+		return
+	}
+	var input adminUserUpdateInput
+	if decodeJSON(request, &input) != nil || input.Role == nil && input.Status == nil && input.Plan == nil && input.LimitUnits == nil {
+		clientError(response, 400, "Invalid user update")
+		return
+	}
+	if input.Role != nil && *input.Role != "user" && *input.Role != "admin" {
+		clientError(response, 400, "Invalid user update")
+		return
+	}
+	if input.Status != nil && *input.Status != "ACTIVE" && *input.Status != "DISABLED" && *input.Status != "LOCKED" {
+		clientError(response, 400, "Invalid user update")
+		return
+	}
+	if input.Plan != nil {
+		value := strings.TrimSpace(*input.Plan)
+		if value == "" || len(value) > 64 {
+			clientError(response, 400, "Invalid user update")
+			return
+		}
+		input.Plan = &value
+	}
+	if input.LimitUnits != nil && (*input.LimitUnits < 0 || *input.LimitUnits > 10_000_000) {
+		clientError(response, 400, "Invalid user update")
+		return
+	}
+	if userID == claims.Subject && (input.Role != nil || input.Status != nil) {
+		clientError(response, 400, "Cannot change your own role or status")
+		return
+	}
+	ctx := request.Context()
+	tx, err := server.repository.pool.Begin(ctx)
+	if err != nil {
+		clientError(response, 500, "Internal server error")
+		return
+	}
+	defer tx.Rollback(ctx)
+	var version int
+	err = tx.QueryRow(ctx, `UPDATE users SET role=COALESCE($1,role),status=COALESCE($2,status),plan=COALESCE($3,plan),auth_version=auth_version+CASE WHEN $1::text IS NULL AND $2::text IS NULL THEN 0 ELSE 1 END WHERE id=$4 RETURNING auth_version`, input.Role, input.Status, input.Plan, userID).Scan(&version)
+	if errors.Is(err, pgx.ErrNoRows) {
+		clientError(response, 404, "User not found")
+		return
+	}
+	if err != nil {
+		clientError(response, 500, "Internal server error")
+		return
+	}
+	if input.LimitUnits != nil {
+		_, err = tx.Exec(ctx, `INSERT INTO user_quotas(user_id,period_start,period_end,limit_units,used_units) VALUES($1,date_trunc('month',now()),date_trunc('month',now())+interval '1 month',$2,0) ON CONFLICT(user_id) DO UPDATE SET limit_units=EXCLUDED.limit_units,updated_at=now()`, userID, *input.LimitUnits)
+		if err != nil {
+			clientError(response, 500, "Internal server error")
+			return
+		}
+	}
+	if input.Role != nil || input.Status != nil {
+		_, err = tx.Exec(ctx, `UPDATE sessions SET revoked_at=COALESCE(revoked_at,now()) WHERE user_id=$1`, userID)
+		if err != nil {
+			clientError(response, 500, "Internal server error")
+			return
+		}
+		event := RevocationEvent{Type: "UserSessionsRevoked", UserID: userID, AuthVersion: version, Timestamp: time.Now().UTC().Format(time.RFC3339Nano)}
+		if err = server.repository.Publish(ctx, tx, event); err != nil {
+			clientError(response, 500, "Internal server error")
+			return
+		}
+		server.revocations.Apply(event)
+	}
+	details, _ := json.Marshal(map[string]any{"role": input.Role, "status": input.Status, "plan": input.Plan, "limitUnits": input.LimitUnits})
+	if _, err = tx.Exec(ctx, `INSERT INTO admin_audit_logs(actor_id,target_user_id,action,details) VALUES($1,$2,'user.updated',$3::jsonb)`, claims.Subject, userID, details); err != nil {
+		clientError(response, 500, "Internal server error")
+		return
+	}
+	if err = tx.Commit(ctx); err != nil {
+		clientError(response, 500, "Internal server error")
+		return
+	}
+	response.WriteHeader(http.StatusNoContent)
+}
+
+func (server *Server) adminAudit(response http.ResponseWriter, request *http.Request) {
+	if _, ok := server.requireAdmin(response, request); !ok {
+		return
+	}
+	rows, err := server.repository.pool.Query(request.Context(), `SELECT a.id,COALESCE(actor.email,''),COALESCE(target.email,''),a.action,a.details,a.created_at FROM admin_audit_logs a LEFT JOIN users actor ON actor.id=a.actor_id LEFT JOIN users target ON target.id=a.target_user_id ORDER BY a.created_at DESC LIMIT 100`)
+	if err != nil {
+		clientError(response, 500, "Internal server error")
+		return
+	}
+	defer rows.Close()
+	logs := make([]map[string]any, 0)
+	for rows.Next() {
+		var id int64
+		var actor, target, action string
+		var details json.RawMessage
+		var created time.Time
+		if err := rows.Scan(&id, &actor, &target, &action, &details, &created); err != nil {
+			clientError(response, 500, "Internal server error")
+			return
+		}
+		logs = append(logs, map[string]any{"id": id, "actor": actor, "target": target, "action": action, "details": json.RawMessage(details), "createdAt": created})
+	}
+	if rows.Err() != nil {
+		clientError(response, 500, "Internal server error")
+		return
+	}
+	writeJSON(response, 200, map[string]any{"logs": logs})
+}
+
 func (server *Server) route(response http.ResponseWriter, request *http.Request) {
 	claims, ok := server.authenticate(response, request, "route:calculate")
 	if !ok {
@@ -1008,6 +1163,17 @@ func (server *Server) ServeHTTP(response http.ResponseWriter, request *http.Requ
 		server.adminDashboard(response, request)
 	case request.Method == http.MethodGet && request.URL.Path == "/api/admin/billing":
 		server.adminBilling(response, request)
+	case request.Method == http.MethodGet && request.URL.Path == "/api/admin/users":
+		server.adminUsers(response, request)
+	case request.Method == http.MethodGet && request.URL.Path == "/api/admin/audit":
+		server.adminAudit(response, request)
+	case request.Method == http.MethodPatch && strings.HasPrefix(request.URL.Path, "/api/admin/users/"):
+		userID := strings.TrimPrefix(request.URL.Path, "/api/admin/users/")
+		if userID == "" || strings.Contains(userID, "/") {
+			clientError(response, 400, "Invalid user id")
+		} else {
+			server.adminUpdateUser(response, request, userID)
+		}
 	case request.Method == http.MethodPost && request.URL.Path == "/api/gateway/route":
 		server.route(response, request)
 	case request.Method == http.MethodPost && request.URL.Path == "/api/gateway/elevation":

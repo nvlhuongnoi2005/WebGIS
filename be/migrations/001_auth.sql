@@ -109,6 +109,16 @@ CREATE TABLE IF NOT EXISTS user_daily_usage (
 );
 CREATE INDEX IF NOT EXISTS user_daily_usage_date_idx ON user_daily_usage (usage_date);
 
+CREATE TABLE IF NOT EXISTS admin_audit_logs (
+  id bigserial PRIMARY KEY,
+  actor_id uuid NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+  target_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
+  action text NOT NULL,
+  details jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS admin_audit_logs_created_at_idx ON admin_audit_logs (created_at DESC);
+
 CREATE OR REPLACE FUNCTION set_auth_updated_at() RETURNS trigger AS $$
 BEGIN
   NEW.updated_at = now();
