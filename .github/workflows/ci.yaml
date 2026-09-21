@@ -17,6 +17,34 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Detect deployable changes
+    runs-on: ubuntu-latest
+    outputs:
+      controller: ${{ steps.filter.outputs.controller }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect image sources that changed
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            controller:
+              - 'be/**'
+              - '.dockerignore'
+            frontend:
+              - 'fe/**'
+              - 'package.json'
+              - 'package-lock.json'
+              - 'tsconfig.json'
+              - '.dockerignore'
+
   validate:
     name: Test, lint and build
     runs-on: ubuntu-latest
@@ -56,7 +84,7 @@ jobs:
 
   publish-images:
     name: Build and publish container images
-    needs: validate
+    needs: [validate, changes]
     # Pull requests validate code only. Publishing occurs only after a successful
     # validation run for a commit that has reached the protected main branch.
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -84,6 +112,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build and push controller
+        if: needs.changes.outputs.controller == 'true'
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -95,6 +124,7 @@ jobs:
             org.opencontainers.image.revision=${{ github.sha }}
 
       - name: Build and push frontend
+        if: needs.changes.outputs.frontend == 'true'
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -107,7 +137,7 @@ jobs:
 
   update-deployment-images:
     name: Update GitOps image tags
-    needs: publish-images
+    needs: [publish-images, changes]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
@@ -128,12 +158,16 @@ jobs:
           IMAGE_TAG: sha-${{ github.sha }}
           IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/webgis
         run: |
-          sed -i -E "s|(image: ${IMAGE_PREFIX}/frontend):sha-[0-9a-f]{40}|\\1:${IMAGE_TAG}|" deployment/frontend.yaml
-          sed -i -E "s|(image: ${IMAGE_PREFIX}/controller):sha-[0-9a-f]{40}|\\1:${IMAGE_TAG}|" deployment/controller.yaml
-          sed -i -E "s|(image: ${IMAGE_PREFIX}/controller):sha-[0-9a-f]{40}|\\1:${IMAGE_TAG}|" deployment/migration-job.yaml
-          grep -F "image: ${IMAGE_PREFIX}/frontend:${IMAGE_TAG}" deployment/frontend.yaml
-          grep -F "image: ${IMAGE_PREFIX}/controller:${IMAGE_TAG}" deployment/controller.yaml
-          grep -F "image: ${IMAGE_PREFIX}/controller:${IMAGE_TAG}" deployment/migration-job.yaml
+          if [ "${{ needs.changes.outputs.frontend }}" = "true" ]; then
+            sed -i -E "s|(image: ${IMAGE_PREFIX}/frontend):sha-[0-9a-f]{40}|\\1:${IMAGE_TAG}|" deployment/frontend.yaml
+            grep -F "image: ${IMAGE_PREFIX}/frontend:${IMAGE_TAG}" deployment/frontend.yaml
+          fi
+          if [ "${{ needs.changes.outputs.controller }}" = "true" ]; then
+            sed -i -E "s|(image: ${IMAGE_PREFIX}/controller):sha-[0-9a-f]{40}|\\1:${IMAGE_TAG}|" deployment/controller.yaml
+            sed -i -E "s|(image: ${IMAGE_PREFIX}/controller):sha-[0-9a-f]{40}|\\1:${IMAGE_TAG}|" deployment/migration-job.yaml
+            grep -F "image: ${IMAGE_PREFIX}/controller:${IMAGE_TAG}" deployment/controller.yaml
+            grep -F "image: ${IMAGE_PREFIX}/controller:${IMAGE_TAG}" deployment/migration-job.yaml
+          fi
 
       - name: Commit manifest update
         run: |
