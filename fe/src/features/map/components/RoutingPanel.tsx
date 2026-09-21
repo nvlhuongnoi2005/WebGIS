@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import type { ChangeEvent, ReactNode } from "react";
 
@@ -334,6 +334,7 @@ function CollapsibleSectionLabel({ label, isOpen, onClick }: { label: string; is
 
 function ElevationProfile({ points, isLoading }: { points: ElevationPoint[]; isLoading: boolean }) {
   const { t } = useTranslation();
+  const elevationGradientId = useId().replace(/:/g, "");
   const knownPoints = points.filter((point): point is ElevationPoint & { elevationM: number } => point.elevationM !== null);
   if (isLoading) {
     return (
@@ -364,12 +365,21 @@ function ElevationProfile({ points, isLoading }: { points: ElevationPoint[]; isL
     const y = 68 - ((point.elevationM - lowest) / elevationRange) * 56;
     return `${x.toFixed(1)},${y.toFixed(1)}`;
   }).join(" ");
+  const chartArea = `M4 68 L${chartPoints} L316 68 Z`;
 
   return (
     <Box sx={{ p: 1.25, border: "1px solid", borderColor: "divider", borderRadius: 2 }}>
       <Box component="svg" viewBox="0 0 320 72" role="img" aria-label={t("routing.elevation.chartLabel")} sx={{ display: "block", width: "100%", height: 76, mb: 0.75 }}>
+        <defs>
+          <linearGradient id={elevationGradientId} x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0%" stopColor="#2e7d32" />
+            <stop offset="50%" stopColor="#f9a825" />
+            <stop offset="100%" stopColor="#c62828" />
+          </linearGradient>
+        </defs>
         <path d="M4 68H316" stroke="currentColor" strokeOpacity="0.16" />
-        <polyline points={chartPoints} fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+        <path d={chartArea} fill={`url(#${elevationGradientId})`} fillOpacity="0.35" />
+        <polyline points={chartPoints} fill="none" stroke={`url(#${elevationGradientId})`} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
       </Box>
       <Stack direction="row" spacing={1.25} useFlexGap sx={{ flexWrap: "wrap" }}>
         <ElevationMetric label={t("routing.elevation.highest")} value={highest} />
