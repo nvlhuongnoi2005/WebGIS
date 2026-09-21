@@ -20,6 +20,7 @@ async function parseResponse(response: Response): Promise<unknown> {
 export function AuthProvider({ children }: PropsWithChildren) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [reauthenticationRequired, setReauthenticationRequired] = useState(false);
   const idleTimeoutMs = useRef(DEFAULT_IDLE_TIMEOUT_MS);
   const lastActivityAt = useRef(0);
   const lastHeartbeatAt = useRef(0);
@@ -29,9 +30,15 @@ export function AuthProvider({ children }: PropsWithChildren) {
     setUser(null);
   }, []);
 
+  const requireReauthentication = useCallback(() => {
+    setReauthenticationRequired(true);
+    expireSession();
+  }, [expireSession]);
+
   const acceptTokenResponse = useCallback((payload: TokenResponse) => {
     setAccessToken(payload.access_token);
     setUser(payload.user);
+    setReauthenticationRequired(false);
     idleTimeoutMs.current = Math.max(60_000, (payload.idle_timeout_seconds || DEFAULT_IDLE_TIMEOUT_MS / 1000) * 1000);
     lastActivityAt.current = Date.now();
   }, []);
@@ -67,6 +74,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
   const logout = useCallback(async () => {
     try { await authFetch("/auth/logout", { method: "POST" }); } catch { /* clear local state regardless */ }
+    setReauthenticationRequired(false);
     expireSession();
   }, [expireSession]);
 
@@ -92,9 +100,24 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }, []);
 
   useEffect(() => {
-    setSessionExpiredHandler(expireSession);
+    setSessionExpiredHandler(requireReauthentication);
     return () => setSessionExpiredHandler(null);
-  }, [expireSession]);
+  }, [requireReauthentication]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const eventSource = new EventSource("/auth/session-events", { withCredentials: true });
+    const handleSessionUpdate = () => {
+      eventSource.close();
+      requireReauthentication();
+    };
+    eventSource.addEventListener("session-updated", handleSessionUpdate);
+    return () => {
+      eventSource.removeEventListener("session-updated", handleSessionUpdate);
+      eventSource.close();
+    };
+  }, [requireReauthentication, user]);
 
   useEffect(() => {
     if (!user) return;
@@ -151,7 +174,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }, [refreshSession]);
 
   const value = useMemo<AuthContextValue>(() => ({
-    user, isLoading, login, register, logout, updateContactDetails, updateAvatar,
-  }), [isLoading, login, logout, register, updateAvatar, updateContactDetails, user]);
+    user, isLoading, reauthenticationRequired, login, register, logout, updateContactDetails, updateAvatar,
+    acknowledgeReauthentication: () => setReauthenticationRequired(false),
+  }), [isLoading, login, logout, reauthenticationRequired, register, updateAvatar, updateContactDetails, user]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

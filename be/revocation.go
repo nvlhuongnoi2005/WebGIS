@@ -15,6 +15,7 @@ type RevocationStore struct {
 	minAuthVersion                                map[string]int
 	ready                                         bool
 	lastEventID                                   int64
+	onApplied                                     func(RevocationEvent)
 }
 
 func NewRevocationStore() *RevocationStore {
@@ -23,7 +24,6 @@ func NewRevocationStore() *RevocationStore {
 
 func (store *RevocationStore) Apply(event RevocationEvent) {
 	store.mu.Lock()
-	defer store.mu.Unlock()
 	switch event.Type {
 	case "SessionRevoked":
 		store.revokedSessions[event.SessionID] = struct{}{}
@@ -32,11 +32,22 @@ func (store *RevocationStore) Apply(event RevocationEvent) {
 		if event.AuthVersion > store.minAuthVersion[event.UserID] {
 			store.minAuthVersion[event.UserID] = event.AuthVersion
 		}
-	case "PasswordChanged", "UserSessionsRevoked":
+	case "PasswordChanged", "UserSessionsRevoked", "UserAccessChanged":
 		if event.AuthVersion > store.minAuthVersion[event.UserID] {
 			store.minAuthVersion[event.UserID] = event.AuthVersion
 		}
 	}
+	onApplied := store.onApplied
+	store.mu.Unlock()
+	if onApplied != nil {
+		onApplied(event)
+	}
+}
+
+func (store *RevocationStore) SetOnApplied(callback func(RevocationEvent)) {
+	store.mu.Lock()
+	store.onApplied = callback
+	store.mu.Unlock()
 }
 
 func (store *RevocationStore) Rejects(claims Claims) bool {

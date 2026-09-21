@@ -227,6 +227,9 @@
     "invalidCredentials": "Email hoặc mật khẩu không đúng.",
     "accountDisabled": "Tài khoản này đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên.",
     "accountLocked": "Tài khoản này đã bị khóa. Vui lòng liên hệ quản trị viên.",
+    "sessionUpdatedTitle": "Phiên làm việc đã được cập nhật",
+    "sessionUpdatedDescription": "Vai trò hoặc trạng thái tài khoản của bạn đã được quản trị viên thay đổi. Bạn đã được đăng xuất; hãy đăng nhập lại để tiếp tục sử dụng dịch vụ.",
+    "sessionUpdatedAction": "Đăng xuất và đăng nhập lại",
     "registrationFailed": "Không thể tạo tài khoản. Hãy kiểm tra thông tin và thử lại.",
     "serviceUnavailable": "Dịch vụ xác thực chưa sẵn sàng. Vui lòng thử lại sau ít phút.",
     "storageFailed": "Không thể lưu thay đổi. Vui lòng thử lại."

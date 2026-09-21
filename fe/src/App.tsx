@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { setWorkerUrl } from "maplibre-gl";
 import maplibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
@@ -20,7 +21,7 @@ function App() {
 }
 
 function AppRoutes() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, reauthenticationRequired, acknowledgeReauthentication } = useAuth();
   const { t } = useTranslation();
   const [pathname, setPathname] = useState(getPathname);
 
@@ -65,6 +66,13 @@ function AppRoutes() {
       <a className="skip-link" href="#main-content">{t("accessibility.skipToContent")}</a>
       {content}
       {pathname === "/login" && !user && <AccessibilitySettingsButton />}
+      <Dialog open={reauthenticationRequired} aria-labelledby="session-updated-title">
+        <DialogTitle id="session-updated-title">{t("auth.sessionUpdatedTitle")}</DialogTitle>
+        <DialogContent><Typography>{t("auth.sessionUpdatedDescription")}</Typography></DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2.5 }}>
+          <Button variant="contained" onClick={acknowledgeReauthentication}>{t("auth.sessionUpdatedAction")}</Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 }

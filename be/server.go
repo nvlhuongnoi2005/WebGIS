@@ -66,15 +66,16 @@ type adminUserUpdateInput struct {
 }
 
 type Server struct {
-	config       Config
-	repository   *Repository
-	passwords    PasswordService
-	tokens       *TokenService
-	revocations  *RevocationStore
-	loginLimiter *RateLimiter
-	loginSlots   chan struct{}
-	dummyHash    string
-	workerClient *http.Client
+	config          Config
+	repository      *Repository
+	passwords       PasswordService
+	tokens          *TokenService
+	revocations     *RevocationStore
+	sessionEventHub *SessionEventHub
+	loginLimiter    *RateLimiter
+	loginSlots      chan struct{}
+	dummyHash       string
+	workerClient    *http.Client
 }
 
 func NewServer(config Config, repository *Repository, passwords PasswordService, tokens *TokenService, revocations *RevocationStore) (*Server, error) {
@@ -82,7 +83,9 @@ func NewServer(config Config, repository *Repository, passwords PasswordService,
 	if err != nil {
 		return nil, err
 	}
-	return &Server{config: config, repository: repository, passwords: passwords, tokens: tokens, revocations: revocations, loginLimiter: NewRateLimiter(time.Duration(config.LoginWindowSeconds)*time.Second, config.LoginMaxAttempts), loginSlots: make(chan struct{}, config.LoginMaxConcurrent), dummyHash: dummyHash, workerClient: &http.Client{Timeout: 30 * time.Second}}, nil
+	sessionEvents := NewSessionEventHub()
+	revocations.SetOnApplied(sessionEvents.NotifyRevocation)
+	return &Server{config: config, repository: repository, passwords: passwords, tokens: tokens, revocations: revocations, sessionEventHub: sessionEvents, loginLimiter: NewRateLimiter(time.Duration(config.LoginWindowSeconds)*time.Second, config.LoginMaxAttempts), loginSlots: make(chan struct{}, config.LoginMaxConcurrent), dummyHash: dummyHash, workerClient: &http.Client{Timeout: 30 * time.Second}}, nil
 }
 
 func writeJSON(response http.ResponseWriter, status int, body any) {
@@ -409,6 +412,62 @@ func (server *Server) refresh(response http.ResponseWriter, request *http.Reques
 		return
 	}
 	server.issueLoginResponse(response, user, session.ID, next)
+}
+
+// sessionEvents is a server-to-browser event stream. It authenticates with the
+// existing HttpOnly refresh cookie (scoped to /auth), so no access token is put
+// into the URL or exposed to JavaScript.
+func (server *Server) sessionEvents(response http.ResponseWriter, request *http.Request) {
+	if request.Method != http.MethodGet {
+		clientError(response, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+	cookie, err := request.Cookie("refresh_token")
+	if err != nil || cookie.Value == "" {
+		unauthorized(response)
+		return
+	}
+	ctx := request.Context()
+	session, err := server.repository.SessionForRefreshWithinIdleTimeout(ctx, server.repository.pool, server.tokens.HashRefreshToken(cookie.Value), server.config.SessionIdleTimeoutSeconds)
+	if err != nil {
+		unauthorized(response)
+		return
+	}
+	user, err := server.repository.UserByID(ctx, server.repository.pool, session.UserID)
+	if err != nil || user.Status != "ACTIVE" {
+		unauthorized(response)
+		return
+	}
+	flusher, ok := response.(http.Flusher)
+	if !ok {
+		clientError(response, http.StatusInternalServerError, "Streaming unavailable")
+		return
+	}
+
+	response.Header().Set("Cache-Control", "no-cache, no-transform")
+	response.Header().Set("Connection", "keep-alive")
+	response.Header().Set("Content-Type", "text/event-stream")
+	response.Header().Set("X-Accel-Buffering", "no")
+	updates, unsubscribe := server.sessionEventHub.Subscribe(user.ID)
+	defer unsubscribe()
+	_, _ = response.Write([]byte("event: ready\ndata: {}\n\n"))
+	flusher.Flush()
+
+	keepAlive := time.NewTicker(25 * time.Second)
+	defer keepAlive.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-updates:
+			_, _ = response.Write([]byte("event: session-updated\ndata: {}\n\n"))
+			flusher.Flush()
+			return
+		case <-keepAlive.C:
+			_, _ = response.Write([]byte(": keepalive\n\n"))
+			flusher.Flush()
+		}
+	}
 }
 
 func (server *Server) logout(response http.ResponseWriter, request *http.Request, all bool) {
@@ -792,6 +851,7 @@ func (server *Server) adminUpdateUser(response http.ResponseWriter, request *htt
 	}
 	defer tx.Rollback(ctx)
 	var version int
+	var accessChangedEvent *RevocationEvent
 	err = tx.QueryRow(ctx, `UPDATE users SET role=COALESCE($1,role),status=COALESCE($2,status),plan=COALESCE($3,plan),auth_version=auth_version+CASE WHEN $1::text IS NULL AND $2::text IS NULL THEN 0 ELSE 1 END WHERE id=$4 RETURNING auth_version`, input.Role, input.Status, input.Plan, userID).Scan(&version)
 	if errors.Is(err, pgx.ErrNoRows) {
 		clientError(response, 404, "User not found")
@@ -814,12 +874,12 @@ func (server *Server) adminUpdateUser(response http.ResponseWriter, request *htt
 			clientError(response, 500, "Internal server error")
 			return
 		}
-		event := RevocationEvent{Type: "UserSessionsRevoked", UserID: userID, AuthVersion: version, Timestamp: time.Now().UTC().Format(time.RFC3339Nano)}
+		event := RevocationEvent{Type: "UserAccessChanged", UserID: userID, AuthVersion: version, Timestamp: time.Now().UTC().Format(time.RFC3339Nano)}
 		if err = server.repository.Publish(ctx, tx, event); err != nil {
 			clientError(response, 500, "Internal server error")
 			return
 		}
-		server.revocations.Apply(event)
+		accessChangedEvent = &event
 	}
 	details, _ := json.Marshal(map[string]any{"role": input.Role, "status": input.Status, "plan": input.Plan, "limitUnits": input.LimitUnits})
 	if _, err = tx.Exec(ctx, `INSERT INTO admin_audit_logs(actor_id,target_user_id,action,details) VALUES($1,$2,'user.updated',$3::jsonb)`, claims.Subject, userID, details); err != nil {
@@ -829,6 +889,9 @@ func (server *Server) adminUpdateUser(response http.ResponseWriter, request *htt
 	if err = tx.Commit(ctx); err != nil {
 		clientError(response, 500, "Internal server error")
 		return
+	}
+	if accessChangedEvent != nil {
+		server.revocations.Apply(*accessChangedEvent)
 	}
 	response.WriteHeader(http.StatusNoContent)
 }
@@ -1158,6 +1221,8 @@ func (server *Server) ServeHTTP(response http.ResponseWriter, request *http.Requ
 		server.register(response, request)
 	case request.Method == http.MethodPost && request.URL.Path == "/auth/login":
 		server.login(response, request)
+	case request.Method == http.MethodGet && request.URL.Path == "/auth/session-events":
+		server.sessionEvents(response, request)
 	case request.Method == http.MethodPost && request.URL.Path == "/auth/refresh":
 		server.refresh(response, request)
 	case request.Method == http.MethodPost && request.URL.Path == "/auth/logout":

@@ -32,11 +32,13 @@ export type AuthResult =
 export interface AuthContextValue {
   user: AuthUser | null;
   isLoading: boolean;
+  reauthenticationRequired: boolean;
   login: (email: string, password: string) => Promise<AuthResult>;
   register: (details: RegisterDetails) => Promise<AuthResult>;
   logout: () => Promise<void>;
   updateContactDetails: (email: string, phone: string) => Promise<AuthResult>;
   updateAvatar: (avatarUrl: string) => Promise<AuthResult>;
+  acknowledgeReauthentication: () => void;
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null);

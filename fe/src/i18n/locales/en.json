@@ -249,6 +249,9 @@
     "invalidCredentials": "Email or password is incorrect.",
     "accountDisabled": "This account has been disabled. Please contact an administrator.",
     "accountLocked": "This account has been locked. Please contact an administrator.",
+    "sessionUpdatedTitle": "Your session has been updated",
+    "sessionUpdatedDescription": "An administrator changed your account role or status. You have been signed out; sign in again to continue using the service.",
+    "sessionUpdatedAction": "Sign out and sign in again",
     "registrationFailed": "Unable to create the account. Check the information and try again.",
     "serviceUnavailable": "Authentication service is unavailable. Please try again shortly.",
     "storageFailed": "Could not save your changes. Please try again."
