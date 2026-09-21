@@ -24,6 +24,17 @@ body,
 
 body {
   overflow: hidden;
+  color: #142a32;
+  font-family: "Aptos", "Trebuchet MS", sans-serif;
+  text-rendering: optimizeLegibility;
+  background: #eef2f1;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
 }
 
 html[data-text-size="large"] {

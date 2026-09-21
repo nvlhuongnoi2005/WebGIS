@@ -42,22 +42,22 @@ export function createAppTheme({ mode, highContrast }: AppThemeOptions) {
         }
       : {
           primary: { main: "#e0002b", light: "#f2e8ea", dark: "#a90020", contrastText: "#ffffff" },
-          secondary: { main: "#ad1630", light: "#f3eaec", dark: "#780017" },
+          secondary: { main: "#087f73", light: "#e2f3f0", dark: "#04564e" },
           error: { main: "#ba1a1a" },
-          success: { main: "#146c2e" },
-          background: { default: "#f7f7f8", paper: "#ffffff" },
-          text: { primary: "#241f21", secondary: "#655c5f" },
-          divider: "#e4e1e2",
-          action: { hover: "#f3f3f4", selected: "#f2e8ea" },
+          success: { main: "#087f73" },
+          background: { default: "#eef2f1", paper: "#ffffff" },
+          text: { primary: "#142a32", secondary: "#587078" },
+          divider: "#d7e2e0",
+          action: { hover: "#edf5f3", selected: "#e1f0ed" },
         };
 
   return createTheme({
     palette: { mode, ...palette },
-    shape: { borderRadius: 14 },
+    shape: { borderRadius: 12 },
     typography: {
-      fontFamily: '"Segoe UI", "Noto Sans", sans-serif',
-      h4: { fontWeight: 750, letterSpacing: "-0.02em" },
-      h5: { fontWeight: 750, letterSpacing: "-0.015em" },
+      fontFamily: '"Aptos", "Trebuchet MS", sans-serif',
+      h4: { fontWeight: 800, letterSpacing: "0" },
+      h5: { fontWeight: 800, letterSpacing: "0" },
       subtitle1: { fontWeight: 700 },
       button: { textTransform: "none", fontWeight: 700 },
     },
