@@ -5,7 +5,7 @@ import { setWorkerUrl } from "maplibre-gl";
 import maplibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import { AccessibilitySettingsButton } from "./features/accessibility";
 import { AuthProvider, LoginPage, useAuth } from "./features/auth";
-import AdminDashboard from "./features/billing/AdminDashboard";
+import AdminDashboard from "./admin/AdminDashboard";
 import BillingPage from "./features/billing/BillingPage";
 import { MapView } from "./features/map";
 

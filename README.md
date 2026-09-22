@@ -47,6 +47,16 @@ Browser
 
 Các worker bản đồ chỉ là `ClusterIP`; browser không gọi trực tiếp Nominatim, Valhalla hoặc tile server trong môi trường Kubernetes.
 
+```mermaid
+flowchart LR
+  B[Browser\nReact + MapLibre] --> I[Ingress / Frontend]
+  I --> C[Go Controller]
+  C --> P[(Auth PostGIS)]
+  C --> N[Nominatim]
+  C --> V[Valhalla]
+  C --> T[Tile server]
+```
+
 ## Công nghệ
 
 | Thành phần | Công nghệ |
@@ -88,6 +98,9 @@ deployment/                 # Manifest Kubernetes
 | `GET` | `/api/nominatim/search` | Proxy geocoding Nominatim. |
 | `POST` | `/api/gateway/route` | Routing có xác thực và quota. |
 | `GET` | `/api/tiles/...` | Proxy tile server. |
+| `GET` | `/api/admin/billing` | Quản trị viên xem quota usage của các tài khoản. |
+
+> **Lưu ý về billing:** tính năng billing hiện chỉ hiển thị gói dịch vụ, hạn mức quota và số request đã dùng trong kỳ. Đây không phải cổng thanh toán, không tạo hóa đơn và không xử lý giao dịch tiền thật.
 | `GET` | `/health` | Health check controller. |
 
 ## Bảo mật
@@ -217,10 +230,11 @@ kubectl -n webgis rollout status deployment/frontend
 
 ## Kịch bản demo
 
-1. Đăng ký/đăng nhập, mở bản đồ và đổi ngôn ngữ/giao diện.
-2. Vẽ Point, LineString, Polygon; chỉnh sửa đỉnh, cập nhật properties và xóa feature.
-3. Đo khoảng cách/diện tích; thể hiện undo/redo và reset.
+1. Đăng ký một tài khoản mới, đăng nhập, mở bản đồ và đổi ngôn ngữ/giao diện.
+2. Tìm địa điểm bằng autocomplete Nominatim, chọn đúng kết quả và zoom tới vị trí; sau đó chọn điểm đi/đến để tính route Valhalla.
+3. Vẽ Point, LineString, Polygon; chỉnh sửa đỉnh/properties, đo khoảng cách/diện tích, thể hiện undo/redo và reset.
 4. Xuất GeoJSON, đổi CRS, import lại và kiểm tra properties/hình học.
-5. Tìm địa điểm bằng autocomplete Nominatim, chọn kết quả và zoom tới vị trí.
-6. Chọn điểm đi/đến, tính route Valhalla, trình bày distance/time/instructions.
-7. Trình bày luồng Browser → Controller → PostGIS/Nominatim/Valhalla/Tile server và NetworkPolicy.
+5. Đăng nhập tài khoản quản trị, mở **Tổng quan** để trình bày số tài khoản, người trực tuyến và hai biểu đồ tròn.
+6. Mở **Billing quota**, chọn một tài khoản và đổi khoảng thời gian biểu đồ. Nêu rõ đây là quota usage, không phải thanh toán tiền thật.
+7. Mở **Người dùng**, tìm kiếm/lọc/phân trang, thêm một tài khoản có ngày sinh, đơn vị và số điện thoại; sửa rồi xóa tài khoản demo.
+8. Mở **Nhật ký quản trị** để chỉ ra người thao tác, loại thay đổi và giá trị trước/sau; kết thúc bằng sơ đồ Browser → Controller → các dịch vụ nội bộ và NetworkPolicy.

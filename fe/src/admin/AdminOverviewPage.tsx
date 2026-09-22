@@ -1,0 +1,7 @@
+import { useEffect, useState } from "react";
+import { Activity, Users } from "lucide-react";
+import { Stack } from "@mui/material";
+import { fetchAdminDashboard, type AdminDashboardMetrics } from "../features/billing/billingApi";
+import { DonutChart, LoadingOrError, MetricCard, PageTitle } from "./AdminShared";
+
+export function AdminOverviewPage() { const [metrics, setMetrics] = useState<AdminDashboardMetrics | null>(null); const [error, setError] = useState(false); useEffect(() => { let active = true; void fetchAdminDashboard().then(value => active && setMetrics(value)).catch(() => active && setError(true)); return () => { active = false; }; }, []); const ageGroups = metrics?.ageGroups ?? []; const organizationGroups = metrics?.organizationGroups ?? []; return <><PageTitle title="Tổng quan" description="Theo dõi tài khoản, người đang trực tuyến và phân bố hồ sơ." /><LoadingOrError loading={!metrics} error={error} />{metrics && <Stack spacing={2.5}><Stack direction={{ xs: "column", sm: "row" }} spacing={2}><MetricCard icon={<Users size={23} />} label="Tổng số tài khoản" value={metrics.totalAccounts} /><MetricCard icon={<Activity size={23} />} label="Đang trực tuyến" value={metrics.onlineUsers} tone="blue" /></Stack><Stack direction={{ xs: "column", lg: "row" }} spacing={2.5}><DonutChart title="Phân bố độ tuổi" description="Các hồ sơ chưa khai báo ngày sinh được tách riêng." groups={ageGroups} /><DonutChart title="Phân bố theo đơn vị" description="Tối đa 8 đơn vị có nhiều tài khoản nhất." groups={organizationGroups} /></Stack></Stack>}</>; }
