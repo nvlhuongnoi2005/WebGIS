@@ -1,5 +1,6 @@
 import type { Geometry } from "geojson";
 
+import { authFetch } from "../../features/auth/authClient";
 import type { MapCoordinates } from "../../types/map";
 
 export interface GeocodingFeature {
@@ -128,7 +129,7 @@ export async function fetchGeocodingSuggestions(
   const query = searchQuery.trim();
   if (!query) return [];
 
-  const response = await fetch(`${SUGGESTIONS_URL}?${new URLSearchParams({ q: query })}`, {
+  const response = await authFetch(`${SUGGESTIONS_URL}?${new URLSearchParams({ q: query })}`, {
     signal,
   });
   if (!response.ok) {
@@ -170,7 +171,7 @@ export async function fetchGeocoding(
     limit: "6",
     "accept-language": acceptLanguage,
   });
-  const response = await fetch(`${NOMINATIM_URL}/search?${params.toString()}`, {
+  const response = await authFetch(`${NOMINATIM_URL}/search?${params.toString()}`, {
     signal,
   });
 

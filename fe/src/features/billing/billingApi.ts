@@ -10,6 +10,7 @@ export interface BillingDetails {
   limitUnits: number;
   usedUnits: number;
   dailyRequests: Array<{ date: string; requests: number }>;
+  apiRequests?: Array<{ api: "route" | "search" | string; requests: number }>;
 }
 
 export interface AdminDashboardMetrics {
@@ -57,6 +58,10 @@ export async function updateAdminUser(id: string, update: Partial<Pick<AdminUser
 }
 export async function createAdminUser(input: CreateAdminUser) {
   const response = await authFetch("/api/admin/users", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) });
+  if (!response.ok) throw new Error(`Request failed (${response.status})`);
+}
+export async function resetAdminUserPassword(id: string, newPassword: string) {
+  const response = await authFetch(`/api/admin/users/${encodeURIComponent(id)}/reset-password`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ newPassword }) });
   if (!response.ok) throw new Error(`Request failed (${response.status})`);
 }
 export async function deleteAdminUser(id: string) {

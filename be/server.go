@@ -49,9 +49,14 @@ type billingRecord struct {
 	LimitUnits    int          `json:"limitUnits"`
 	UsedUnits     int          `json:"usedUnits"`
 	DailyRequests []dailyUsage `json:"dailyRequests,omitempty"`
+	APIRequests   []apiUsage   `json:"apiRequests,omitempty"`
 }
 type dailyUsage struct {
 	Date     string `json:"date"`
+	Requests int    `json:"requests"`
+}
+type apiUsage struct {
+	API      string `json:"api"`
 	Requests int    `json:"requests"`
 }
 type ageGroup struct {
@@ -77,6 +82,9 @@ type adminUserCreateInput struct {
 	Status       string `json:"status"`
 	Plan         string `json:"plan"`
 	LimitUnits   int    `json:"limitUnits"`
+}
+type adminPasswordResetInput struct {
+	NewPassword string `json:"newPassword"`
 }
 
 func validDateOfBirth(value string) bool {
@@ -647,6 +655,27 @@ func billingDays(request *http.Request) int {
 	}
 }
 
+func (server *Server) consumeQuota(ctx context.Context, userID, apiType string) error {
+	result, err := server.repository.pool.Exec(ctx, `
+		WITH consumed_quota AS (
+			UPDATE user_quotas
+			SET used_units = used_units + 1, updated_at = now()
+			WHERE user_id = $1 AND period_start <= now() AND period_end > now() AND used_units + 1 <= limit_units
+			RETURNING user_id
+		)
+		INSERT INTO user_daily_usage (user_id, usage_date, api_type, request_count)
+		SELECT user_id, current_date, $2, 1 FROM consumed_quota
+		ON CONFLICT (user_id, usage_date, api_type) DO UPDATE
+		SET request_count = user_daily_usage.request_count + 1`, userID, apiType)
+	if err != nil {
+		return err
+	}
+	if result.RowsAffected() != 1 {
+		return errors.New("quota exceeded")
+	}
+	return nil
+}
+
 func (server *Server) billingForUser(ctx context.Context, userID string, days int) (billingRecord, error) {
 	var billing billingRecord
 	err := server.repository.pool.QueryRow(ctx, `
@@ -670,8 +699,10 @@ func (server *Server) billingForUser(ctx context.Context, userID string, days in
 	rows, err := server.repository.pool.Query(ctx, `
 		SELECT day::date::text, COALESCE(usage.request_count, 0)
 		FROM generate_series(current_date - ($2::integer - 1), current_date, interval '1 day') AS days(day)
-		LEFT JOIN user_daily_usage usage
-			ON usage.user_id = $1 AND usage.usage_date = days.day::date
+		LEFT JOIN (
+			SELECT usage_date, SUM(request_count) AS request_count
+			FROM user_daily_usage WHERE user_id = $1 AND api_type IN ('route', 'search') GROUP BY usage_date
+		) usage ON usage.usage_date = days.day::date
 		ORDER BY days.day`, userID, days)
 	if err != nil {
 		return billing, err
@@ -685,11 +716,31 @@ func (server *Server) billingForUser(ctx context.Context, userID string, days in
 		}
 		billing.DailyRequests = append(billing.DailyRequests, usage)
 	}
-	return billing, rows.Err()
+	if err := rows.Err(); err != nil {
+		return billing, err
+	}
+	apiRows, err := server.repository.pool.Query(ctx, `
+		SELECT api_type, SUM(request_count)
+		FROM user_daily_usage
+		WHERE user_id=$1 AND usage_date >= current_date - ($2::integer - 1) AND api_type IN ('route', 'search')
+		GROUP BY api_type ORDER BY api_type`, userID, days)
+	if err != nil {
+		return billing, err
+	}
+	defer apiRows.Close()
+	billing.APIRequests = make([]apiUsage, 0, 2)
+	for apiRows.Next() {
+		var usage apiUsage
+		if err := apiRows.Scan(&usage.API, &usage.Requests); err != nil {
+			return billing, err
+		}
+		billing.APIRequests = append(billing.APIRequests, usage)
+	}
+	return billing, apiRows.Err()
 }
 
-// billing only returns the signed-in user's subscription, quota, and route
-// requests counted in the selected reporting window.
+// billing only returns the signed-in user's subscription, quota, and requests
+// counted in the selected reporting window, grouped by API type.
 func (server *Server) billing(response http.ResponseWriter, request *http.Request) {
 	claims, ok := server.authenticate(response, request)
 	if !ok {
@@ -1080,6 +1131,67 @@ func (server *Server) adminUpdateUser(response http.ResponseWriter, request *htt
 	response.WriteHeader(http.StatusNoContent)
 }
 
+// adminResetUserPassword lets an administrator issue a temporary password for
+// another account. It invalidates all existing sessions so the old password or
+// refresh token cannot be used after the reset.
+func (server *Server) adminResetUserPassword(response http.ResponseWriter, request *http.Request, userID string) {
+	claims, ok := server.requireAdmin(response, request)
+	if !ok {
+		return
+	}
+	if userID == claims.Subject {
+		clientError(response, http.StatusBadRequest, "Use the change-password endpoint for your own account")
+		return
+	}
+	var input adminPasswordResetInput
+	if decodeJSON(request, &input) != nil || validatePassword(input.NewPassword) != "" {
+		clientError(response, http.StatusBadRequest, "Invalid password reset")
+		return
+	}
+	nextHash, err := server.passwords.Hash(input.NewPassword)
+	if err != nil {
+		clientError(response, http.StatusInternalServerError, "Internal server error")
+		return
+	}
+	ctx := request.Context()
+	tx, err := server.repository.pool.Begin(ctx)
+	if err != nil {
+		clientError(response, http.StatusInternalServerError, "Internal server error")
+		return
+	}
+	defer tx.Rollback(ctx)
+	var version int
+	if err = tx.QueryRow(ctx, `UPDATE users SET password_hash=$1,auth_version=auth_version+1 WHERE id=$2 RETURNING auth_version`, nextHash, userID).Scan(&version); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			clientError(response, http.StatusNotFound, "User not found")
+		} else {
+			clientError(response, http.StatusInternalServerError, "Internal server error")
+		}
+		return
+	}
+	if _, err = tx.Exec(ctx, `UPDATE sessions SET revoked_at=COALESCE(revoked_at,now()) WHERE user_id=$1 AND revoked_at IS NULL`, userID); err != nil {
+		clientError(response, http.StatusInternalServerError, "Internal server error")
+		return
+	}
+	details, _ := json.Marshal(map[string]any{"passwordReset": "Temporary password issued; existing sessions revoked"})
+	if _, err = tx.Exec(ctx, `INSERT INTO admin_audit_logs(actor_id,target_user_id,action,details) VALUES($1,$2,'user.password_reset',$3::jsonb)`, claims.Subject, userID, details); err != nil {
+		clientError(response, http.StatusInternalServerError, "Internal server error")
+		return
+	}
+	event := RevocationEvent{Type: "PasswordChanged", UserID: userID, AuthVersion: version, Timestamp: time.Now().UTC().Format(time.RFC3339Nano)}
+	if err = server.repository.Publish(ctx, tx, event); err != nil {
+		clientError(response, http.StatusInternalServerError, "Internal server error")
+		return
+	}
+	if err = tx.Commit(ctx); err != nil {
+		clientError(response, http.StatusInternalServerError, "Internal server error")
+		return
+	}
+	server.revocations.Apply(event)
+	slog.Info("admin_password_reset", "actor_id", claims.Subject, "user_id", userID)
+	response.WriteHeader(http.StatusNoContent)
+}
+
 func (server *Server) adminDeleteUser(response http.ResponseWriter, request *http.Request, userID string) {
 	claims, ok := server.requireAdmin(response, request)
 	if !ok {
@@ -1151,25 +1263,11 @@ func (server *Server) route(response http.ResponseWriter, request *http.Request)
 		return
 	}
 	ctx := request.Context()
-	quota, err := server.repository.pool.Exec(ctx, `
-		WITH consumed_quota AS (
-			UPDATE user_quotas
-			SET used_units = used_units + 1, updated_at = now()
-			WHERE user_id = $1
-				AND period_start <= now()
-				AND period_end > now()
-				AND used_units + 1 <= limit_units
-			RETURNING user_id
-		)
-		INSERT INTO user_daily_usage (user_id, usage_date, request_count)
-		SELECT user_id, current_date, 1 FROM consumed_quota
-		ON CONFLICT (user_id, usage_date) DO UPDATE
-		SET request_count = user_daily_usage.request_count + 1`, claims.Subject)
-	if err != nil {
-		clientError(response, 500, "Internal server error")
-		return
-	}
-	if quota.RowsAffected() != 1 {
+	if err := server.consumeQuota(ctx, claims.Subject, "route"); err != nil {
+		if err.Error() != "quota exceeded" {
+			clientError(response, 500, "Internal server error")
+			return
+		}
 		clientError(response, 429, "Quota exceeded")
 		return
 	}
@@ -1252,8 +1350,7 @@ func (server *Server) elevation(response http.ResponseWriter, request *http.Requ
 
 // tileProxy keeps the worker private: browser requests always enter through the
 // Controller, while the Controller is the only workload allowed to reach Tile Server.
-// Basemap files are public, cacheable map assets; protected operations remain under
-// the authenticated /api/gateway routes.
+// Basemap files remain cacheable map assets and do not consume user quota.
 func (server *Server) tileProxy(response http.ResponseWriter, request *http.Request, workerPath string) {
 	if request.Method != http.MethodGet && request.Method != http.MethodHead {
 		clientError(response, http.StatusMethodNotAllowed, "Method not allowed")
@@ -1272,7 +1369,6 @@ func (server *Server) tileProxy(response http.ResponseWriter, request *http.Requ
 			return
 		}
 	}
-
 	target := server.config.TileServerURL + workerPath
 	if request.URL.RawQuery != "" {
 		target += "?" + request.URL.RawQuery
@@ -1322,6 +1418,20 @@ func (server *Server) nominatimProxy(response http.ResponseWriter, request *http
 	for _, segment := range strings.Split(workerPath, "/") {
 		if segment == "." || segment == ".." || strings.Contains(segment, "\\") {
 			clientError(response, http.StatusNotFound, "Not found")
+			return
+		}
+	}
+	claims, ok := server.authenticate(response, request, "map:read")
+	if !ok {
+		return
+	}
+	if request.Method == http.MethodGet {
+		if err := server.consumeQuota(request.Context(), claims.Subject, "search"); err != nil {
+			if err.Error() == "quota exceeded" {
+				clientError(response, http.StatusTooManyRequests, "Quota exceeded")
+			} else {
+				clientError(response, http.StatusInternalServerError, "Internal server error")
+			}
 			return
 		}
 	}
@@ -1474,6 +1584,13 @@ func (server *Server) ServeHTTP(response http.ResponseWriter, request *http.Requ
 		server.adminUsers(response, request)
 	case request.Method == http.MethodPost && request.URL.Path == "/api/admin/users":
 		server.adminCreateUser(response, request)
+	case request.Method == http.MethodPost && strings.HasPrefix(request.URL.Path, "/api/admin/users/") && strings.HasSuffix(request.URL.Path, "/reset-password"):
+		userID := strings.TrimSuffix(strings.TrimPrefix(request.URL.Path, "/api/admin/users/"), "/reset-password")
+		if userID == "" || strings.Contains(userID, "/") {
+			clientError(response, 400, "Invalid user id")
+		} else {
+			server.adminResetUserPassword(response, request, userID)
+		}
 	case request.Method == http.MethodGet && request.URL.Path == "/api/admin/audit":
 		server.adminAudit(response, request)
 	case request.Method == http.MethodPatch && strings.HasPrefix(request.URL.Path, "/api/admin/users/"):

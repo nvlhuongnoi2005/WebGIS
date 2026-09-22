@@ -151,6 +151,18 @@ func (server *Server) suggestions(response http.ResponseWriter, request *http.Re
 		clientError(response, http.StatusBadRequest, "Query must contain 2 to 120 characters")
 		return
 	}
+	claims, ok := server.authenticate(response, request, "map:read")
+	if !ok {
+		return
+	}
+	if err := server.consumeQuota(request.Context(), claims.Subject, "search"); err != nil {
+		if err.Error() == "quota exceeded" {
+			clientError(response, http.StatusTooManyRequests, "Quota exceeded")
+		} else {
+			clientError(response, http.StatusInternalServerError, "Internal server error")
+		}
+		return
+	}
 	if server.config.ElasticsearchURL == "" {
 		clientError(response, http.StatusServiceUnavailable, "Suggestions temporarily unavailable")
 		return

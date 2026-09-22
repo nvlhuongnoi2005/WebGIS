@@ -67,6 +67,10 @@ export function BillingCard({ billing, locale, range, onRangeChange }: { billing
   const { t } = useTranslation();
   const totalRequests = billing.dailyRequests.reduce((total, item) => total + item.requests, 0);
   const maximumRequests = Math.max(...billing.dailyRequests.map(item => item.requests), 1);
+  const apiRequests = ["route", "search"].map(api => ({
+    api,
+    requests: billing.apiRequests?.find(item => item.api === api)?.requests ?? 0,
+  }));
   return (
     <Stack spacing={2.5}>
       <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: 3, border: "1px solid rgba(224, 0, 43, 0.18)", bgcolor: "rgba(224, 0, 43, 0.06)" }}>
@@ -88,7 +92,7 @@ export function BillingCard({ billing, locale, range, onRangeChange }: { billing
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ justifyContent: "space-between", alignItems: { sm: "center" } }}>
             <Box>
               <Typography variant="h6" sx={{ fontWeight: 750 }}>{t("billing.requestChart")}</Typography>
-              <Typography variant="body2" color="text.secondary">{t("billing.routeRequestsDescription")}</Typography>
+              <Typography variant="body2" color="text.secondary">{t("billing.requestRequestsDescription")}</Typography>
             </Box>
             <ToggleButtonGroup
               exclusive
@@ -108,7 +112,61 @@ export function BillingCard({ billing, locale, range, onRangeChange }: { billing
           <Typography variant="caption" color="text.secondary">{t("billing.dailyTrackingNote")}</Typography>
         </Stack>
       </Paper>
+
+      <ApiRequestChart items={apiRequests} total={totalRequests} />
     </Stack>
+  );
+}
+
+function ApiRequestChart({ items, total }: { items: Array<{ api: string; requests: number }>; total: number }) {
+  const { t } = useTranslation();
+  const labels: Record<string, string> = {
+    route: t("billing.apiRoute"),
+    search: t("billing.apiSearch"),
+  };
+  const colors: Record<string, string> = { route: "#e0002b", search: "#008b7f" };
+  const nonEmptyItems = items.filter(item => item.requests > 0);
+  const percentages = nonEmptyItems.map(item => item.requests / Math.max(total, 1) * 100);
+  const segments = nonEmptyItems.map((item, index) => {
+    const start = percentages.slice(0, index).reduce((sum, percentage) => sum + percentage, 0);
+    return `${colors[item.api]} ${start}% ${start + percentages[index]}%`;
+  });
+
+  return (
+    <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: 3, border: "1px solid rgba(37, 99, 200, 0.16)", bgcolor: "rgba(37, 99, 200, 0.025)" }}>
+      <Stack spacing={2}>
+        <Box>
+          <Typography variant="h6" sx={{ fontWeight: 750 }}>{t("billing.apiRequestChart")}</Typography>
+          <Typography variant="body2" color="text.secondary">{t("billing.apiRequestDescription")}</Typography>
+        </Box>
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={3} sx={{ alignItems: "center" }}>
+          <Box
+            role="img"
+            aria-label={t("billing.apiChartLabel", { count: total })}
+            sx={{
+              position: "relative", display: "grid", placeItems: "center", flex: "0 0 auto", width: 168, height: 168,
+              borderRadius: "50%", background: segments.length ? `conic-gradient(${segments.join(", ")})` : "rgba(37, 99, 200, 0.12)",
+            }}
+          >
+            <Box sx={{ display: "grid", placeItems: "center", width: 112, height: 112, borderRadius: "50%", bgcolor: "background.paper", textAlign: "center", boxShadow: "inset 0 0 0 1px rgba(37, 99, 200, 0.08)" }}>
+              <Typography variant="h5" sx={{ fontWeight: 800 }}>{total}</Typography>
+              <Typography variant="caption" color="text.secondary">{t("billing.requests")}</Typography>
+            </Box>
+          </Box>
+          <Stack spacing={1.25} sx={{ width: "100%" }}>
+            {items.map(item => (
+              <Stack key={item.api} direction="row" spacing={1.25} sx={{ alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(30, 49, 59, 0.08)", pb: 1 }}>
+                <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+                  <Box sx={{ width: 10, height: 10, borderRadius: "50%", bgcolor: colors[item.api] }} />
+                  <Typography variant="body2" sx={{ fontWeight: 700 }}>{labels[item.api] ?? item.api}</Typography>
+                </Stack>
+                <Typography variant="body2" color="text.secondary">{item.requests} · {total ? Math.round(item.requests / total * 100) : 0}%</Typography>
+              </Stack>
+            ))}
+          </Stack>
+        </Stack>
+      </Stack>
+    </Paper>
   );
 }
 

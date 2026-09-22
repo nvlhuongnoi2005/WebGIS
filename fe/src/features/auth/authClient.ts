@@ -3,7 +3,7 @@ let onSessionExpired: (() => void) | null = null;
 let refreshInFlight: Promise<boolean> | null = null;
 
 export function setAccessToken(token: string | null): void {
-  accessToken = token;
+	accessToken = token;
 }
 
 export function setSessionExpiredHandler(handler: (() => void) | null): void {

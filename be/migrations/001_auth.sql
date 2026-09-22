@@ -99,14 +99,27 @@ CREATE TABLE IF NOT EXISTS user_quotas (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
--- One aggregate row per account and calendar day keeps request reporting
--- compact while preserving the exact units counted toward the route quota.
+-- One aggregate row per account, calendar day and API keeps request reporting
+-- compact while preserving the exact units counted toward quota usage.
 CREATE TABLE IF NOT EXISTS user_daily_usage (
   user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   usage_date date NOT NULL,
+  api_type text NOT NULL DEFAULT 'route' CHECK (api_type IN ('route', 'search', 'tile')),
   request_count integer NOT NULL DEFAULT 0 CHECK (request_count >= 0),
-  PRIMARY KEY (user_id, usage_date)
+  PRIMARY KEY (user_id, usage_date, api_type)
 );
+-- Upgrade databases created before API-level reporting. Existing totals were
+-- route requests, so they retain the route label.
+ALTER TABLE user_daily_usage ADD COLUMN IF NOT EXISTS api_type text NOT NULL DEFAULT 'route';
+ALTER TABLE user_daily_usage DROP CONSTRAINT IF EXISTS user_daily_usage_pkey;
+ALTER TABLE user_daily_usage ADD PRIMARY KEY (user_id, usage_date, api_type);
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'user_daily_usage_api_type_check') THEN
+    ALTER TABLE user_daily_usage ADD CONSTRAINT user_daily_usage_api_type_check CHECK (api_type IN ('route', 'search', 'tile'));
+  END IF;
+END;
+$$;
 CREATE INDEX IF NOT EXISTS user_daily_usage_date_idx ON user_daily_usage (usage_date);
 
 CREATE TABLE IF NOT EXISTS admin_audit_logs (
