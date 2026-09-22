@@ -151,9 +151,17 @@ jobs:
           fetch-depth: 0
 
       - name: Ensure main has not advanced during the build
-        run: test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+        id: source
+        run: |
+          if [ "$(git rev-parse HEAD)" = "${GITHUB_SHA}" ]; then
+            echo "matches=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "matches=false" >> "$GITHUB_OUTPUT"
+            echo "main advanced while this build was running; skipping stale GitOps update."
+          fi
 
       - name: Set immutable image tags in manifests
+        if: steps.source.outputs.matches == 'true'
         env:
           IMAGE_TAG: sha-${{ github.sha }}
           IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/webgis
@@ -170,6 +178,7 @@ jobs:
           fi
 
       - name: Commit manifest update
+        if: steps.source.outputs.matches == 'true'
         run: |
           if git diff --quiet -- deployment/frontend.yaml deployment/controller.yaml deployment/migration-job.yaml; then
             echo "Image tags already match this build."
