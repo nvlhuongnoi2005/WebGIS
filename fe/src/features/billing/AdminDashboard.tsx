@@ -15,12 +15,12 @@ export default function AdminDashboard() {
 }
 
 function AdminShell({ section, children }: { section: AdminSection; children: React.ReactNode }) {
-  return <Box component="main" id="main-content" sx={{ minHeight: "100dvh", bgcolor: "background.default", p: { xs: 1.5, sm: 3 } }}><Stack direction={{ xs: "column", md: "row" }} spacing={2.5} sx={{ maxWidth: 1440, mx: "auto" }}>
+  return <Box component="main" id="main-content" sx={{ height: "100dvh", overflow: "hidden", bgcolor: "background.default", p: { xs: 1.5, sm: 3 } }}><Stack direction={{ xs: "column", md: "row" }} spacing={2.5} sx={{ height: "100%", minHeight: 0, maxWidth: 1440, mx: "auto" }}>
     <Paper component="nav" aria-label="Điều hướng quản trị" sx={{ width: { md: 244 }, flexShrink: 0, p: 1.25, borderRadius: 3, height: { md: "fit-content" }, position: { md: "sticky" }, top: { md: 24 }, border: "1px solid rgba(224, 0, 43, 0.15)" }}>
       <Stack direction="row" spacing={1.25} sx={{ alignItems: "center", px: 1, py: 1.25 }}><Box sx={{ display: "grid", placeItems: "center", width: 38, height: 38, borderRadius: 2, bgcolor: "primary.main", color: "#fff" }}><ShieldCheck size={21} /></Box><Box><Typography sx={{ fontWeight: 800 }}>Quản trị</Typography><Typography variant="caption" color="text.secondary">VGIS console</Typography></Box></Stack>
       <Divider /><List disablePadding sx={{ py: 1 }}>{navigation.map(item => { const Icon = item.icon; return <ListItemButton key={item.id} component="a" href={pathFor(item.id)} selected={section === item.id} sx={{ my: 0.25, borderRadius: 2, "&.Mui-selected": { bgcolor: "rgba(224, 0, 43, 0.11)", color: "primary.main", "& .MuiListItemText-primary": { fontWeight: 750 } } }}><ListItemIcon sx={{ minWidth: 37, color: "inherit" }}><Icon size={19} /></ListItemIcon><ListItemText primary={item.label} /></ListItemButton>; })}</List><Divider />
       <Button component="a" href="/map" fullWidth startIcon={<ArrowLeft size={17} />} sx={{ mt: 1.25, justifyContent: "flex-start" }}>Về bản đồ</Button>
-    </Paper><Box sx={{ flex: 1, minWidth: 0 }}>{children}</Box>
+    </Paper><Box sx={{ flex: 1, minWidth: 0, minHeight: 0, overflowY: "auto", overflowX: "hidden", overscrollBehavior: "contain", pr: { md: 0.5 }, pb: 3 }}>{children}</Box>
   </Stack></Box>;
 }
 
