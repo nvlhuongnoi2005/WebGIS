@@ -17,7 +17,7 @@ data:
   AUTH_SECURE_COOKIES: "true"
   AUTH_COOKIE_SAME_SITE: lax
   AUTH_DEV_EPHEMERAL_KEYS: "false"
-  APP_ORIGINS: http://webgis.localhost
+  APP_ORIGINS: http://webgis.localhost,http://192.168.0.191
   VALHALLA_INTERNAL_URL: http://valhalla:8002
   TILE_SERVER_INTERNAL_URL: http://tile-server:8080
   NOMINATIM_INTERNAL_URL: http://nominatim:8083

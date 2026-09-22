@@ -8,8 +8,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: webgis.localhost
-      http:
+    - http:
         paths:
           - path: /auth
             pathType: Prefix
