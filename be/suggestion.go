@@ -161,6 +161,10 @@ func (server *Server) suggestions(response http.ResponseWriter, request *http.Re
 		"_source": []string{"name", "address", "category", "importance", "location"},
 		"query": map[string]any{
 			"function_score": map[string]any{
+				// Text relevance must win over a place's administrative rank.
+				// Otherwise a fuzzy match on one short word (for example "la")
+				// makes provinces and cities outrank the POI the user typed.
+				"boost_mode": "sum",
 				"query": map[string]any{
 					"bool": map[string]any{
 						"minimum_should_match": 1,
@@ -168,11 +172,11 @@ func (server *Server) suggestions(response http.ResponseWriter, request *http.Re
 							map[string]any{"match": map[string]any{"aliases": map[string]any{"query": normalized, "operator": "and", "boost": 16}}},
 							map[string]any{"match": map[string]any{"name_normalized": map[string]any{"query": normalized, "operator": "and", "boost": 12}}},
 							map[string]any{"match_phrase_prefix": map[string]any{"name_normalized": map[string]any{"query": normalized, "boost": 8}}},
-							map[string]any{"match": map[string]any{"name_normalized": map[string]any{"query": normalized, "fuzziness": "AUTO", "prefix_length": 1, "boost": 2}}},
+							map[string]any{"match": map[string]any{"name_normalized": map[string]any{"query": normalized, "operator": "and", "fuzziness": "AUTO", "prefix_length": 2, "boost": 2}}},
 						},
 					},
 				},
-				"field_value_factor": map[string]any{"field": "rank", "modifier": "sqrt", "missing": 1},
+				"field_value_factor": map[string]any{"field": "rank", "factor": 0.05, "modifier": "sqrt", "missing": 1},
 			},
 		},
 		"sort": []any{"_score", map[string]any{"importance": map[string]string{"order": "desc"}}},
@@ -206,9 +210,12 @@ func (server *Server) suggestions(response http.ResponseWriter, request *http.Re
 			continue
 		}
 		results = append(results, map[string]any{
-			"id": "es-" + hit.ID, "type": "Feature", "place_name": suggestionPlaceName(hit.Source.Name, hit.Source.Address), "text": hit.Source.Name, "context": hit.Source.Address,
+			// Keep this intentionally lightweight. The browser resolves a selected
+			// suggestion through Nominatim to get the authoritative geometry and
+			// avoid treating a centroid-only suggestion as a final search result.
+			"id": "es-" + hit.ID, "place_name": suggestionPlaceName(hit.Source.Name, hit.Source.Address), "text": hit.Source.Name, "context": hit.Source.Address,
 			"is_area": suggestionIsArea(hit.Source.Category),
-			"center": hit.Source.Location, "geometry": map[string]any{"type": "Point", "coordinates": hit.Source.Location},
+			"center":  hit.Source.Location,
 		})
 	}
 	writeJSON(response, http.StatusOK, results)
