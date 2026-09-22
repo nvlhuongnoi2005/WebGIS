@@ -59,10 +59,29 @@ type ageGroup struct {
 	Count int    `json:"count"`
 }
 type adminUserUpdateInput struct {
+	Name       *string `json:"name"`
+	Email      *string `json:"email"`
 	Role       *string `json:"role"`
 	Status     *string `json:"status"`
 	Plan       *string `json:"plan"`
 	LimitUnits *int    `json:"limitUnits"`
+}
+type adminUserCreateInput struct {
+	Email        string `json:"email"`
+	Password     string `json:"password"`
+	Name         string `json:"name"`
+	DateOfBirth  string `json:"dateOfBirth"`
+	Phone        string `json:"phone"`
+	Organization string `json:"organization"`
+	Role         string `json:"role"`
+	Status       string `json:"status"`
+	Plan         string `json:"plan"`
+	LimitUnits   int    `json:"limitUnits"`
+}
+
+func validDateOfBirth(value string) bool {
+	date, err := time.Parse("2006-01-02", value)
+	return err == nil && date.Before(time.Now().UTC().Truncate(24*time.Hour))
 }
 
 type Server struct {
@@ -716,6 +735,30 @@ func (server *Server) adminDashboard(response http.ResponseWriter, request *http
 		clientError(response, 500, "Internal server error")
 		return
 	}
+	organizationRows, err := server.repository.pool.Query(request.Context(), `
+		SELECT COALESCE(NULLIF(BTRIM(organization), ''), 'Chưa cập nhật'), COUNT(*)
+		FROM users
+		GROUP BY 1
+		ORDER BY COUNT(*) DESC, 1
+		LIMIT 8`)
+	if err != nil {
+		clientError(response, 500, "Internal server error")
+		return
+	}
+	defer organizationRows.Close()
+	organizationGroups := make([]ageGroup, 0)
+	for organizationRows.Next() {
+		var group ageGroup
+		if err := organizationRows.Scan(&group.Label, &group.Count); err != nil {
+			clientError(response, 500, "Internal server error")
+			return
+		}
+		organizationGroups = append(organizationGroups, group)
+	}
+	if err := organizationRows.Err(); err != nil {
+		clientError(response, 500, "Internal server error")
+		return
+	}
 	writeJSON(response, 200, map[string]any{
 		"totalAccounts": totalAccounts,
 		"onlineUsers":   onlineUsers,
@@ -727,6 +770,7 @@ func (server *Server) adminDashboard(response http.ResponseWriter, request *http
 			{Label: "45+", Count: age45Plus},
 			{Label: "Unknown", Count: unknownAge},
 		},
+		"organizationGroups": organizationGroups,
 	})
 }
 
@@ -772,6 +816,25 @@ func (server *Server) adminBilling(response http.ResponseWriter, request *http.R
 	writeJSON(response, 200, map[string]any{"billings": billings})
 }
 
+// adminBillingUser is deliberately separate from the user's own billing route:
+// an administrator may inspect a selected account, while ordinary users can
+// only request the billing record for their token subject.
+func (server *Server) adminBillingUser(response http.ResponseWriter, request *http.Request, userID string) {
+	if _, ok := server.requireAdmin(response, request); !ok {
+		return
+	}
+	billing, err := server.billingForUser(request.Context(), userID, billingDays(request))
+	if errors.Is(err, pgx.ErrNoRows) {
+		clientError(response, http.StatusNotFound, "User not found")
+		return
+	}
+	if err != nil {
+		clientError(response, 500, "Internal server error")
+		return
+	}
+	writeJSON(response, 200, billing)
+}
+
 func (server *Server) requireAdmin(response http.ResponseWriter, request *http.Request) (Claims, bool) {
 	claims, ok := server.authenticate(response, request)
 	if !ok || isAdmin(claims) {
@@ -809,13 +872,75 @@ func (server *Server) adminUsers(response http.ResponseWriter, request *http.Req
 	writeJSON(response, 200, map[string]any{"users": users})
 }
 
+func (server *Server) adminCreateUser(response http.ResponseWriter, request *http.Request) {
+	claims, ok := server.requireAdmin(response, request)
+	if !ok {
+		return
+	}
+	var input adminUserCreateInput
+	if decodeJSON(request, &input) != nil {
+		clientError(response, 400, "Invalid user")
+		return
+	}
+	email, valid := normalizedEmail(input.Email)
+	input.Name = strings.TrimSpace(input.Name)
+	input.Plan = strings.TrimSpace(input.Plan)
+	if !valid || validatePassword(input.Password) != "" || len(input.Name) > 120 || len(input.Phone) > 32 || len(input.Organization) > 160 || (input.DateOfBirth != "" && !validDateOfBirth(input.DateOfBirth)) || (input.Role != "user" && input.Role != "admin") || (input.Status != "ACTIVE" && input.Status != "DISABLED" && input.Status != "LOCKED") || input.Plan == "" || len(input.Plan) > 64 || input.LimitUnits < 0 || input.LimitUnits > 10_000_000 {
+		clientError(response, 400, "Invalid user")
+		return
+	}
+	hash, err := server.passwords.Hash(input.Password)
+	if err != nil {
+		clientError(response, 500, "Internal server error")
+		return
+	}
+	ctx := request.Context()
+	tx, err := server.repository.pool.Begin(ctx)
+	if err != nil {
+		clientError(response, 500, "Internal server error")
+		return
+	}
+	defer tx.Rollback(ctx)
+	if _, err = server.repository.UserByEmail(ctx, tx, email); err == nil {
+		clientError(response, 409, "Email is already registered")
+		return
+	} else if !errors.Is(err, pgx.ErrNoRows) {
+		clientError(response, 500, "Internal server error")
+		return
+	}
+	registration := registerInput{Email: email, Password: input.Password, Name: input.Name, DateOfBirth: input.DateOfBirth, Phone: input.Phone, Organization: input.Organization}
+	user, err := server.repository.CreateUser(ctx, tx, email, hash, registration)
+	if err != nil {
+		clientError(response, 500, "Internal server error")
+		return
+	}
+	if _, err = tx.Exec(ctx, `UPDATE users SET role=$1,status=$2,plan=$3 WHERE id=$4`, input.Role, input.Status, input.Plan, user.ID); err != nil {
+		clientError(response, 500, "Internal server error")
+		return
+	}
+	if _, err = tx.Exec(ctx, `INSERT INTO user_quotas(user_id,period_start,period_end,limit_units) VALUES($1,date_trunc('month',now()),date_trunc('month',now()) + interval '1 month',$2)`, user.ID, input.LimitUnits); err != nil {
+		clientError(response, 500, "Internal server error")
+		return
+	}
+	details, _ := json.Marshal(map[string]any{"created": map[string]any{"name": input.Name, "email": email, "role": input.Role, "status": input.Status, "plan": input.Plan, "limitUnits": input.LimitUnits}})
+	if _, err = tx.Exec(ctx, `INSERT INTO admin_audit_logs(actor_id,target_user_id,action,details) VALUES($1,$2,'user.created',$3::jsonb)`, claims.Subject, user.ID, details); err != nil {
+		clientError(response, 500, "Internal server error")
+		return
+	}
+	if err = tx.Commit(ctx); err != nil {
+		clientError(response, 500, "Internal server error")
+		return
+	}
+	writeJSON(response, http.StatusCreated, map[string]any{"id": user.ID})
+}
+
 func (server *Server) adminUpdateUser(response http.ResponseWriter, request *http.Request, userID string) {
 	claims, ok := server.requireAdmin(response, request)
 	if !ok {
 		return
 	}
 	var input adminUserUpdateInput
-	if decodeJSON(request, &input) != nil || input.Role == nil && input.Status == nil && input.Plan == nil && input.LimitUnits == nil {
+	if decodeJSON(request, &input) != nil || input.Name == nil && input.Email == nil && input.Role == nil && input.Status == nil && input.Plan == nil && input.LimitUnits == nil {
 		clientError(response, 400, "Invalid user update")
 		return
 	}
@@ -835,6 +960,22 @@ func (server *Server) adminUpdateUser(response http.ResponseWriter, request *htt
 		}
 		input.Plan = &value
 	}
+	if input.Name != nil {
+		value := strings.TrimSpace(*input.Name)
+		if len(value) > 120 {
+			clientError(response, 400, "Invalid user update")
+			return
+		}
+		input.Name = &value
+	}
+	if input.Email != nil {
+		value, valid := normalizedEmail(*input.Email)
+		if !valid {
+			clientError(response, 400, "Invalid user update")
+			return
+		}
+		input.Email = &value
+	}
 	if input.LimitUnits != nil && (*input.LimitUnits < 0 || *input.LimitUnits > 10_000_000) {
 		clientError(response, 400, "Invalid user update")
 		return
@@ -850,9 +991,52 @@ func (server *Server) adminUpdateUser(response http.ResponseWriter, request *htt
 		return
 	}
 	defer tx.Rollback(ctx)
+	var oldName, oldEmail, oldRole, oldStatus, oldPlan string
+	if err = tx.QueryRow(ctx, `SELECT COALESCE(full_name,email),email,role,status,plan FROM users WHERE id=$1 FOR UPDATE`, userID).Scan(&oldName, &oldEmail, &oldRole, &oldStatus, &oldPlan); errors.Is(err, pgx.ErrNoRows) {
+		clientError(response, 404, "User not found")
+		return
+	} else if err != nil {
+		clientError(response, 500, "Internal server error")
+		return
+	}
+	var oldLimit int
+	if err = tx.QueryRow(ctx, `SELECT COALESCE((SELECT limit_units FROM user_quotas WHERE user_id=$1 AND period_start<=now() AND period_end>now() LIMIT 1),0)`, userID).Scan(&oldLimit); err != nil {
+		clientError(response, 500, "Internal server error")
+		return
+	}
+	if input.Email != nil && *input.Email != oldEmail {
+		var emailInUse bool
+		if err = tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM users WHERE lower(email)=lower($1) AND id <> $2)`, *input.Email, userID).Scan(&emailInUse); err != nil {
+			clientError(response, 500, "Internal server error")
+			return
+		}
+		if emailInUse {
+			clientError(response, 409, "Email is already registered")
+			return
+		}
+	}
+	changes := map[string]any{}
+	if input.Name != nil && *input.Name != oldName {
+		changes["name"] = map[string]string{"from": oldName, "to": *input.Name}
+	}
+	if input.Email != nil && *input.Email != oldEmail {
+		changes["email"] = map[string]string{"from": oldEmail, "to": *input.Email}
+	}
+	if input.Role != nil && *input.Role != oldRole {
+		changes["role"] = map[string]string{"from": oldRole, "to": *input.Role}
+	}
+	if input.Status != nil && *input.Status != oldStatus {
+		changes["status"] = map[string]string{"from": oldStatus, "to": *input.Status}
+	}
+	if input.Plan != nil && *input.Plan != oldPlan {
+		changes["plan"] = map[string]string{"from": oldPlan, "to": *input.Plan}
+	}
+	if input.LimitUnits != nil && *input.LimitUnits != oldLimit {
+		changes["limitUnits"] = map[string]int{"from": oldLimit, "to": *input.LimitUnits}
+	}
 	var version int
 	var accessChangedEvent *RevocationEvent
-	err = tx.QueryRow(ctx, `UPDATE users SET role=COALESCE($1,role),status=COALESCE($2,status),plan=COALESCE($3,plan),auth_version=auth_version+CASE WHEN $1::text IS NULL AND $2::text IS NULL THEN 0 ELSE 1 END WHERE id=$4 RETURNING auth_version`, input.Role, input.Status, input.Plan, userID).Scan(&version)
+	err = tx.QueryRow(ctx, `UPDATE users SET role=COALESCE($1,role),status=COALESCE($2,status),plan=COALESCE($3,plan),full_name=COALESCE($4,full_name),email=COALESCE($5,email),auth_version=auth_version+CASE WHEN $1::text IS NULL AND $2::text IS NULL THEN 0 ELSE 1 END WHERE id=$6 RETURNING auth_version`, input.Role, input.Status, input.Plan, input.Name, input.Email, userID).Scan(&version)
 	if errors.Is(err, pgx.ErrNoRows) {
 		clientError(response, 404, "User not found")
 		return
@@ -881,7 +1065,7 @@ func (server *Server) adminUpdateUser(response http.ResponseWriter, request *htt
 		}
 		accessChangedEvent = &event
 	}
-	details, _ := json.Marshal(map[string]any{"role": input.Role, "status": input.Status, "plan": input.Plan, "limitUnits": input.LimitUnits})
+	details, _ := json.Marshal(map[string]any{"changes": changes})
 	if _, err = tx.Exec(ctx, `INSERT INTO admin_audit_logs(actor_id,target_user_id,action,details) VALUES($1,$2,'user.updated',$3::jsonb)`, claims.Subject, userID, details); err != nil {
 		clientError(response, 500, "Internal server error")
 		return
@@ -892,6 +1076,42 @@ func (server *Server) adminUpdateUser(response http.ResponseWriter, request *htt
 	}
 	if accessChangedEvent != nil {
 		server.revocations.Apply(*accessChangedEvent)
+	}
+	response.WriteHeader(http.StatusNoContent)
+}
+
+func (server *Server) adminDeleteUser(response http.ResponseWriter, request *http.Request, userID string) {
+	claims, ok := server.requireAdmin(response, request)
+	if !ok {
+		return
+	}
+	if userID == claims.Subject {
+		clientError(response, 400, "Cannot delete your own account")
+		return
+	}
+	ctx := request.Context()
+	tx, err := server.repository.pool.Begin(ctx)
+	if err != nil {
+		clientError(response, 500, "Internal server error")
+		return
+	}
+	defer tx.Rollback(ctx)
+	var name, email string
+	if err = tx.QueryRow(ctx, `DELETE FROM users WHERE id=$1 RETURNING COALESCE(full_name,email),email`, userID).Scan(&name, &email); errors.Is(err, pgx.ErrNoRows) {
+		clientError(response, 404, "User not found")
+		return
+	} else if err != nil {
+		clientError(response, 500, "Internal server error")
+		return
+	}
+	details, _ := json.Marshal(map[string]any{"deleted": map[string]string{"name": name, "email": email, "userId": userID}})
+	if _, err = tx.Exec(ctx, `INSERT INTO admin_audit_logs(actor_id,action,details) VALUES($1,'user.deleted',$2::jsonb)`, claims.Subject, details); err != nil {
+		clientError(response, 500, "Internal server error")
+		return
+	}
+	if err = tx.Commit(ctx); err != nil {
+		clientError(response, 500, "Internal server error")
+		return
 	}
 	response.WriteHeader(http.StatusNoContent)
 }
@@ -1192,7 +1412,7 @@ func (server *Server) cors(response http.ResponseWriter, request *http.Request) 
 	response.Header().Set("Access-Control-Allow-Origin", origin)
 	response.Header().Set("Access-Control-Allow-Credentials", "true")
 	response.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-CSRF-Token, X-Request-Id")
-	response.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, OPTIONS")
+	response.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
 	return true
 }
 
@@ -1241,8 +1461,17 @@ func (server *Server) ServeHTTP(response http.ResponseWriter, request *http.Requ
 		server.adminDashboard(response, request)
 	case request.Method == http.MethodGet && request.URL.Path == "/api/admin/billing":
 		server.adminBilling(response, request)
+	case request.Method == http.MethodGet && strings.HasPrefix(request.URL.Path, "/api/admin/billing/"):
+		userID := strings.TrimPrefix(request.URL.Path, "/api/admin/billing/")
+		if userID == "" || strings.Contains(userID, "/") {
+			clientError(response, 400, "Invalid user id")
+		} else {
+			server.adminBillingUser(response, request, userID)
+		}
 	case request.Method == http.MethodGet && request.URL.Path == "/api/admin/users":
 		server.adminUsers(response, request)
+	case request.Method == http.MethodPost && request.URL.Path == "/api/admin/users":
+		server.adminCreateUser(response, request)
 	case request.Method == http.MethodGet && request.URL.Path == "/api/admin/audit":
 		server.adminAudit(response, request)
 	case request.Method == http.MethodPatch && strings.HasPrefix(request.URL.Path, "/api/admin/users/"):
@@ -1251,6 +1480,13 @@ func (server *Server) ServeHTTP(response http.ResponseWriter, request *http.Requ
 			clientError(response, 400, "Invalid user id")
 		} else {
 			server.adminUpdateUser(response, request, userID)
+		}
+	case request.Method == http.MethodDelete && strings.HasPrefix(request.URL.Path, "/api/admin/users/"):
+		userID := strings.TrimPrefix(request.URL.Path, "/api/admin/users/")
+		if userID == "" || strings.Contains(userID, "/") {
+			clientError(response, 400, "Invalid user id")
+		} else {
+			server.adminDeleteUser(response, request, userID)
 		}
 	case request.Method == http.MethodPost && request.URL.Path == "/api/gateway/route":
 		server.route(response, request)

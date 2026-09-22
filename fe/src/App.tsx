@@ -53,7 +53,7 @@ function AppRoutes() {
     content = user
       ? <BillingPage />
       : <Redirect to="/login" navigate={navigate} />;
-  } else if (pathname === "/admin") {
+  } else if (pathname === "/admin" || pathname === "/admin/billing" || pathname === "/admin/users" || pathname === "/admin/audit") {
     content = user?.role === "admin"
       ? <AdminDashboard />
       : <Redirect to={user ? "/map" : "/login"} navigate={navigate} />;
@@ -94,6 +94,6 @@ function getPathname(): string {
   return window.location.pathname.replace(/\/+$/, "") || "/";
 }
 
-type AppPath = "/login" | "/map" | "/admin" | "/billing";
+type AppPath = "/login" | "/map" | "/admin" | "/admin/billing" | "/admin/users" | "/admin/audit" | "/billing";
 
 export default App;

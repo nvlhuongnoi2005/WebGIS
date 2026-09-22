@@ -119,6 +119,14 @@ CREATE TABLE IF NOT EXISTS admin_audit_logs (
 );
 CREATE INDEX IF NOT EXISTS admin_audit_logs_created_at_idx ON admin_audit_logs (created_at DESC);
 
+-- Preserve audit history when a managed account is removed.  Old entries keep
+-- their descriptive details, while their actor/target UUIDs become NULL.
+ALTER TABLE admin_audit_logs ALTER COLUMN actor_id DROP NOT NULL;
+ALTER TABLE admin_audit_logs DROP CONSTRAINT IF EXISTS admin_audit_logs_actor_id_fkey;
+ALTER TABLE admin_audit_logs
+  ADD CONSTRAINT admin_audit_logs_actor_id_fkey
+  FOREIGN KEY (actor_id) REFERENCES users(id) ON DELETE SET NULL;
+
 CREATE OR REPLACE FUNCTION set_auth_updated_at() RETURNS trigger AS $$
 BEGIN
   NEW.updated_at = now();

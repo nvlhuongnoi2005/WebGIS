@@ -1,100 +1,72 @@
-import { useEffect, useState, type ReactNode } from "react";
-import { Alert, Box, CircularProgress, MenuItem, Paper, Select, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from "@mui/material";
-import { Activity, ShieldCheck, Users } from "lucide-react";
-import { useTranslation } from "react-i18next";
-import { PageShell } from "./BillingPage";
-import { fetchAdminAudit, fetchAdminBilling, fetchAdminDashboard, fetchAdminUsers, updateAdminUser, type AdminDashboardMetrics, type AdminUser, type AuditLog, type BillingDetails } from "./billingApi";
+import { useEffect, useMemo, useState } from "react";
+import { Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Divider, List, ListItemButton, ListItemIcon, ListItemText, MenuItem, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography } from "@mui/material";
+import { Activity, ArrowLeft, ClipboardList, CreditCard, LayoutDashboard, Pencil, Plus, ShieldCheck, Trash2, Users } from "lucide-react";
+import { BillingCard } from "./BillingPage";
+import { createAdminUser, deleteAdminUser, fetchAdminAudit, fetchAdminBilling, fetchAdminDashboard, fetchAdminUserBilling, fetchAdminUsers, updateAdminUser, type AdminDashboardMetrics, type AdminUser, type AuditLog, type BillingDetails, type CreateAdminUser } from "./billingApi";
+
+type AdminSection = "overview" | "billing" | "users" | "audit";
+const navigation: Array<{ id: AdminSection; label: string; icon: typeof LayoutDashboard }> = [
+  { id: "overview", label: "Tổng quan", icon: LayoutDashboard }, { id: "billing", label: "Thanh toán", icon: CreditCard }, { id: "users", label: "Người dùng", icon: Users }, { id: "audit", label: "Nhật ký quản trị", icon: ClipboardList },
+];
 
 export default function AdminDashboard() {
-  const { t, i18n } = useTranslation();
-  const [metrics, setMetrics] = useState<AdminDashboardMetrics | null>(null);
-  const [billings, setBillings] = useState<BillingDetails[]>([]);
-  const [users, setUsers] = useState<AdminUser[]>([]);
-  const [audit, setAudit] = useState<AuditLog[]>([]);
-  const [error, setError] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-    void Promise.all([fetchAdminDashboard(), fetchAdminBilling(), fetchAdminUsers(), fetchAdminAudit()]).then(([nextMetrics, nextBillings, nextUsers, nextAudit]) => {
-      if (!active) return;
-      setMetrics(nextMetrics);
-      setBillings(nextBillings);
-      setUsers(nextUsers);
-      setAudit(nextAudit);
-    }).catch(() => {
-      if (active) setError(true);
-    });
-    return () => { active = false; };
-  }, []);
-
-  const saveUser = async (id: string, update: Parameters<typeof updateAdminUser>[1]) => {
-    try { await updateAdminUser(id, update); setUsers(await fetchAdminUsers()); setAudit(await fetchAdminAudit()); }
-    catch { setError(true); }
-  };
-
-  return (
-    <PageShell title={t("admin.title")}>
-      {error && <Alert severity="error">{t("admin.loadError")}</Alert>}
-      {!metrics && !error && <Stack sx={{ alignItems: "center", py: 6 }}><CircularProgress /></Stack>}
-      {metrics && <>
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-          <MetricCard icon={<Users size={23} />} label={t("admin.totalAccounts")} value={metrics.totalAccounts} accent="#e0002b" tint="rgba(224, 0, 43, 0.13)" />
-          <MetricCard icon={<Activity size={23} />} label={t("admin.onlineUsers")} value={metrics.onlineUsers} accent="#a90020" tint="rgba(169, 0, 32, 0.10)" />
-        </Stack>
-        <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: 3, border: "1px solid rgba(224, 0, 43, 0.17)", bgcolor: "rgba(224, 0, 43, 0.035)" }}>
-          <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>{t("admin.ageDistribution")}</Typography>
-          <Stack direction="row" spacing={1.5} sx={{ height: 180, alignItems: "end" }}>
-            {metrics.ageGroups.map((group, index) => <AgeBar key={group.label} label={group.label} value={group.count} max={Math.max(...metrics.ageGroups.map(item => item.count), 1)} index={index} />)}
-          </Stack>
-        </Paper>
-        <Box>
-          <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>{t("admin.billingDetails")}</Typography>
-          <TableContainer component={Paper} sx={{ borderRadius: 3, overflow: "hidden", border: "1px solid rgba(224, 0, 43, 0.15)" }}>
-            <Table size="small" aria-label={t("admin.billingDetails")}>
-              <TableHead sx={{ bgcolor: "rgba(224, 0, 43, 0.10)" }}><TableRow><TableCell>{t("admin.account")}</TableCell><TableCell>{t("billing.plan")}</TableCell><TableCell>{t("billing.monthlyUsage")}</TableCell><TableCell>{t("billing.period")}</TableCell></TableRow></TableHead>
-              <TableBody>
-                {billings.map(billing => <TableRow key={billing.userId} hover>
-                  <TableCell><Typography variant="body2" sx={{ fontWeight: 700 }}>{billing.name}</Typography><Typography variant="caption" color="text.secondary">{billing.email}</Typography></TableCell>
-                  <TableCell>{billing.plan}</TableCell>
-                  <TableCell>{billing.usedUnits} / {billing.limitUnits}</TableCell>
-                  <TableCell>{billing.periodStart && billing.periodEnd ? `${new Intl.DateTimeFormat(i18n.language, { dateStyle: "short" }).format(new Date(billing.periodStart))} – ${new Intl.DateTimeFormat(i18n.language, { dateStyle: "short" }).format(new Date(billing.periodEnd))}` : "—"}</TableCell>
-                </TableRow>)}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Box>
-        <Box>
-          <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>{t("admin.userManagement")}</Typography>
-          <TableContainer component={Paper} sx={{ borderRadius: 3, overflow: "hidden", border: "1px solid rgba(224, 0, 43, 0.15)" }}>
-            <Table size="small"><TableHead sx={{ bgcolor: "rgba(169, 0, 32, 0.09)" }}><TableRow><TableCell>{t("admin.account")}</TableCell><TableCell>{t("admin.role")}</TableCell><TableCell>{t("admin.status")}</TableCell><TableCell>{t("billing.plan")}</TableCell><TableCell>{t("admin.quota")}</TableCell><TableCell>{t("admin.online")}</TableCell></TableRow></TableHead>
-              <TableBody>{users.map(user => <TableRow key={user.id} hover>
-                <TableCell><Typography variant="body2" sx={{ fontWeight: 700 }}>{user.name}</Typography><Typography variant="caption" color="text.secondary">{user.email}</Typography></TableCell>
-                <TableCell><Select size="small" value={user.role} onChange={event => void saveUser(user.id, { role: event.target.value as AdminUser["role"] })}><MenuItem value="user">user</MenuItem><MenuItem value="admin">admin</MenuItem></Select></TableCell>
-                <TableCell><Select size="small" value={user.status} onChange={event => void saveUser(user.id, { status: event.target.value as AdminUser["status"] })}><MenuItem value="ACTIVE">ACTIVE</MenuItem><MenuItem value="DISABLED">DISABLED</MenuItem><MenuItem value="LOCKED">LOCKED</MenuItem></Select></TableCell>
-                <TableCell><TextField size="small" defaultValue={user.plan} onBlur={event => event.target.value !== user.plan && void saveUser(user.id, { plan: event.target.value })} /></TableCell>
-                <TableCell><TextField size="small" type="number" defaultValue={user.limitUnits} onBlur={event => { const limitUnits = Number(event.target.value); if (Number.isFinite(limitUnits) && limitUnits !== user.limitUnits) void saveUser(user.id, { limitUnits }); }} /></TableCell>
-                <TableCell><Typography variant="caption" color={user.online ? "success.main" : "text.secondary"}>{user.online ? t("admin.online") : t("admin.offline")}</Typography></TableCell>
-              </TableRow>)}</TableBody>
-            </Table>
-          </TableContainer>
-        </Box>
-        <Box>
-          <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>{t("admin.auditLog")}</Typography>
-          <Paper sx={{ borderRadius: 3, p: 2, border: "1px solid rgba(224, 0, 43, 0.16)", bgcolor: "rgba(224, 0, 43, 0.025)" }}><Stack spacing={1}>{audit.slice(0, 8).map((entry, index) => <Stack key={entry.id} direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: "space-between", px: 1.25, py: 1, borderLeft: `3px solid ${AUDIT_COLORS[index % AUDIT_COLORS.length]}`, borderRadius: 1.5, bgcolor: "rgba(255, 255, 255, 0.03)" }}><Typography variant="body2"><ShieldCheck size={14} color={AUDIT_COLORS[index % AUDIT_COLORS.length]} /> {entry.actor} · {entry.action} · {entry.target}</Typography><Typography variant="caption" color="text.secondary">{new Intl.DateTimeFormat(i18n.language,{dateStyle:"short",timeStyle:"short"}).format(new Date(entry.createdAt))}</Typography></Stack>)}</Stack></Paper>
-        </Box>
-      </>}
-    </PageShell>
-  );
+  const section = sectionFromPath(window.location.pathname);
+  return <AdminShell section={section}>{section === "overview" ? <OverviewPage /> : section === "billing" ? <BillingAdminPage /> : section === "users" ? <UsersAdminPage /> : <AuditPage />}</AdminShell>;
 }
 
-function MetricCard({ icon, label, value, accent, tint }: { icon: ReactNode; label: string; value: number; accent: string; tint: string }) {
-  return <Paper sx={{ p: 2.5, borderRadius: 3, flex: 1, border: `1px solid ${tint}`, bgcolor: tint }}><Stack direction="row" spacing={1.5} sx={{ alignItems: "center", color: accent }}><Box sx={{ display: "grid", placeItems: "center", width: 42, height: 42, borderRadius: 2.5, bgcolor: "background.paper" }}>{icon}</Box><Box><Typography variant="body2" color="text.secondary">{label}</Typography><Typography variant="h4" color="text.primary" sx={{ fontWeight: 750 }}>{value}</Typography></Box></Stack></Paper>;
+function AdminShell({ section, children }: { section: AdminSection; children: React.ReactNode }) {
+  return <Box component="main" id="main-content" sx={{ minHeight: "100dvh", bgcolor: "background.default", p: { xs: 1.5, sm: 3 } }}><Stack direction={{ xs: "column", md: "row" }} spacing={2.5} sx={{ maxWidth: 1440, mx: "auto" }}>
+    <Paper component="nav" aria-label="Điều hướng quản trị" sx={{ width: { md: 244 }, flexShrink: 0, p: 1.25, borderRadius: 3, height: { md: "fit-content" }, position: { md: "sticky" }, top: { md: 24 }, border: "1px solid rgba(224, 0, 43, 0.15)" }}>
+      <Stack direction="row" spacing={1.25} sx={{ alignItems: "center", px: 1, py: 1.25 }}><Box sx={{ display: "grid", placeItems: "center", width: 38, height: 38, borderRadius: 2, bgcolor: "primary.main", color: "#fff" }}><ShieldCheck size={21} /></Box><Box><Typography sx={{ fontWeight: 800 }}>Quản trị</Typography><Typography variant="caption" color="text.secondary">VGIS console</Typography></Box></Stack>
+      <Divider /><List disablePadding sx={{ py: 1 }}>{navigation.map(item => { const Icon = item.icon; return <ListItemButton key={item.id} component="a" href={pathFor(item.id)} selected={section === item.id} sx={{ my: 0.25, borderRadius: 2, "&.Mui-selected": { bgcolor: "rgba(224, 0, 43, 0.11)", color: "primary.main", "& .MuiListItemText-primary": { fontWeight: 750 } } }}><ListItemIcon sx={{ minWidth: 37, color: "inherit" }}><Icon size={19} /></ListItemIcon><ListItemText primary={item.label} /></ListItemButton>; })}</List><Divider />
+      <Button component="a" href="/map" fullWidth startIcon={<ArrowLeft size={17} />} sx={{ mt: 1.25, justifyContent: "flex-start" }}>Về bản đồ</Button>
+    </Paper><Box sx={{ flex: 1, minWidth: 0 }}>{children}</Box>
+  </Stack></Box>;
 }
 
-function AgeBar({ label, value, max, index }: { label: string; value: number; max: number; index: number }) {
-  const color = BAR_COLORS[index % BAR_COLORS.length];
-  return <Stack spacing={0.75} sx={{ alignItems: "center", flex: 1, minWidth: 28, height: "100%", justifyContent: "end" }}><Typography variant="caption" sx={{ fontWeight: 700, color }}>{value}</Typography><Box sx={{ width: "100%", maxWidth: 48, minHeight: value ? 4 : 0, height: `${value / max * 128}px`, borderRadius: "8px 8px 2px 2px", bgcolor: color, boxShadow: `0 5px 10px ${color}33` }} /><Typography variant="caption" color="text.secondary">{label}</Typography></Stack>;
+function PageTitle({ title, description, action }: { title: string; description: string; action?: React.ReactNode }) { return <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ mb: 3, justifyContent: "space-between", alignItems: { sm: "center" } }}><Box><Typography variant="h4" component="h1" sx={{ fontWeight: 800 }}>{title}</Typography><Typography color="text.secondary">{description}</Typography></Box>{action}</Stack>; }
+function LoadingOrError({ loading, error }: { loading: boolean; error: boolean }) { if (error) return <Alert severity="error">Không thể tải dữ liệu quản trị. Vui lòng thử lại.</Alert>; return loading ? <Stack sx={{ alignItems: "center", py: 8 }}><CircularProgress /></Stack> : null; }
+
+function OverviewPage() {
+  const [metrics, setMetrics] = useState<AdminDashboardMetrics | null>(null); const [error, setError] = useState(false);
+  useEffect(() => { let active = true; void fetchAdminDashboard().then(value => active && setMetrics(value)).catch(() => active && setError(true)); return () => { active = false; }; }, []);
+  return <><PageTitle title="Tổng quan" description="Theo dõi tài khoản, người đang trực tuyến và phân bố hồ sơ." /><LoadingOrError loading={!metrics} error={error} />{metrics && <Stack spacing={2.5}><Stack direction={{ xs: "column", sm: "row" }} spacing={2}><MetricCard icon={<Users size={23} />} label="Tổng số tài khoản" value={metrics.totalAccounts} /><MetricCard icon={<Activity size={23} />} label="Đang trực tuyến" value={metrics.onlineUsers} tone="blue" /></Stack><Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: 3, border: "1px solid rgba(224,0,43,.14)" }}><Typography variant="h6" sx={{ fontWeight: 750, mb: 0.5 }}>Phân bố độ tuổi</Typography><Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>Các hồ sơ chưa khai báo ngày sinh được tách riêng.</Typography><Stack direction="row" spacing={1.25} sx={{ height: 210, alignItems: "end" }}>{metrics.ageGroups.map((group, index) => <AgeBar key={group.label} {...group} max={Math.max(...metrics.ageGroups.map(value => value.count), 1)} index={index} />)}</Stack></Paper><Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: 3, border: "1px solid rgba(37,99,200,.16)" }}><Typography variant="h6" sx={{ fontWeight: 750, mb: 0.5 }}>Phân bố theo đơn vị</Typography><Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>Tối đa 8 đơn vị có nhiều tài khoản nhất.</Typography><Stack spacing={1.2}>{metrics.organizationGroups.map(group => <Stack key={group.label} direction="row" spacing={2} sx={{ alignItems: "center" }}><Typography variant="body2" sx={{ width: { xs: 130, sm: 220 }, flexShrink: 0 }} noWrap>{group.label}</Typography><Box sx={{ flex: 1, height: 10, borderRadius: 4, bgcolor: "rgba(37,99,200,.10)", overflow: "hidden" }}><Box sx={{ width: `${group.count / Math.max(...metrics.organizationGroups.map(value => value.count), 1) * 100}%`, height: "100%", bgcolor: "#2563c8", borderRadius: 4 }} /></Box><Typography variant="body2" sx={{ minWidth: 20, fontWeight: 700 }}>{group.count}</Typography></Stack>)}</Stack></Paper></Stack>}</>;
 }
 
-const BAR_COLORS = ["#e0002b", "#2563c8", "#008b7f", "#8540ba", "#d16a00", "#c23e8a"];
-const AUDIT_COLORS = ["#e0002b", "#c90027", "#a90020", "#ec3154", "#820018"];
+function BillingAdminPage() {
+  const [billings, setBillings] = useState<BillingDetails[]>([]); const [selected, setSelected] = useState<BillingDetails | null>(null); const [range, setRange] = useState<1 | 7 | 30>(7); const [loading, setLoading] = useState(true); const [error, setError] = useState(false);
+  useEffect(() => { let active = true; void fetchAdminBilling().then(value => { if (active) { setBillings(value); setLoading(false); } }).catch(() => active && setError(true)); return () => { active = false; }; }, []);
+  const openBilling = async (billing: BillingDetails) => { setError(false); try { setSelected(await fetchAdminUserBilling(billing.userId, range)); } catch { setError(true); } };
+  const changeRange = async (next: 1 | 7 | 30) => { setRange(next); if (selected) try { setSelected(await fetchAdminUserBilling(selected.userId, next)); } catch { setError(true); } };
+  return <><PageTitle title="Thanh toán" description="Chọn một tài khoản để xem trang billing và biểu đồ sử dụng của họ." /><LoadingOrError loading={loading} error={error} />{!loading && !error && <Stack spacing={2.5}>{selected && <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: 3, border: "1px solid rgba(224,0,43,.18)" }}><Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", mb: 2 }}><Box><Typography variant="h6" sx={{ fontWeight: 800 }}>{selected.name}</Typography><Typography variant="body2" color="text.secondary">{selected.email}</Typography></Box><Button onClick={() => setSelected(null)}>Đóng chi tiết</Button></Stack><BillingCard billing={selected} locale="vi" range={range} onRangeChange={value => void changeRange(value)} /></Paper>}<TableContainer component={Paper} sx={{ borderRadius: 3, border: "1px solid rgba(224,0,43,.14)" }}><Table><TableHead sx={{ bgcolor: "rgba(224,0,43,.08)" }}><TableRow><TableCell>Tài khoản</TableCell><TableCell>Gói</TableCell><TableCell>Đã dùng</TableCell><TableCell>Kỳ thanh toán</TableCell><TableCell /></TableRow></TableHead><TableBody>{billings.map(billing => <TableRow key={billing.userId} hover><TableCell><Typography sx={{ fontWeight: 700 }}>{billing.name}</Typography><Typography variant="caption" color="text.secondary">{billing.email}</Typography></TableCell><TableCell>{billing.plan}</TableCell><TableCell>{billing.usedUnits} / {billing.limitUnits}</TableCell><TableCell>{formatPeriod(billing.periodStart, billing.periodEnd)}</TableCell><TableCell align="right"><Button size="small" onClick={() => void openBilling(billing)}>Xem billing</Button></TableCell></TableRow>)}</TableBody></Table></TableContainer></Stack>}</>;
+}
+
+function UsersAdminPage() {
+  const [users, setUsers] = useState<AdminUser[]>([]); const [editing, setEditing] = useState<AdminUser | null>(null); const [creating, setCreating] = useState(false); const [loading, setLoading] = useState(true); const [error, setError] = useState(false);
+  const reload = async () => { setLoading(true); try { setUsers(await fetchAdminUsers()); setError(false); } catch { setError(true); } finally { setLoading(false); } };
+  useEffect(() => { void reload(); }, []);
+  const remove = async (user: AdminUser) => { if (!window.confirm(`Xóa tài khoản ${user.email}? Thao tác này không thể hoàn tác.`)) return; try { await deleteAdminUser(user.id); await reload(); } catch { setError(true); } };
+  return <><PageTitle title="Quản lý người dùng" description="Tạo, chỉnh sửa quyền truy cập, gói dịch vụ hoặc xóa tài khoản." action={<Button variant="contained" startIcon={<Plus size={18} />} onClick={() => setCreating(true)}>Thêm người dùng</Button>} /><LoadingOrError loading={loading} error={error} />{!loading && <TableContainer component={Paper} sx={{ borderRadius: 3, border: "1px solid rgba(224,0,43,.14)" }}><Table><TableHead sx={{ bgcolor: "rgba(224,0,43,.08)" }}><TableRow><TableCell>Tài khoản</TableCell><TableCell>Vai trò</TableCell><TableCell>Trạng thái</TableCell><TableCell>Gói / hạn mức</TableCell><TableCell>Hoạt động</TableCell><TableCell /></TableRow></TableHead><TableBody>{users.map(user => <TableRow key={user.id} hover><TableCell><Typography sx={{ fontWeight: 700 }}>{user.name}</Typography><Typography variant="caption" color="text.secondary">{user.email}</Typography></TableCell><TableCell>{user.role}</TableCell><TableCell>{user.status}</TableCell><TableCell>{user.plan} · {user.usedUnits}/{user.limitUnits}</TableCell><TableCell><Typography variant="body2" color={user.online ? "success.main" : "text.secondary"}>{user.online ? "Trực tuyến" : "Ngoại tuyến"}</Typography></TableCell><TableCell align="right"><Button size="small" onClick={() => setEditing(user)} startIcon={<Pencil size={15} />}>Sửa</Button><Button color="error" size="small" onClick={() => void remove(user)} startIcon={<Trash2 size={15} />}>Xóa</Button></TableCell></TableRow>)}</TableBody></Table></TableContainer>}<UserDialog open={creating || Boolean(editing)} user={editing} onClose={() => { setCreating(false); setEditing(null); }} onSaved={() => void reload()} onError={() => setError(true)} /></>;
+}
+
+function UserDialog({ open, user, onClose, onSaved, onError }: { open: boolean; user: AdminUser | null; onClose: () => void; onSaved: () => void; onError: () => void }) {
+  const empty = useMemo<CreateAdminUser>(() => ({ email: "", password: "", name: "", role: "user", status: "ACTIVE", plan: "free", limitUnits: 1000 }), []); const [form, setForm] = useState<CreateAdminUser>(empty);
+  useEffect(() => { setForm(user ? { email: user.email, password: "", name: user.name, role: user.role, status: user.status, plan: user.plan, limitUnits: user.limitUnits } : empty); }, [user, empty, open]);
+  const set = <K extends keyof CreateAdminUser>(key: K, value: CreateAdminUser[K]) => setForm(current => ({ ...current, [key]: value }));
+  const save = async () => { try { if (user) { const update = { ...(form.name !== user.name && { name: form.name }), ...(form.email !== user.email && { email: form.email }), ...(form.role !== user.role && { role: form.role }), ...(form.status !== user.status && { status: form.status }), ...(form.plan !== user.plan && { plan: form.plan }), ...(Number(form.limitUnits) !== user.limitUnits && { limitUnits: Number(form.limitUnits) }) }; if (Object.keys(update).length) await updateAdminUser(user.id, update); } else await createAdminUser({ ...form, limitUnits: Number(form.limitUnits) }); onClose(); onSaved(); } catch { onError(); } };
+  return <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm"><DialogTitle>{user ? "Chỉnh sửa người dùng" : "Thêm người dùng"}</DialogTitle><DialogContent><Stack spacing={2} sx={{ pt: 1 }}><TextField label="Họ và tên" value={form.name} onChange={event => set("name", event.target.value)} /><TextField label="Email" type="email" value={form.email} onChange={event => set("email", event.target.value)} required /><TextField label={user ? "Mật khẩu (không đổi)" : "Mật khẩu"} type="password" value={form.password} required={!user} onChange={event => set("password", event.target.value)} helperText={user ? "Mật khẩu chỉ được thay đổi bởi chính người dùng." : "Ít nhất 8 ký tự, gồm chữ hoa, chữ thường và số."} /><Stack direction={{ xs: "column", sm: "row" }} spacing={2}><TextField select fullWidth label="Vai trò" value={form.role} onChange={event => set("role", event.target.value as AdminUser["role"])}><MenuItem value="user">user</MenuItem><MenuItem value="admin">admin</MenuItem></TextField><TextField select fullWidth label="Trạng thái" value={form.status} onChange={event => set("status", event.target.value as AdminUser["status"])}><MenuItem value="ACTIVE">ACTIVE</MenuItem><MenuItem value="DISABLED">DISABLED</MenuItem><MenuItem value="LOCKED">LOCKED</MenuItem></TextField></Stack><Stack direction={{ xs: "column", sm: "row" }} spacing={2}><TextField fullWidth label="Gói dịch vụ" value={form.plan} onChange={event => set("plan", event.target.value)} /><TextField fullWidth type="number" label="Hạn mức tháng" value={form.limitUnits} onChange={event => set("limitUnits", Number(event.target.value))} /></Stack></Stack></DialogContent><DialogActions sx={{ p: 2.5 }}><Button onClick={onClose}>Hủy</Button><Button variant="contained" onClick={() => void save()}>{user ? "Lưu thay đổi" : "Tạo người dùng"}</Button></DialogActions></Dialog>;
+}
+
+function AuditPage() {
+  const [logs, setLogs] = useState<AuditLog[]>([]); const [loading, setLoading] = useState(true); const [error, setError] = useState(false);
+  useEffect(() => { let active = true; void fetchAdminAudit().then(value => { if (active) { setLogs(value); setLoading(false); } }).catch(() => active && setError(true)); return () => { active = false; }; }, []);
+  return <><PageTitle title="Nhật ký thao tác quản trị" description="Mỗi dòng ghi rõ thao tác và nội dung được tạo, xóa hoặc thay đổi." /><LoadingOrError loading={loading} error={error} />{!loading && !error && <Stack spacing={1.25}>{logs.length === 0 && <Paper sx={{ p: 3, borderRadius: 3 }}><Typography color="text.secondary">Chưa có thao tác quản trị nào.</Typography></Paper>}{logs.map(log => <Paper key={log.id} sx={{ p: 2, borderRadius: 2.5, borderLeft: "4px solid #e0002b" }}><Stack direction={{ xs: "column", sm: "row" }} spacing={1} sx={{ justifyContent: "space-between" }}><Box><Typography sx={{ fontWeight: 750 }}>{auditAction(log.action)}</Typography><Typography variant="body2" color="text.secondary">Quản trị viên: {log.actor || "Tài khoản đã xóa"}{log.target ? ` · Tài khoản: ${log.target}` : ""}</Typography><Typography variant="body2" sx={{ mt: 0.75 }}>{describeAudit(log.details)}</Typography></Box><Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0 }}>{new Intl.DateTimeFormat("vi-VN", { dateStyle: "medium", timeStyle: "short" }).format(new Date(log.createdAt))}</Typography></Stack></Paper>)}</Stack>}</>;
+}
+
+function MetricCard({ icon, label, value, tone = "red" }: { icon: React.ReactNode; label: string; value: number; tone?: "red" | "blue" }) { const colors = tone === "red" ? ["#e0002b", "rgba(224,0,43,.09)"] : ["#2563c8", "rgba(37,99,200,.09)"]; return <Paper sx={{ p: 2.5, borderRadius: 3, flex: 1, bgcolor: colors[1], border: `1px solid ${colors[0]}22` }}><Stack direction="row" spacing={1.5} sx={{ alignItems: "center", color: colors[0] }}><Box sx={{ display: "grid", placeItems: "center", width: 42, height: 42, borderRadius: 2, bgcolor: "background.paper" }}>{icon}</Box><Box><Typography variant="body2" color="text.secondary">{label}</Typography><Typography variant="h4" sx={{ fontWeight: 800 }}>{value}</Typography></Box></Stack></Paper>; }
+function AgeBar({ label, count, max, index }: { label: string; count: number; max: number; index: number }) { const color = ["#e0002b", "#2563c8", "#008b7f", "#8540ba", "#d16a00", "#c23e8a"][index % 6]; return <Stack spacing={0.75} sx={{ alignItems: "center", flex: 1, minWidth: 28, height: "100%", justifyContent: "end" }}><Typography variant="caption" sx={{ fontWeight: 700, color }}>{count}</Typography><Box sx={{ width: "100%", maxWidth: 50, minHeight: count ? 4 : 0, height: `${count / max * 140}px`, borderRadius: "8px 8px 2px 2px", bgcolor: color }} /><Typography variant="caption" color="text.secondary">{label}</Typography></Stack>; }
+function sectionFromPath(path: string): AdminSection { const match = path.match(/^\/admin\/(billing|users|audit)$/); return match ? match[1] as AdminSection : "overview"; }
+function pathFor(section: AdminSection) { return section === "overview" ? "/admin" : `/admin/${section}`; }
+function formatPeriod(start: string | null, end: string | null) { return start && end ? `${new Intl.DateTimeFormat("vi-VN", { dateStyle: "short" }).format(new Date(start))} – ${new Intl.DateTimeFormat("vi-VN", { dateStyle: "short" }).format(new Date(end))}` : "—"; }
+function auditAction(action: string) { return action === "user.created" ? "Đã tạo người dùng" : action === "user.deleted" ? "Đã xóa người dùng" : "Đã cập nhật người dùng"; }
+function describeAudit(details: Record<string, unknown>) { const changes = details.changes; if (changes && typeof changes === "object") return Object.entries(changes as Record<string, unknown>).map(([field, value]) => { const pair = value as { from?: unknown; to?: unknown }; return `${field}: ${String(pair.from ?? "—")} → ${String(pair.to ?? "—")}`; }).join(" · ") || "Không có thay đổi giá trị."; const created = details.created ?? details.deleted; if (created && typeof created === "object") return Object.entries(created as Record<string, unknown>).map(([key, value]) => `${key}: ${String(value)}`).join(" · "); const legacy = Object.entries(details).map(([key, value]) => `${key}: ${String(value)}`).join(" · "); return legacy || "Không có chi tiết bổ sung."; }
