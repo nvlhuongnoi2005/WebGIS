@@ -10,7 +10,7 @@ const methodColor: Record<string, "success" | "info" | "warning" | "error"> = { 
 const methodTint: Record<string, string> = { get: "#1675bc", post: "#087f5b", patch: "#b56b00", delete: "#c92a2a" };
 const anchorFor = (tag: string) => `swagger-${tag.toLocaleLowerCase("vi").replace(/[^a-z0-9]+/g, "-")}`;
 const vietnameseTag: Record<string, string> = { Authentication: "Xác thực", Administration: "Quản trị", Billing: "Billing quota", Map: "Bản đồ", Khác: "Khác" };
-const swaggerFont = '"Segoe UI", Roboto, "Noto Sans", Arial, sans-serif';
+const swaggerFont = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif';
 const tagLabel = (tag: string) => vietnameseTag[tag] ?? tag;
 
 export default function SwaggerPage() {

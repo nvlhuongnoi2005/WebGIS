@@ -55,7 +55,7 @@ export function createAppTheme({ mode, highContrast }: AppThemeOptions) {
     palette: { mode, ...palette },
     shape: { borderRadius: 12 },
     typography: {
-      fontFamily: '"Aptos", "Trebuchet MS", sans-serif',
+      fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif',
       h4: { fontWeight: 800, letterSpacing: "0" },
       h5: { fontWeight: 800, letterSpacing: "0" },
       subtitle1: { fontWeight: 700 },
