@@ -53,3 +53,14 @@ func TestAdminBillingAPIsRequireAuthentication(t *testing.T) {
 		})
 	}
 }
+
+func TestOpenAPISpecDocumentsAdminBilling(t *testing.T) {
+	spec := openAPISpec()
+	if spec["openapi"] != "3.0.3" {
+		t.Fatalf("unexpected OpenAPI version: %v", spec["openapi"])
+	}
+	paths, ok := spec["paths"].(map[string]any)
+	if !ok || paths["/api/admin/billing"] == nil || paths["/api/admin/billing/{userId}"] == nil {
+		t.Fatal("admin billing endpoints are missing from the OpenAPI specification")
+	}
+}

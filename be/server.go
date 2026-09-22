@@ -1429,6 +1429,8 @@ func (server *Server) ServeHTTP(response http.ResponseWriter, request *http.Requ
 		return
 	}
 	switch {
+	case request.Method == http.MethodGet && request.URL.Path == "/api/openapi.json":
+		writeJSON(response, http.StatusOK, openAPISpec())
 	case request.Method == http.MethodGet && request.URL.Path == "/health":
 		if server.revocations.Ready() {
 			writeJSON(response, 200, map[string]bool{"ok": true})

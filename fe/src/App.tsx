@@ -8,6 +8,7 @@ import { AuthProvider, LoginPage, useAuth } from "./features/auth";
 import AdminDashboard from "./admin/AdminDashboard";
 import BillingPage from "./features/billing/BillingPage";
 import { MapView } from "./features/map";
+import SwaggerPage from "./swagger/SwaggerPage";
 
 // Register the Vite-emitted worker before any map instance is created.
 setWorkerUrl(maplibreWorkerUrl);
@@ -41,6 +42,8 @@ function AppRoutes() {
   let content: React.ReactNode;
   if (isLoading) {
     content = null;
+  } else if (pathname === "/swagger") {
+    content = <SwaggerPage />;
   } else if (pathname === "/login") {
     content = user
       ? <Redirect to="/map" navigate={navigate} />
@@ -94,6 +97,6 @@ function getPathname(): string {
   return window.location.pathname.replace(/\/+$/, "") || "/";
 }
 
-type AppPath = "/login" | "/map" | "/admin" | "/admin/billing" | "/admin/users" | "/admin/audit" | "/billing";
+type AppPath = "/login" | "/map" | "/admin" | "/admin/billing" | "/admin/users" | "/admin/audit" | "/billing" | "/swagger";
 
 export default App;
