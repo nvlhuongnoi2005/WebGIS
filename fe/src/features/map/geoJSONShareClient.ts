@@ -7,7 +7,7 @@ export interface GeoJSONShareSummary {
   expires_at: string;
   token?: string;
   feature_count: number;
-  geojson_preview: string;
+  preview_svg: string;
 }
 
 export interface GeoJSONShareRecipient {

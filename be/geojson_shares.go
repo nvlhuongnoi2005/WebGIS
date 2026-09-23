@@ -6,8 +6,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
+	"math"
 	"net/http"
 	"sort"
 	"strings"
@@ -244,12 +246,13 @@ func (server *Server) createGeoJSONShare(response http.ResponseWriter, request *
 		return
 	}
 	token := hex.EncodeToString(tokenBytes)
+	previewSVG := createGeoJSONPreviewSVG(input.GeoJSON)
 	var id string
 	var expiresAt string
 	err := server.repository.pool.QueryRow(request.Context(), `
-		INSERT INTO geojson_shares (owner_id, token, geojson, expires_at)
-		VALUES ($1, $2, $3::jsonb, now() + interval '30 days')
-		RETURNING id::text, expires_at::text`, claims.Subject, token, string(input.GeoJSON)).Scan(&id, &expiresAt)
+		INSERT INTO geojson_shares (owner_id, token, geojson, preview_svg, expires_at)
+		VALUES ($1, $2, $3::jsonb, $4, now() + interval '30 days')
+		RETURNING id::text, expires_at::text`, claims.Subject, token, string(input.GeoJSON), previewSVG).Scan(&id, &expiresAt)
 	if err != nil {
 		clientError(response, http.StatusInternalServerError, "Unable to create share")
 		return
@@ -311,7 +314,8 @@ func (server *Server) listGeoJSONShares(response http.ResponseWriter, request *h
 	}
 	rows, err := server.repository.pool.Query(request.Context(), `
 		SELECT id::text, created_at::text, expires_at::text, COALESCE(token,''),
-		jsonb_array_length(geojson->'features'), left(geojson::text, 512)
+		jsonb_array_length(geojson->'features'), preview_svg,
+		CASE WHEN preview_svg='' THEN geojson ELSE NULL END
 		FROM geojson_shares WHERE owner_id=$1 AND expires_at > now() ORDER BY created_at DESC`, claims.Subject)
 	if err != nil {
 		clientError(response, http.StatusInternalServerError, "Unable to list shares")
@@ -319,19 +323,24 @@ func (server *Server) listGeoJSONShares(response http.ResponseWriter, request *h
 	}
 	defer rows.Close()
 	type share struct {
-		ID             string `json:"id"`
-		CreatedAt      string `json:"created_at"`
-		ExpiresAt      string `json:"expires_at"`
-		Token          string `json:"token,omitempty"`
-		FeatureCount   int    `json:"feature_count"`
-		GeoJSONPreview string `json:"geojson_preview"`
+		ID           string `json:"id"`
+		CreatedAt    string `json:"created_at"`
+		ExpiresAt    string `json:"expires_at"`
+		Token        string `json:"token,omitempty"`
+		FeatureCount int    `json:"feature_count"`
+		PreviewSVG   string `json:"preview_svg"`
 	}
 	shares := make([]share, 0)
 	for rows.Next() {
 		var item share
-		if err := rows.Scan(&item.ID, &item.CreatedAt, &item.ExpiresAt, &item.Token, &item.FeatureCount, &item.GeoJSONPreview); err != nil {
+		var geoJSON []byte
+		if err := rows.Scan(&item.ID, &item.CreatedAt, &item.ExpiresAt, &item.Token, &item.FeatureCount, &item.PreviewSVG, &geoJSON); err != nil {
 			clientError(response, http.StatusInternalServerError, "Unable to list shares")
 			return
+		}
+		if item.PreviewSVG == "" && len(geoJSON) > 0 {
+			item.PreviewSVG = createGeoJSONPreviewSVG(geoJSON)
+			_, _ = server.repository.pool.Exec(request.Context(), `UPDATE geojson_shares SET preview_svg=$1 WHERE id=$2 AND preview_svg=''`, item.PreviewSVG, item.ID)
 		}
 		shares = append(shares, item)
 	}
@@ -340,6 +349,200 @@ func (server *Server) listGeoJSONShares(response http.ResponseWriter, request *h
 		return
 	}
 	writeJSON(response, http.StatusOK, map[string]any{"shares": shares})
+}
+
+type previewGeometry struct {
+	Type        string            `json:"type"`
+	Coordinates json.RawMessage   `json:"coordinates"`
+	Geometries  []previewGeometry `json:"geometries"`
+}
+
+type previewPosition struct {
+	lon float64
+	lat float64
+}
+
+const sharePreviewWidth = 160
+const sharePreviewHeight = 96
+
+func createGeoJSONPreviewSVG(raw json.RawMessage) string {
+	var collection struct {
+		Features []struct {
+			Geometry previewGeometry `json:"geometry"`
+		} `json:"features"`
+	}
+	if json.Unmarshal(raw, &collection) != nil {
+		return ""
+	}
+	allPositions := make([]previewPosition, 0)
+	for _, feature := range collection.Features {
+		allPositions = appendGeometryPreviewPositions(allPositions, feature.Geometry)
+	}
+	if len(allPositions) == 0 {
+		return ""
+	}
+	minLon, maxLon := allPositions[0].lon, allPositions[0].lon
+	minLat, maxLat := allPositions[0].lat, allPositions[0].lat
+	for _, position := range allPositions[1:] {
+		minLon = math.Min(minLon, position.lon)
+		maxLon = math.Max(maxLon, position.lon)
+		minLat = math.Min(minLat, position.lat)
+		maxLat = math.Max(maxLat, position.lat)
+	}
+	width, height, padding := float64(sharePreviewWidth), float64(sharePreviewHeight), 10.0
+	lonRange, latRange := maxLon-minLon, maxLat-minLat
+	if lonRange == 0 {
+		lonRange = 0.0001
+	}
+	if latRange == 0 {
+		latRange = 0.0001
+	}
+	scale := math.Min((width-2*padding)/lonRange, (height-2*padding)/latRange)
+	project := func(position previewPosition) (float64, float64) {
+		x := (width-(maxLon-minLon)*scale)/2 + (position.lon-minLon)*scale
+		y := (height-(maxLat-minLat)*scale)/2 + (maxLat-position.lat)*scale
+		return x, y
+	}
+
+	var svg strings.Builder
+	fmt.Fprintf(&svg, `<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %d %d"><rect width="100%%" height="100%%" rx="10" fill="#eef6f8"/><path d="M0 32H160 M0 64H160 M40 0V96 M80 0V96 M120 0V96" stroke="#dbe8ec" stroke-width="1"/>`, sharePreviewWidth, sharePreviewHeight, sharePreviewWidth, sharePreviewHeight)
+	for _, feature := range collection.Features {
+		renderGeometryPreview(&svg, feature.Geometry, project)
+	}
+	svg.WriteString(`</svg>`)
+	return svg.String()
+}
+
+func appendGeometryPreviewPositions(positions []previewPosition, geometry previewGeometry) []previewPosition {
+	if geometry.Type == "GeometryCollection" {
+		for _, child := range geometry.Geometries {
+			positions = appendGeometryPreviewPositions(positions, child)
+		}
+		return positions
+	}
+	return append(positions, coordinatePreviewPositions(geometry.Coordinates)...)
+}
+
+func coordinatePreviewPositions(raw json.RawMessage) []previewPosition {
+	var coordinates any
+	if json.Unmarshal(raw, &coordinates) != nil {
+		return nil
+	}
+	positions := make([]previewPosition, 0)
+	var visit func(any)
+	visit = func(value any) {
+		items, ok := value.([]any)
+		if !ok {
+			return
+		}
+		if len(items) >= 2 {
+			lon, lonOK := items[0].(float64)
+			lat, latOK := items[1].(float64)
+			if lonOK && latOK {
+				positions = append(positions, previewPosition{lon: lon, lat: lat})
+				return
+			}
+		}
+		for _, item := range items {
+			visit(item)
+		}
+	}
+	visit(coordinates)
+	return positions
+}
+
+func renderGeometryPreview(svg *strings.Builder, geometry previewGeometry, project func(previewPosition) (float64, float64)) {
+	if geometry.Type == "GeometryCollection" {
+		for _, child := range geometry.Geometries {
+			renderGeometryPreview(svg, child, project)
+		}
+		return
+	}
+	lines := coordinatePreviewLines(geometry.Coordinates)
+	switch geometry.Type {
+	case "Point", "MultiPoint":
+		for _, line := range lines {
+			for _, position := range line {
+				x, y := project(position)
+				fmt.Fprintf(svg, `<circle cx="%.1f" cy="%.1f" r="4" fill="#e0002b" stroke="#ffffff" stroke-width="1.5"/>`, x, y)
+			}
+		}
+	case "LineString", "MultiLineString":
+		for _, line := range lines {
+			writePreviewPath(svg, line, project, false)
+		}
+	case "Polygon", "MultiPolygon":
+		for _, ring := range lines {
+			writePreviewPath(svg, ring, project, true)
+		}
+	}
+}
+
+func coordinatePreviewLines(raw json.RawMessage) [][]previewPosition {
+	var coordinates any
+	if json.Unmarshal(raw, &coordinates) != nil {
+		return nil
+	}
+	lines := make([][]previewPosition, 0)
+	var visit func(any)
+	visit = func(value any) {
+		items, ok := value.([]any)
+		if !ok {
+			return
+		}
+		if len(items) >= 2 {
+			if _, ok := items[0].(float64); ok {
+				if lat, ok := items[1].(float64); ok {
+					lines = append(lines, []previewPosition{{lon: items[0].(float64), lat: lat}})
+					return
+				}
+			}
+		}
+		line := make([]previewPosition, 0)
+		allPositions := len(items) > 0
+		for _, item := range items {
+			position, ok := item.([]any)
+			if !ok || len(position) < 2 {
+				allPositions = false
+				break
+			}
+			lon, lonOK := position[0].(float64)
+			lat, latOK := position[1].(float64)
+			if !lonOK || !latOK {
+				allPositions = false
+				break
+			}
+			line = append(line, previewPosition{lon: lon, lat: lat})
+		}
+		if allPositions {
+			lines = append(lines, line)
+			return
+		}
+		for _, item := range items {
+			visit(item)
+		}
+	}
+	visit(coordinates)
+	return lines
+}
+
+func writePreviewPath(svg *strings.Builder, positions []previewPosition, project func(previewPosition) (float64, float64), closePath bool) {
+	if len(positions) == 0 {
+		return
+	}
+	for index, position := range positions {
+		x, y := project(position)
+		if index == 0 {
+			fmt.Fprintf(svg, `<path d="M%.1f %.1f`, x, y)
+		} else {
+			fmt.Fprintf(svg, ` L%.1f %.1f`, x, y)
+		}
+	}
+	if closePath {
+		svg.WriteString(` Z" fill="#e0002b" fill-opacity="0.24" fill-rule="evenodd" stroke="#e0002b" stroke-width="2" stroke-linejoin="round"/>`)
+	} else {
+		svg.WriteString(`" fill="none" stroke="#e0002b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>`)
+	}
 }
 
 func (server *Server) getOrCreateGeoJSONShareLink(response http.ResponseWriter, request *http.Request, id string) {

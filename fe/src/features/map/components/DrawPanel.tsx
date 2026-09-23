@@ -846,19 +846,20 @@ function DrawPanel({
                   sx={{ minWidth: 0, justifyContent: "flex-start", textAlign: "left", textTransform: "none", px: 1 }}
                 >
                   {openingShareId === share.id ? <CircularProgress size={18} /> : (
-                    <Stack spacing={0.35} sx={{ minWidth: 0, alignItems: "flex-start" }}>
-                      <Typography variant="body2" sx={{ fontWeight: 650 }}>
-                        {t("draw.sharePreviewCount", { count: share.feature_count })}
-                      </Typography>
-                      <Typography
-                        component="code"
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{ maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}
-                      >
-                        {share.geojson_preview}{share.geojson_preview.length >= 512 ? "…" : ""}
-                      </Typography>
-                      <Typography variant="caption" color="primary.main">{t("draw.showShareLink")}</Typography>
+                    <Stack direction="row" spacing={1.25} sx={{ minWidth: 0, alignItems: "center" }}>
+                      <Box
+                        component="img"
+                        src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(share.preview_svg)}`}
+                        alt={t("draw.sharePreviewAlt")}
+                        loading="lazy"
+                        sx={{ width: 120, height: 72, flex: "0 0 auto", objectFit: "contain", border: 1, borderColor: "divider", borderRadius: 1 }}
+                      />
+                      <Stack spacing={0.35} sx={{ minWidth: 0, alignItems: "flex-start" }}>
+                        <Typography variant="body2" sx={{ fontWeight: 650 }}>
+                          {t("draw.sharePreviewCount", { count: share.feature_count })}
+                        </Typography>
+                        <Typography variant="caption" color="primary.main">{t("draw.showShareLink")}</Typography>
+                      </Stack>
                     </Stack>
                   )}
                 </Button>
