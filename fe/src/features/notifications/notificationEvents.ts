@@ -23,7 +23,7 @@ const listeners = new Set<Listener>();
 
 /**
  * Lets non-React code, such as the authenticated fetch client, add an inbox
- * item. A future GeoJSON-sharing flow can use this same function.
+ * item. Live account and share events use this same function.
  */
 export function publishNotification(notification: NewNotification): void {
   listeners.forEach(listener => listener(notification));

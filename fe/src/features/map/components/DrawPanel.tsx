@@ -239,6 +239,8 @@ function DrawPanel({
   const handleCreateShare = async () => {
     setShareBusy(true);
     setShareError(null);
+    setSelectedRecipients([]);
+    setSendComplete(false);
     try {
       const result = await createGeoJSONShare(shareGeoJSON);
       setCreatedShareId(result.id);
@@ -473,6 +475,9 @@ function DrawPanel({
                   startIcon={<Share2 size={15} />}
                   onClick={() => {
                     setShareError(null);
+                    setShareUrl("");
+                    setCreatedShareId(null);
+                    setShareCopied(false);
                     setRecipientSearch("");
                     setRecipientResults([]);
                     setSelectedRecipients([]);
@@ -777,7 +782,7 @@ function DrawPanel({
           <Stack spacing={1.5} sx={{ pt: 1 }}>
             <Typography color="text.secondary">{t("draw.shareDescription", { count: geoJSON.features.length })}</Typography>
             {shareError && <Alert severity="error">{shareError}</Alert>}
-            {shareUrl ? (
+            {shareUrl && (
               <Stack spacing={1}>
                 <TextField
                   fullWidth
@@ -827,11 +832,10 @@ function DrawPanel({
                   {sendBusy ? <CircularProgress size={18} color="inherit" /> : t("draw.shareSendToPeople")}
                 </Button>
               </Stack>
-            ) : (
-              <Button variant="contained" onClick={() => void handleCreateShare()} disabled={shareBusy || geoJSON.features.length === 0}>
-                {shareBusy ? <CircularProgress size={18} color="inherit" /> : t("draw.createShareLink")}
-              </Button>
             )}
+            <Button variant="contained" onClick={() => void handleCreateShare()} disabled={shareBusy || geoJSON.features.length === 0}>
+              {shareBusy ? <CircularProgress size={18} color="inherit" /> : t("draw.createShareLink")}
+            </Button>
             <Divider />
             <Typography variant="subtitle2">{t("draw.activeShares")}</Typography>
             {shareListBusy ? <CircularProgress size={22} /> : shares.length === 0 ? (

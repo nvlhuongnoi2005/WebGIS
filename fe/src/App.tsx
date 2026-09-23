@@ -20,10 +20,17 @@ setWorkerUrl(maplibreWorkerUrl);
 function App() {
   return (
     <AuthProvider>
-      <NotificationProvider>
-        <AppRoutes />
-      </NotificationProvider>
+      <AuthenticatedApp />
     </AuthProvider>
+  );
+}
+
+function AuthenticatedApp() {
+  const { user } = useAuth();
+  return (
+    <NotificationProvider key={user?.id ?? "anonymous"} userId={user?.id}>
+      <AppRoutes />
+    </NotificationProvider>
   );
 }
 

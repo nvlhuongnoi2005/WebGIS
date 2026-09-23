@@ -1,4 +1,4 @@
-import { publishNotification } from "../notifications";
+import { publishNotification } from "../notifications/notificationEvents";
 
 let accessToken: string | null = null;
 let onSessionExpired: (() => void) | null = null;

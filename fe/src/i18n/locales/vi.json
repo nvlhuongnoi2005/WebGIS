@@ -233,7 +233,10 @@
     "quotaTitle": "Bạn đã dùng hết quota API",
     "quotaDescription": "Các yêu cầu tìm kiếm hoặc định tuyến mới có thể không khả dụng cho đến khi quota được gia hạn.",
     "viewUsage": "Xem mức sử dụng",
-    "sharedWithMe": "Bản đồ được chia sẻ với tôi"
+    "sharedWithMe": "Bản đồ được chia sẻ với tôi",
+    "shareReceivedTitle": "Bạn nhận được bản đồ được chia sẻ",
+    "shareReceivedDescription": "{{owner}} đã chia sẻ một bản đồ với bạn.",
+    "openShare": "Mở bản đồ"
   },
   "auth": {
     "forgotPassword": "Quên mật khẩu?",

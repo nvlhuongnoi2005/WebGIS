@@ -2,7 +2,8 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { Badge, Box, Button, IconButton, List, ListItem, ListItemText, Menu, Stack, Tooltip, Typography } from "@mui/material";
 import { Bell, CheckCheck, Info, Share2, TriangleAlert } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { type AppNotification, type NewNotification, subscribeToNotifications } from "./notificationEvents";
+import { listReceivedGeoJSONShares } from "../map/geoJSONShareClient";
+import { type AppNotification, type NewNotification, publishNotification, subscribeToNotifications } from "./notificationEvents";
 
 interface NotificationContextValue {
   notifications: AppNotification[];
@@ -20,7 +21,7 @@ function createNotification(notification: NewNotification): AppNotification {
   };
 }
 
-export function NotificationProvider({ children }: PropsWithChildren) {
+export function NotificationProvider({ children, userId }: PropsWithChildren<{ userId?: string }>) {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const markAllRead = useCallback(() => {
     setNotifications(current => current.map(notification => ({ ...notification, read: true })));
@@ -32,6 +33,54 @@ export function NotificationProvider({ children }: PropsWithChildren) {
       return [createNotification(notification), ...current].slice(0, 20);
     });
   }), []);
+
+  useEffect(() => {
+    if (!userId) return;
+    let active = true;
+    let checking = false;
+    const storageKey = `webgis:seen-shared-maps:${userId}`;
+    let seen = new Set<string>();
+    try {
+      const saved = JSON.parse(window.localStorage.getItem(storageKey) ?? "[]") as unknown;
+      if (Array.isArray(saved)) seen = new Set(saved.filter((id): id is string => typeof id === "string"));
+    } catch { /* Keep an in-memory set when browser storage is unavailable. */ }
+
+    const checkForSharedMaps = async () => {
+      if (checking) return;
+      checking = true;
+      try {
+        const shares = await listReceivedGeoJSONShares();
+        if (!active) return;
+        for (const share of [...shares].reverse()) {
+          if (seen.has(share.id)) continue;
+          publishNotification({
+            kind: "share",
+            titleKey: "notifications.shareReceivedTitle",
+            descriptionKey: "notifications.shareReceivedDescription",
+            values: { owner: share.owner_name },
+            dedupeKey: `shared-map:${share.id}`,
+            actionHref: `/shared-with-me/${encodeURIComponent(share.id)}`,
+            actionLabelKey: "notifications.openShare",
+          });
+          seen.add(share.id);
+        }
+        try {
+          window.localStorage.setItem(storageKey, JSON.stringify([...seen].slice(-500)));
+        } catch { /* Notifications still work for the current session. */ }
+      } catch { /* Retry on the next poll; inbox loading has its own error UI. */ }
+      finally { checking = false; }
+    };
+
+    void checkForSharedMaps();
+    const interval = window.setInterval(() => void checkForSharedMaps(), 15_000);
+    const handleFocus = () => void checkForSharedMaps();
+    window.addEventListener("focus", handleFocus);
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [userId]);
 
   const value = useMemo(() => ({ notifications, markAllRead }), [markAllRead, notifications]);
   return <NotificationContext.Provider value={value}>{children}</NotificationContext.Provider>;

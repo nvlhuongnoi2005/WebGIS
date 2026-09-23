@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type PropsWithChildren } from "react";
 import { authFetch, setAccessToken, setSessionExpiredHandler } from "./authClient";
 import { AuthContext, type AuthContextValue, type AuthResult, type AuthUser, type RegisterDetails } from "./AuthStore";
-import { publishNotification } from "../notifications";
+import { publishNotification } from "../notifications/notificationEvents";
 
 type TokenResponse = {
   access_token: string;

@@ -255,7 +255,10 @@
     "quotaTitle": "Your API quota has been reached",
     "quotaDescription": "New search or routing requests may be unavailable until your quota renews.",
     "viewUsage": "View usage",
-    "sharedWithMe": "Maps shared with me"
+    "sharedWithMe": "Maps shared with me",
+    "shareReceivedTitle": "A map was shared with you",
+    "shareReceivedDescription": "{{owner}} shared a map with you.",
+    "openShare": "Open map"
   },
   "auth": {
     "brand": "VGIS",

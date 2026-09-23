@@ -16,7 +16,10 @@ export interface GeoJSONShareRecipient {
   email: string;
 }
 
-export interface ReceivedGeoJSONShare extends GeoJSONShareSummary {
+export interface ReceivedGeoJSONShare {
+  id: string;
+  created_at: string;
+  expires_at: string;
   owner_name: string;
   owner_email: string;
 }
