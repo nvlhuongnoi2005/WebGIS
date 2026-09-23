@@ -40,6 +40,10 @@ export default defineConfig(({ mode }) => {
           target: env.VITE_AUTH_URL || "http://localhost:3001",
           changeOrigin: true,
         },
+        "/api/shares": {
+          target: env.VITE_AUTH_URL || "http://localhost:3001",
+          changeOrigin: true,
+        },
         "/api/valhalla": {
           target: env.VITE_VALHALLA_URL || "http://localhost:8002",
           changeOrigin: true,
