@@ -6,7 +6,7 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { Accessibility, Building2, Camera, LogOut, Mail, ReceiptText, UserRound } from "lucide-react";
+import { Accessibility, Building2, Camera, Link2, LogOut, Mail, ReceiptText, UserRound } from "lucide-react";
 import {
   type ChangeEvent,
   useRef,
@@ -23,6 +23,7 @@ interface ProfilePanelProps {
   onClose: () => void;
   onOpenAccessibility: () => void;
   onViewProfile: () => void;
+  onOpenSharedLinks: () => void;
   onSignOut: () => void;
 }
 
@@ -35,6 +36,7 @@ export default function ProfilePanel({
   onClose,
   onOpenAccessibility,
   onViewProfile,
+  onOpenSharedLinks,
   onSignOut,
 }: ProfilePanelProps) {
   const { t } = useTranslation();
@@ -74,6 +76,11 @@ export default function ProfilePanel({
 
   function handleViewProfile() {
     onViewProfile();
+    onClose();
+  }
+
+  function handleOpenSharedLinks() {
+    onOpenSharedLinks();
     onClose();
   }
 
@@ -171,6 +178,15 @@ export default function ProfilePanel({
         fullWidth
       >
         {t("profile.viewProfile")}
+      </Button>
+
+      <Button
+        variant="outlined"
+        startIcon={<Link2 size={17} />}
+        onClick={handleOpenSharedLinks}
+        fullWidth
+      >
+        {t("profile.yourLinks")}
       </Button>
 
       <Button

@@ -14,12 +14,14 @@ import { AccessibilitySettingsDialog } from "../../features/accessibility";
 import { useAuth } from "../../features/auth";
 import ProfileDialog from "./ProfileDialog";
 import ProfilePanel from "./ProfilePanel";
+import SharedLinksDialog from "./SharedLinksDialog";
 
 export default function Profile() {
   const { t } = useTranslation();
   const { logout, updateAvatar, updateContactDetails, user } = useAuth();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
+  const [isSharedLinksOpen, setIsSharedLinksOpen] = useState(false);
   const [isAccessibilityDialogOpen, setIsAccessibilityDialogOpen] = useState(false);
   const isOpen = Boolean(anchorEl);
 
@@ -108,6 +110,7 @@ export default function Profile() {
             onAvatarChange={updateAvatar}
             onClose={handleClosePanel}
             onViewProfile={() => setIsProfileDialogOpen(true)}
+            onOpenSharedLinks={() => setIsSharedLinksOpen(true)}
             onOpenAccessibility={() => setIsAccessibilityDialogOpen(true)}
             onSignOut={logout}
           />
@@ -121,6 +124,7 @@ export default function Profile() {
           onSave={updateContactDetails}
         />
       )}
+      {isSharedLinksOpen && <SharedLinksDialog open onClose={() => setIsSharedLinksOpen(false)} />}
       <AccessibilitySettingsDialog
         open={isAccessibilityDialogOpen}
         onClose={() => setIsAccessibilityDialogOpen(false)}
