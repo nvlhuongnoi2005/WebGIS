@@ -29,7 +29,7 @@ function App() {
 function AuthenticatedApp() {
   const { user } = useAuth();
   return (
-    <NotificationProvider key={user?.id ?? "anonymous"} userId={user?.id}>
+    <NotificationProvider key={user?.id ?? "anonymous"}>
       <AppRoutes />
     </NotificationProvider>
   );

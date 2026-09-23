@@ -111,7 +111,7 @@ func NewServer(config Config, repository *Repository, passwords PasswordService,
 		return nil, err
 	}
 	sessionEvents := NewSessionEventHub()
-	revocations.SetOnApplied(sessionEvents.NotifyRevocation)
+	revocations.SetOnApplied(sessionEvents.NotifyEvent)
 	return &Server{config: config, repository: repository, passwords: passwords, tokens: tokens, revocations: revocations, sessionEventHub: sessionEvents, loginLimiter: NewRateLimiter(time.Duration(config.LoginWindowSeconds)*time.Second, config.LoginMaxAttempts), loginSlots: make(chan struct{}, config.LoginMaxConcurrent), dummyHash: dummyHash, workerClient: &http.Client{Timeout: 30 * time.Second}}, nil
 }
 
@@ -499,15 +499,17 @@ func (server *Server) sessionEvents(response http.ResponseWriter, request *http.
 		select {
 		case <-ctx.Done():
 			return
-		case <-updates:
+		case update := <-updates:
 			if !refreshWriteDeadline() {
 				return
 			}
-			if _, err := response.Write([]byte("event: session-updated\ndata: {}\n\n")); err != nil {
+			if err := writeSSE(response, update); err != nil {
 				return
 			}
 			flusher.Flush()
-			return
+			if update.Type == "session-updated" {
+				return
+			}
 		case <-keepAlive.C:
 			if !refreshWriteDeadline() {
 				return

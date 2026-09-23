@@ -32,5 +32,7 @@ type RevocationEvent struct {
 	SessionID   string `json:"sid,omitempty"`
 	AuthVersion int    `json:"auth_version,omitempty"`
 	KeyID       string `json:"key_id,omitempty"`
+	ShareID     string `json:"share_id,omitempty"`
+	OwnerName   string `json:"owner_name,omitempty"`
 	Timestamp   string `json:"timestamp"`
 }

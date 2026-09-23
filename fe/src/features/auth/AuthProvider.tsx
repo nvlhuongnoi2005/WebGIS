@@ -142,9 +142,26 @@ export function AuthProvider({ children }: PropsWithChildren) {
       eventSource.close();
       requireReauthentication();
     };
+    const handleShareReceived = (event: MessageEvent<string>) => {
+      try {
+        const payload = JSON.parse(event.data) as { share_id?: unknown; owner_name?: unknown };
+        if (typeof payload.share_id !== "string" || typeof payload.owner_name !== "string") return;
+        publishNotification({
+          kind: "share",
+          titleKey: "notifications.shareReceivedTitle",
+          descriptionKey: "notifications.shareReceivedDescription",
+          values: { owner: payload.owner_name },
+          dedupeKey: `shared-map:${payload.share_id}`,
+          actionHref: `/shared-with-me/${encodeURIComponent(payload.share_id)}`,
+          actionLabelKey: "notifications.openShare",
+        });
+      } catch { /* Ignore malformed stream data and keep the session stream open. */ }
+    };
     eventSource.addEventListener("session-updated", handleSessionUpdate);
+    eventSource.addEventListener("share-received", handleShareReceived);
     return () => {
       eventSource.removeEventListener("session-updated", handleSessionUpdate);
+      eventSource.removeEventListener("share-received", handleShareReceived);
       eventSource.close();
     };
   }, [requireReauthentication, user]);

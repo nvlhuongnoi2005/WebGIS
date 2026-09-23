@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -105,8 +106,11 @@ func (server *Server) sendGeoJSONShare(response http.ResponseWriter, request *ht
 		return
 	}
 	defer func() { _ = tx.Rollback(request.Context()) }()
-	var ownerID string
-	err = tx.QueryRow(request.Context(), `SELECT owner_id::text FROM geojson_shares WHERE id=$1 AND expires_at>now() FOR UPDATE`, id).Scan(&ownerID)
+	var ownerID, ownerName string
+	err = tx.QueryRow(request.Context(), `
+		SELECT s.owner_id::text, COALESCE(NULLIF(u.full_name,''),u.email)
+		FROM geojson_shares s JOIN users u ON u.id=s.owner_id
+		WHERE s.id=$1 AND s.expires_at>now() FOR UPDATE`, id).Scan(&ownerID, &ownerName)
 	if err != nil || ownerID != claims.Subject {
 		clientError(response, http.StatusNotFound, "Share not found")
 		return
@@ -117,16 +121,49 @@ func (server *Server) sendGeoJSONShare(response http.ResponseWriter, request *ht
 		clientError(response, http.StatusBadRequest, "One or more recipients are unavailable")
 		return
 	}
-	_, err = tx.Exec(request.Context(), `INSERT INTO geojson_share_recipients (share_id, recipient_id) SELECT $1, recipient_id::uuid FROM unnest($2::text[]) AS ids(recipient_id) ON CONFLICT (share_id,recipient_id) DO NOTHING`, id, ids)
+	rows, err := tx.Query(request.Context(), `
+		INSERT INTO geojson_share_recipients (share_id, recipient_id)
+		SELECT $1, recipient_id::uuid FROM unnest($2::text[]) AS ids(recipient_id)
+		ON CONFLICT (share_id,recipient_id) DO NOTHING
+		RETURNING recipient_id::text`, id, ids)
 	if err != nil {
 		slog.Error("unable to insert GeoJSON share recipients", "error", err)
 		clientError(response, http.StatusInternalServerError, "Unable to send share")
 		return
 	}
+	newRecipientIDs := make([]string, 0, len(ids))
+	for rows.Next() {
+		var recipientID string
+		if err := rows.Scan(&recipientID); err != nil {
+			rows.Close()
+			clientError(response, http.StatusInternalServerError, "Unable to send share")
+			return
+		}
+		newRecipientIDs = append(newRecipientIDs, recipientID)
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		clientError(response, http.StatusInternalServerError, "Unable to send share")
+		return
+	}
+	rows.Close()
+	events := make([]RevocationEvent, 0, len(newRecipientIDs))
+	for _, recipientID := range newRecipientIDs {
+		event := RevocationEvent{Type: "ShareReceived", UserID: recipientID, ShareID: id, OwnerName: ownerName, Timestamp: time.Now().UTC().Format(time.RFC3339Nano)}
+		if err := server.repository.Publish(request.Context(), tx, event); err != nil {
+			slog.Error("unable to publish GeoJSON share notification", "error", err)
+			clientError(response, http.StatusInternalServerError, "Unable to send share")
+			return
+		}
+		events = append(events, event)
+	}
 	if err := tx.Commit(request.Context()); err != nil {
 		slog.Error("unable to commit GeoJSON share recipients", "error", err)
 		clientError(response, http.StatusInternalServerError, "Unable to send share")
 		return
+	}
+	for _, event := range events {
+		server.revocations.Apply(event)
 	}
 	response.WriteHeader(http.StatusNoContent)
 }
