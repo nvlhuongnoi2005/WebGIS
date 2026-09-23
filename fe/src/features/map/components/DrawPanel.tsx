@@ -295,11 +295,14 @@ function DrawPanel({
 
   const handleCopyShareLink = async () => {
     try {
-      await navigator.clipboard.writeText(shareUrl);
-      setShareCopied(true);
-    } catch {
-      setShareError(t("draw.shareCopyError"));
-    }
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+        setShareCopied(true);
+        return;
+      }
+    } catch { /* Try the legacy clipboard path on insecure origins. */ }
+    if (copyTextWithLegacyClipboard(shareUrl)) setShareCopied(true);
+    else setShareError(t("draw.shareCopyError"));
   };
 
   const handleRevokeShare = async (share: GeoJSONShareSummary) => {
@@ -835,6 +838,20 @@ function DrawPanel({
       </Dialog>
     </Paper>
   );
+}
+
+function copyTextWithLegacyClipboard(value: string): boolean {
+  const textarea = document.createElement("textarea");
+  textarea.value = value;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+  textarea.select();
+  textarea.setSelectionRange(0, value.length);
+  const copied = document.execCommand("copy");
+  textarea.remove();
+  return copied;
 }
 
 function getFeatureName(

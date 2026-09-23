@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log/slog"
 	"net/http"
 	"sort"
 	"strings"
@@ -97,6 +98,7 @@ func (server *Server) sendGeoJSONShare(response http.ResponseWriter, request *ht
 	sort.Strings(ids)
 	tx, err := server.repository.pool.Begin(request.Context())
 	if err != nil {
+		slog.Error("unable to start GeoJSON share transaction", "error", err)
 		clientError(response, http.StatusInternalServerError, "Unable to send share")
 		return
 	}
@@ -114,7 +116,13 @@ func (server *Server) sendGeoJSONShare(response http.ResponseWriter, request *ht
 		return
 	}
 	_, err = tx.Exec(request.Context(), `INSERT INTO geojson_share_recipients (share_id, recipient_id) SELECT $1, recipient_id::uuid FROM unnest($2::text[]) AS ids(recipient_id) ON CONFLICT (share_id,recipient_id) DO NOTHING`, id, ids)
-	if err != nil || tx.Commit(request.Context()) != nil {
+	if err != nil {
+		slog.Error("unable to insert GeoJSON share recipients", "error", err)
+		clientError(response, http.StatusInternalServerError, "Unable to send share")
+		return
+	}
+	if err := tx.Commit(request.Context()); err != nil {
+		slog.Error("unable to commit GeoJSON share recipients", "error", err)
 		clientError(response, http.StatusInternalServerError, "Unable to send share")
 		return
 	}
