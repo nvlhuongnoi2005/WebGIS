@@ -67,6 +67,8 @@ export function NotificationButton() {
         anchorEl={anchor}
         open={open}
         onClose={() => setAnchor(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        transformOrigin={{ vertical: "top", horizontal: "right" }}
         slotProps={{
           list: { "aria-label": t("notifications.title") },
           paper: { sx: { width: { xs: "calc(100vw - 32px)", sm: 360 }, maxHeight: 440, borderRadius: 3 } },
