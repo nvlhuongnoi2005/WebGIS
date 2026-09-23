@@ -1630,6 +1630,14 @@ func (server *Server) ServeHTTP(response http.ResponseWriter, request *http.Requ
 		server.route(response, request)
 	case request.Method == http.MethodPost && request.URL.Path == "/api/gateway/elevation":
 		server.elevation(response, request)
+	case request.Method == http.MethodPost && request.URL.Path == "/api/shares":
+		server.createGeoJSONShare(response, request)
+	case request.Method == http.MethodGet && request.URL.Path == "/api/shares":
+		server.listGeoJSONShares(response, request)
+	case request.Method == http.MethodGet && strings.HasPrefix(request.URL.Path, "/api/shares/"):
+		server.getGeoJSONShare(response, request, strings.TrimPrefix(request.URL.Path, "/api/shares/"))
+	case request.Method == http.MethodDelete && strings.HasPrefix(request.URL.Path, "/api/shares/"):
+		server.revokeGeoJSONShare(response, request, strings.TrimPrefix(request.URL.Path, "/api/shares/"))
 	case request.Method == http.MethodGet && request.URL.Path == "/api/gateway/map":
 		if claims, ok := server.authenticate(response, request, "map:read"); ok {
 			writeJSON(response, 200, map[string]any{"user_id": claims.Subject, "plan": claims.Plan, "request_id": request.Header.Get("X-Request-Id")})

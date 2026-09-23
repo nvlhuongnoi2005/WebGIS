@@ -312,6 +312,7 @@ function MapView({ onNavigate }: MapViewProps) {
           canRedo={draw.canRedo}
           canUndo={draw.canUndo}
           geoJSON={displayedGeoJSON}
+          shareGeoJSON={draw.geoJSON}
           hiddenFeatureIds={draw.hiddenFeatureIds}
           selectedFeatureId={draw.selectedFeatureId}
           onChangeMode={draw.changeMode}

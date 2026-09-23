@@ -1,9 +1,14 @@
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import {
   Alert,
   Button,
   Box,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Divider,
   IconButton,
   Paper,
@@ -22,6 +27,7 @@ import {
   ArrowLeft,
   Braces,
   Download,
+  Copy,
   Eye,
   EyeOff,
   Edit3,
@@ -30,6 +36,7 @@ import {
   Redo2,
   RotateCcw,
   Save,
+  Share2,
   Trash2,
   Undo2,
 } from "lucide-react";
@@ -47,6 +54,7 @@ import {
   MEASURED_AREA_PROPERTY,
   MEASURED_LENGTH_PROPERTY,
 } from "../../../tools/measure/MeasureTool";
+import { createGeoJSONShare, listGeoJSONShares, revokeGeoJSONShare, type GeoJSONShareSummary } from "../geoJSONShareClient";
 
 interface DrawPanelProps {
   drawingCount: number;
@@ -58,6 +66,7 @@ interface DrawPanelProps {
   canRedo: boolean;
   canUndo: boolean;
   geoJSON: DrawFeatureCollection;
+  shareGeoJSON: DrawFeatureCollection;
   hiddenFeatureIds: ReadonlySet<string>;
   selectedFeatureId: string | null;
   onChangeMode: (mode: DrawMode) => void;
@@ -85,6 +94,7 @@ function DrawPanel({
   canRedo,
   canUndo,
   geoJSON,
+  shareGeoJSON,
   hiddenFeatureIds,
   selectedFeatureId,
   onChangeMode,
@@ -101,6 +111,14 @@ function DrawPanel({
   const { t } = useTranslation();
   const selectedMode = mode === "edit" ? "select" : mode;
   const [panelTab, setPanelTab] = useState<"select" | "geojson">("select");
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [shareBusy, setShareBusy] = useState(false);
+  const [shareListBusy, setShareListBusy] = useState(false);
+  const [revokingShareId, setRevokingShareId] = useState<string | null>(null);
+  const [shareError, setShareError] = useState<string | null>(null);
+  const [shareUrl, setShareUrl] = useState("");
+  const [shareCopied, setShareCopied] = useState(false);
+  const [shares, setShares] = useState<GeoJSONShareSummary[]>([]);
   const selectedFeature = geoJSON.features.find(feature => feature.id === selectedFeatureId);
   const selectedFeatureName = selectedFeature ? getFeatureNameProperty(selectedFeature) : "";
   const selectedFeaturePropertiesSignature = selectedFeature
@@ -194,6 +212,60 @@ function DrawPanel({
     link.download = `drawings-${new Date().toISOString().slice(0, 10)}.geojson`;
     link.click();
     URL.revokeObjectURL(url);
+  };
+
+  const loadShares = useCallback(async () => {
+    setShareListBusy(true);
+    try {
+      setShares(await listGeoJSONShares());
+    } catch {
+      setShareError(t("draw.shareListError"));
+    } finally {
+      setShareListBusy(false);
+    }
+  }, [t]);
+
+  useEffect(() => {
+    if (shareDialogOpen) void loadShares();
+  }, [loadShares, shareDialogOpen]);
+
+  const handleCreateShare = async () => {
+    setShareBusy(true);
+    setShareError(null);
+    try {
+      const result = await createGeoJSONShare(shareGeoJSON);
+      setShareUrl(`${window.location.origin}/share/${result.token}`);
+      setShareCopied(false);
+      await loadShares();
+    } catch {
+      setShareError(t("draw.shareCreateError"));
+    } finally {
+      setShareBusy(false);
+    }
+  };
+
+  const handleCopyShareLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setShareCopied(true);
+    } catch {
+      setShareError(t("draw.shareCopyError"));
+    }
+  };
+
+  const handleRevokeShare = async (share: GeoJSONShareSummary) => {
+    if (!window.confirm(t("draw.shareRevokeConfirm"))) return;
+    setRevokingShareId(share.id);
+    setShareError(null);
+    try {
+      await revokeGeoJSONShare(share.id);
+      setShares(current => current.filter(item => item.id !== share.id));
+      setShareUrl("");
+    } catch {
+      setShareError(t("draw.shareRevokeError"));
+    } finally {
+      setRevokingShareId(null);
+    }
   };
 
   const handleDownloadFeatureGeoJSON = (
@@ -323,14 +395,25 @@ function DrawPanel({
                   {t("draw.geoJsonFeatureCount", { count: geoJSON.features.length })}
                 </Typography>
               </Stack>
-              <Button
-                size="small"
-                variant="outlined"
-                startIcon={<Braces size={15} />}
-                onClick={() => setPanelTab("geojson")}
-              >
-                {t("draw.geoJsonTitle")}
-              </Button>
+              <Stack direction="row" spacing={0.75}>
+                <Button
+                  size="small"
+                  variant="contained"
+                  startIcon={<Share2 size={15} />}
+                  onClick={() => { setShareError(null); setShareDialogOpen(true); }}
+                  disabled={geoJSON.features.length === 0}
+                >
+                  {t("draw.share")}
+                </Button>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={<Braces size={15} />}
+                  onClick={() => setPanelTab("geojson")}
+                >
+                  {t("draw.geoJsonTitle")}
+                </Button>
+              </Stack>
             </Stack>
 
             {geoJSON.features.length === 0 ? (
@@ -609,6 +692,57 @@ function DrawPanel({
           </Stack>
         )}
       </Stack>
+      <Dialog open={shareDialogOpen} onClose={() => setShareDialogOpen(false)} fullWidth maxWidth="sm">
+        <DialogTitle>{t("draw.shareTitle")}</DialogTitle>
+        <DialogContent>
+          <Stack spacing={1.5} sx={{ pt: 1 }}>
+            <Typography color="text.secondary">{t("draw.shareDescription", { count: geoJSON.features.length })}</Typography>
+            {shareError && <Alert severity="error">{shareError}</Alert>}
+            {shareUrl ? (
+              <Stack spacing={1}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label={t("draw.shareLink")}
+                  value={shareUrl}
+                  slotProps={{ htmlInput: { readOnly: true } }}
+                />
+                <Button
+                  variant="outlined"
+                  startIcon={<Copy size={16} />}
+                  onClick={() => void handleCopyShareLink()}
+                >
+                  {shareCopied ? t("draw.shareLinkCopied") : t("draw.copyShareLink")}
+                </Button>
+              </Stack>
+            ) : (
+              <Button variant="contained" onClick={() => void handleCreateShare()} disabled={shareBusy || geoJSON.features.length === 0}>
+                {shareBusy ? <CircularProgress size={18} color="inherit" /> : t("draw.createShareLink")}
+              </Button>
+            )}
+            <Divider />
+            <Typography variant="subtitle2">{t("draw.activeShares")}</Typography>
+            {shareListBusy ? <CircularProgress size={22} /> : shares.length === 0 ? (
+              <Typography variant="body2" color="text.secondary">{t("draw.noActiveShares")}</Typography>
+            ) : shares.map(share => (
+              <Stack key={share.id} direction="row" spacing={1} sx={{ justifyContent: "space-between", alignItems: "center" }}>
+                <Typography variant="body2">{t("draw.shareExpires", { date: new Date(share.expires_at).toLocaleDateString() })}</Typography>
+                <Button
+                  size="small"
+                  color="error"
+                  onClick={() => void handleRevokeShare(share)}
+                  disabled={revokingShareId === share.id}
+                >
+                  {revokingShareId === share.id ? <CircularProgress size={16} /> : t("draw.revokeShare")}
+                </Button>
+              </Stack>
+            ))}
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setShareDialogOpen(false)}>{t("profile.cancel")}</Button>
+        </DialogActions>
+      </Dialog>
     </Paper>
   );
 }

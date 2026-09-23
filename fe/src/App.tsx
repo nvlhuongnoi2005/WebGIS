@@ -9,6 +9,7 @@ import { NotificationProvider } from "./features/notifications";
 import AdminDashboard from "./admin/AdminDashboard";
 import BillingPage from "./features/billing/BillingPage";
 import { MapView } from "./features/map";
+import SharedGeoJSONPage from "./features/map/SharedGeoJSONPage";
 import SwaggerPage from "./swagger/SwaggerPage";
 
 // Register the Vite-emitted worker before any map instance is created.
@@ -47,6 +48,8 @@ function AppRoutes() {
     content = null;
   } else if (pathname === "/swagger") {
     content = <SwaggerPage />;
+  } else if (pathname.startsWith("/share/")) {
+    content = <SharedGeoJSONPage token={pathname.slice("/share/".length)} />;
   } else if (pathname === "/login") {
     content = user
       ? <Redirect to="/map" navigate={navigate} />
