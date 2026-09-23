@@ -195,7 +195,8 @@
     "sharedBy": "Được chia sẻ bởi {{name}}",
     "shareUnavailable": "Liên kết không tồn tại hoặc đã hết hạn.",
     "sharedMapTitle": "Bản đồ được chia sẻ",
-    "backToMap": "Về bản đồ"
+    "backToMap": "Về bản đồ",
+    "backToShares": "Về danh sách bản đồ được chia sẻ"
   },
   "language": {
     "vietnamese": "Tiếng Việt",

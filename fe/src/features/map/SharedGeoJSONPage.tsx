@@ -83,7 +83,7 @@ export default function SharedGeoJSONPage({ token, shareId }: { token?: string; 
       <AppBar position="static" color="inherit" elevation={1}>
         <Toolbar sx={{ gap: 1 }}>
           <Button onClick={() => navigate(shareId ? "/shared-with-me" : "/map")} startIcon={<ArrowLeft size={18} />}>
-            {shareId ? t("shares.backToShares") : t("draw.backToMap")}
+            {shareId ? t("draw.backToShares") : t("draw.backToMap")}
           </Button>
           <Typography variant="h6" sx={{ flex: 1 }}>{t("draw.sharedMapTitle")}</Typography>
           <Button variant="outlined" startIcon={<Download size={17} />} onClick={handleDownload} disabled={!geoJSON}>

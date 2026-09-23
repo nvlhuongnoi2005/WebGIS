@@ -195,7 +195,8 @@
     "sharedBy": "Shared by {{name}}",
     "shareUnavailable": "This link does not exist or has expired.",
     "sharedMapTitle": "Shared map",
-    "backToMap": "Back to map"
+    "backToMap": "Back to map",
+    "backToShares": "Back to shared maps"
   },
   "language": {
     "vietnamese": "Tiếng Việt",
