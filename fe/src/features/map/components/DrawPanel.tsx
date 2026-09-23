@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import {
   Alert,
@@ -214,7 +214,7 @@ function DrawPanel({
     URL.revokeObjectURL(url);
   };
 
-  const loadShares = useCallback(async () => {
+  const loadShares = async () => {
     setShareListBusy(true);
     try {
       setShares(await listGeoJSONShares());
@@ -223,11 +223,7 @@ function DrawPanel({
     } finally {
       setShareListBusy(false);
     }
-  }, [t]);
-
-  useEffect(() => {
-    if (shareDialogOpen) void loadShares();
-  }, [loadShares, shareDialogOpen]);
+  };
 
   const handleCreateShare = async () => {
     setShareBusy(true);
@@ -400,7 +396,7 @@ function DrawPanel({
                   size="small"
                   variant="contained"
                   startIcon={<Share2 size={15} />}
-                  onClick={() => { setShareError(null); setShareDialogOpen(true); }}
+                  onClick={() => { setShareError(null); setShareDialogOpen(true); void loadShares(); }}
                   disabled={geoJSON.features.length === 0}
                 >
                   {t("draw.share")}
