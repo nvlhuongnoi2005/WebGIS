@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type PropsWithChildren } from "react";
 import { authFetch, setAccessToken, setSessionExpiredHandler } from "./authClient";
 import { AuthContext, type AuthContextValue, type AuthResult, type AuthUser, type RegisterDetails } from "./AuthStore";
+import { publishNotification } from "../notifications";
 
 type TokenResponse = {
   access_token: string;
@@ -68,7 +69,15 @@ export function AuthProvider({ children }: PropsWithChildren) {
       if (response.status >= 500) return { ok: false, code: "serviceUnavailable" };
       if (!response.ok) return { ok: false, code: "registrationFailed" };
       // Preserve seamless registration without ever persisting credentials in the browser.
-      return login(details.email, details.password);
+      const result = await login(details.email, details.password);
+      if (result.ok) {
+        publishNotification({
+          kind: "welcome",
+          titleKey: "notifications.welcomeTitle",
+          descriptionKey: "notifications.welcomeDescription",
+        });
+      }
+      return result;
     } catch { return { ok: false, code: "serviceUnavailable" }; }
   }, [login]);
 

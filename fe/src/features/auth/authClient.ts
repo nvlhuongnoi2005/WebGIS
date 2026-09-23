@@ -1,3 +1,5 @@
+import { publishNotification } from "../notifications";
+
 let accessToken: string | null = null;
 let onSessionExpired: (() => void) | null = null;
 let refreshInFlight: Promise<boolean> | null = null;
@@ -23,6 +25,18 @@ function authPath(input: RequestInfo | URL): string {
 function expireSession(): void {
   accessToken = null;
   onSessionExpired?.();
+}
+
+function notifyQuotaExceeded(response: Response): void {
+  if (response.status !== 429) return;
+  publishNotification({
+    kind: "quota",
+    titleKey: "notifications.quotaTitle",
+    descriptionKey: "notifications.quotaDescription",
+    dedupeKey: "quota-exceeded",
+    actionHref: "/billing",
+    actionLabelKey: "notifications.viewUsage",
+  });
 }
 
 async function renewAccessToken(): Promise<boolean> {
@@ -65,12 +79,16 @@ export async function authFetch(input: RequestInfo | URL, init: RequestInit = {}
   const response = await fetch(input, { ...init, headers, credentials: "include" });
   // Login and refresh failures are handled by their callers. For protected API
   // calls, renew an expired 15-minute access token once before giving up.
-  if (response.status !== 401 || !accessToken || authPath(input).startsWith("/auth/")) return response;
+  if (response.status !== 401 || !accessToken || authPath(input).startsWith("/auth/")) {
+    notifyQuotaExceeded(response);
+    return response;
+  }
   if (!await renewAccessToken()) return response;
   const retryHeaders = new Headers(init.headers);
   if (accessToken) retryHeaders.set("Authorization", `Bearer ${accessToken}`);
   if (csrf && !["GET", "HEAD", "OPTIONS"].includes(init.method ?? "GET")) retryHeaders.set("X-CSRF-Token", csrf);
   const retry = await fetch(input, { ...init, headers: retryHeaders, credentials: "include" });
   if (retry.status === 401) expireSession();
+  notifyQuotaExceeded(retry);
   return retry;
 }

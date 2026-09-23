@@ -9,6 +9,7 @@ import Profile from "../../components/Profile/Profile";
 import SearchBar from "../../components/SearchBar/SearchBar";
 import { ThemeModeSwitcher } from "../accessibility";
 import { useAuth } from "../auth";
+import { NotificationButton } from "../notifications";
 import { useBaseMapStyle } from "../../hooks/useBaseMapStyle";
 import { useDrawLayers } from "../../hooks/useDrawLayers";
 import { useDrawTool } from "../../hooks/useDrawTool";
@@ -214,6 +215,7 @@ function MapView({ onNavigate }: MapViewProps) {
         }}
       >
         <ThemeModeSwitcher />
+        <NotificationButton />
         {user?.role === "admin" && (
           <Tooltip title={t("admin.openDashboard")}>
             <IconButton

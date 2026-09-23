@@ -185,6 +185,18 @@
     "reduceMotionDescription": "Hạn chế các chuyển động và hiệu ứng không cần thiết.",
     "reset": "Đặt lại tùy chỉnh"
   },
+  "notifications": {
+    "title": "Thông báo",
+    "open": "Mở thông báo",
+    "unreadCount": "{{count}} thông báo chưa đọc",
+    "markAllRead": "Đánh dấu đã đọc",
+    "empty": "Bạn chưa có thông báo nào.",
+    "welcomeTitle": "Chào mừng bạn đến với VGIS",
+    "welcomeDescription": "Tài khoản đã sẵn sàng. Hãy bắt đầu khám phá bản đồ và các công cụ.",
+    "quotaTitle": "Bạn đã dùng hết quota API",
+    "quotaDescription": "Các yêu cầu tìm kiếm hoặc định tuyến mới có thể không khả dụng cho đến khi quota được gia hạn.",
+    "viewUsage": "Xem mức sử dụng"
+  },
   "auth": {
     "forgotPassword": "Quên mật khẩu?",
     "resetPasswordTitle": "Đặt lại mật khẩu",

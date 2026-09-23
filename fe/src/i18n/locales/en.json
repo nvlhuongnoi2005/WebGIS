@@ -207,6 +207,18 @@
     "reduceMotionDescription": "Limit non-essential movement and transitions.",
     "reset": "Reset preferences"
   },
+  "notifications": {
+    "title": "Notifications",
+    "open": "Open notifications",
+    "unreadCount": "{{count}} unread notifications",
+    "markAllRead": "Mark all read",
+    "empty": "You have no notifications yet.",
+    "welcomeTitle": "Welcome to VGIS",
+    "welcomeDescription": "Your account is ready. Start exploring the map and its tools.",
+    "quotaTitle": "Your API quota has been reached",
+    "quotaDescription": "New search or routing requests may be unavailable until your quota renews.",
+    "viewUsage": "View usage"
+  },
   "auth": {
     "brand": "VGIS",
     "subtitle": "GIS mapping tool",
