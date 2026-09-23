@@ -5,6 +5,7 @@ import "time"
 type User struct {
 	ID, Email, PasswordHash, Status string
 	AuthVersion                     int
+	MustChangePassword              bool
 	Scopes                          []string
 	Plan, Role                      string
 	Name, DateOfBirth               *string
@@ -20,6 +21,7 @@ type Session struct {
 type Claims struct {
 	Subject, SessionID, TokenID string
 	AuthVersion                 int
+	MustChangePassword          bool
 	Scopes                      []string
 	Plan, Role                  string
 }

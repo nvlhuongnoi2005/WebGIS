@@ -87,6 +87,27 @@ export function AuthProvider({ children }: PropsWithChildren) {
     expireSession();
   }, [expireSession]);
 
+  const changePassword = useCallback(async (currentPassword: string, newPassword: string): Promise<AuthResult> => {
+    try {
+      const response = await authFetch("/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+      });
+      if (response.status === 401) return { ok: false, code: "currentPasswordInvalid" };
+      if (response.status === 400) {
+        const payload = await parseResponse(response) as { code?: string } | null;
+        return { ok: false, code: payload?.code === "passwordMustDiffer" ? "newPasswordSameAsCurrent" : "newPasswordInvalid" };
+      }
+      if (!response.ok) return { ok: false, code: "serviceUnavailable" };
+      setReauthenticationRequired(false);
+      expireSession();
+      return { ok: true };
+    } catch {
+      return { ok: false, code: "serviceUnavailable" };
+    }
+  }, [expireSession]);
+
   const refreshSession = useCallback(async (): Promise<boolean> => {
     try {
       const response = await authFetch("/auth/refresh", {
@@ -183,8 +204,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }, [refreshSession]);
 
   const value = useMemo<AuthContextValue>(() => ({
-    user, isLoading, reauthenticationRequired, login, register, logout, updateContactDetails, updateAvatar,
+    user, isLoading, reauthenticationRequired, login, register, logout, changePassword, updateContactDetails, updateAvatar,
     acknowledgeReauthentication: () => setReauthenticationRequired(false),
-  }), [isLoading, login, logout, reauthenticationRequired, register, updateAvatar, updateContactDetails, user]);
+  }), [changePassword, isLoading, login, logout, reauthenticationRequired, register, updateAvatar, updateContactDetails, user]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

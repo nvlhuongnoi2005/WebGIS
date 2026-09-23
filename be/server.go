@@ -193,6 +193,10 @@ func (server *Server) authenticate(response http.ResponseWriter, request *http.R
 		unauthorized(response)
 		return Claims{}, false
 	}
+	if claims.MustChangePassword && !(request.Method == http.MethodPost && (request.URL.Path == "/auth/change-password" || request.URL.Path == "/auth/logout")) {
+		writeJSON(response, http.StatusForbidden, map[string]string{"error": "Password change required", "code": "passwordChangeRequired"})
+		return Claims{}, false
+	}
 	for _, scope := range scopes {
 		if !hasScope(claims, scope) {
 			clientError(response, http.StatusForbidden, "Forbidden")
@@ -578,6 +582,10 @@ func (server *Server) changePassword(response http.ResponseWriter, request *http
 		clientError(response, 400, "Invalid password change request")
 		return
 	}
+	if input.NewPassword == input.CurrentPassword {
+		writeJSON(response, http.StatusBadRequest, map[string]string{"error": "Choose a different password", "code": "passwordMustDiffer"})
+		return
+	}
 	ctx := request.Context()
 	user, err := server.repository.UserByID(ctx, server.repository.pool, claims.Subject)
 	if err != nil || user.Status != "ACTIVE" || !server.passwords.Verify(user.PasswordHash, input.CurrentPassword) {
@@ -600,7 +608,7 @@ func (server *Server) changePassword(response http.ResponseWriter, request *http
 		return
 	}
 	var version int
-	if err = tx.QueryRow(ctx, `UPDATE users SET password_hash=$1,auth_version=auth_version+1 WHERE id=$2 RETURNING auth_version`, nextHash, user.ID).Scan(&version); err != nil {
+	if err = tx.QueryRow(ctx, `UPDATE users SET password_hash=$1,must_change_password=false,auth_version=auth_version+1 WHERE id=$2 RETURNING auth_version`, nextHash, user.ID).Scan(&version); err != nil {
 		clientError(response, 500, "Internal server error")
 		return
 	}
@@ -1180,7 +1188,7 @@ func (server *Server) adminResetUserPassword(response http.ResponseWriter, reque
 	}
 	defer tx.Rollback(ctx)
 	var version int
-	if err = tx.QueryRow(ctx, `UPDATE users SET password_hash=$1,auth_version=auth_version+1 WHERE id=$2 RETURNING auth_version`, nextHash, userID).Scan(&version); err != nil {
+	if err = tx.QueryRow(ctx, `UPDATE users SET password_hash=$1,must_change_password=true,auth_version=auth_version+1 WHERE id=$2 RETURNING auth_version`, nextHash, userID).Scan(&version); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			clientError(response, http.StatusNotFound, "User not found")
 		} else {

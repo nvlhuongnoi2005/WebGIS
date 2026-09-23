@@ -25,6 +25,8 @@ CREATE TABLE IF NOT EXISTS users (
   last_login_at timestamptz
 );
 
+ALTER TABLE users ADD COLUMN IF NOT EXISTS must_change_password boolean NOT NULL DEFAULT false;
+
 -- Existing installations run this migration again, so keep the new role
 -- column backwards-compatible with databases created before role support.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS role text;

@@ -11,6 +11,7 @@ export interface AuthUser {
   plan: string;
   role: "user" | "admin";
   scopes: string[];
+  mustChangePassword?: boolean;
 }
 
 export interface RegisterDetails {
@@ -26,7 +27,7 @@ export type AuthResult =
   | { ok: true }
   | {
     ok: false;
-    code: "emailInUse" | "invalidCredentials" | "accountDisabled" | "accountLocked" | "registrationFailed" | "serviceUnavailable" | "storageFailed";
+    code: "emailInUse" | "invalidCredentials" | "accountDisabled" | "accountLocked" | "registrationFailed" | "serviceUnavailable" | "storageFailed" | "currentPasswordInvalid" | "newPasswordInvalid" | "newPasswordSameAsCurrent";
   };
 
 export interface AuthContextValue {
@@ -36,6 +37,7 @@ export interface AuthContextValue {
   login: (email: string, password: string) => Promise<AuthResult>;
   register: (details: RegisterDetails) => Promise<AuthResult>;
   logout: () => Promise<void>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<AuthResult>;
   updateContactDetails: (email: string, phone: string) => Promise<AuthResult>;
   updateAvatar: (avatarUrl: string) => Promise<AuthResult>;
   acknowledgeReauthentication: () => void;

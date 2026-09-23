@@ -101,7 +101,7 @@ func (service *TokenService) Issue(user User, sessionID string) (string, int, er
 		return "", 0, err
 	}
 	claims := jwt.MapClaims{
-		"sub": user.ID, "sid": sessionID, "av": user.AuthVersion, "scope": user.Scopes, "plan": user.Plan, "role": normalizedRole(user.Role),
+		"sub": user.ID, "sid": sessionID, "av": user.AuthVersion, "scope": user.Scopes, "plan": user.Plan, "role": normalizedRole(user.Role), "must_change_password": user.MustChangePassword,
 		"iss": service.config.Issuer, "aud": service.config.Audience, "iat": now.Unix(), "exp": now.Add(time.Duration(service.config.AccessTTL) * time.Second).Unix(), "jti": jti,
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
@@ -189,7 +189,15 @@ func (service *TokenService) Verify(encoded string) (Claims, error) {
 			return Claims{}, fmt.Errorf("invalid access token")
 		}
 	}
-	return Claims{Subject: sub, SessionID: sid, TokenID: jti, AuthVersion: version, Scopes: scopes, Plan: plan, Role: role}, nil
+	mustChangePassword := false
+	if value, exists := claims["must_change_password"]; exists {
+		var valid bool
+		mustChangePassword, valid = value.(bool)
+		if !valid {
+			return Claims{}, fmt.Errorf("invalid access token")
+		}
+	}
+	return Claims{Subject: sub, SessionID: sid, TokenID: jti, AuthVersion: version, MustChangePassword: mustChangePassword, Scopes: scopes, Plan: plan, Role: role}, nil
 }
 
 func normalizedRole(role string) string {

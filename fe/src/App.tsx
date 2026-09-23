@@ -5,6 +5,7 @@ import { setWorkerUrl } from "maplibre-gl";
 import maplibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import { AccessibilitySettingsButton } from "./features/accessibility";
 import { AuthProvider, LoginPage, useAuth } from "./features/auth";
+import ForcePasswordChangePage from "./features/auth/ForcePasswordChangePage";
 import { NotificationProvider } from "./features/notifications";
 import AdminDashboard from "./admin/AdminDashboard";
 import BillingPage from "./features/billing/BillingPage";
@@ -47,6 +48,8 @@ function AppRoutes() {
   let content: React.ReactNode;
   if (isLoading) {
     content = null;
+  } else if (user?.mustChangePassword) {
+    content = <ForcePasswordChangePage onComplete={() => navigate("/login", true)} />;
   } else if (pathname === "/swagger") {
     content = <SwaggerPage />;
   } else if (pathname.startsWith("/share/")) {
