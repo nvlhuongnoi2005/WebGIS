@@ -19,7 +19,7 @@ spec:
         - name: ghcr-pull
       containers:
         - name: migrate
-          image: ghcr.io/nvlhuongnoi2005/webgis/controller:sha-8ea2d2435a585f1b576d343fbc23adc6d4f0e440
+          image: ghcr.io/nvlhuongnoi2005/webgis/controller:sha-b760f8ba1c9a2271bdfd024326612a5c2d444955
           imagePullPolicy: IfNotPresent
           command: ["/controller", "migrate"]
           envFrom:
