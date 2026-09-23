@@ -71,7 +71,7 @@ export function NotificationButton() {
         transformOrigin={{ vertical: "top", horizontal: "right" }}
         slotProps={{
           list: { "aria-label": t("notifications.title") },
-          paper: { sx: { width: { xs: "calc(100vw - 32px)", sm: 360 }, maxHeight: 440, borderRadius: 3 } },
+          paper: { sx: { mt: 1.5, width: { xs: "calc(100vw - 32px)", sm: 360 }, maxHeight: 440, borderRadius: 2 } },
         }}
       >
         <Stack direction="row" sx={{ px: 2, pt: 1.5, pb: 0.75, alignItems: "center", justifyContent: "space-between" }}>
