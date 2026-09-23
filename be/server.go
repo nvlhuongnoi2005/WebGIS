@@ -470,6 +470,10 @@ func (server *Server) sessionEvents(response http.ResponseWriter, request *http.
 		clientError(response, http.StatusInternalServerError, "Streaming unavailable")
 		return
 	}
+	writeDeadline := http.NewResponseController(response)
+	refreshWriteDeadline := func() bool {
+		return writeDeadline.SetWriteDeadline(time.Now().Add(30*time.Second)) == nil
+	}
 
 	response.Header().Set("Cache-Control", "no-cache, no-transform")
 	response.Header().Set("Connection", "keep-alive")
@@ -477,7 +481,12 @@ func (server *Server) sessionEvents(response http.ResponseWriter, request *http.
 	response.Header().Set("X-Accel-Buffering", "no")
 	updates, unsubscribe := server.sessionEventHub.Subscribe(user.ID)
 	defer unsubscribe()
-	_, _ = response.Write([]byte("event: ready\ndata: {}\n\n"))
+	if !refreshWriteDeadline() {
+		return
+	}
+	if _, err := response.Write([]byte("event: ready\ndata: {}\n\n")); err != nil {
+		return
+	}
 	flusher.Flush()
 
 	keepAlive := time.NewTicker(25 * time.Second)
@@ -487,11 +496,21 @@ func (server *Server) sessionEvents(response http.ResponseWriter, request *http.
 		case <-ctx.Done():
 			return
 		case <-updates:
-			_, _ = response.Write([]byte("event: session-updated\ndata: {}\n\n"))
+			if !refreshWriteDeadline() {
+				return
+			}
+			if _, err := response.Write([]byte("event: session-updated\ndata: {}\n\n")); err != nil {
+				return
+			}
 			flusher.Flush()
 			return
 		case <-keepAlive.C:
-			_, _ = response.Write([]byte(": keepalive\n\n"))
+			if !refreshWriteDeadline() {
+				return
+			}
+			if _, err := response.Write([]byte(": keepalive\n\n")); err != nil {
+				return
+			}
 			flusher.Flush()
 		}
 	}
