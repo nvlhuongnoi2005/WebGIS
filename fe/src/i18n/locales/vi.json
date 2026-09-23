@@ -175,6 +175,20 @@
     "shareListError": "Không thể tải danh sách liên kết.",
     "shareCopyError": "Không thể sao chép. Hãy chọn và sao chép liên kết thủ công.",
     "shareRevokeError": "Không thể thu hồi liên kết.",
+    "shareChooseRecipients": "Gửi cho người dùng",
+    "shareSearchPeople": "Tìm người dùng",
+    "shareSearchPeoplePlaceholder": "Nhập tên hoặc email (ít nhất 2 ký tự)",
+    "shareSearchHint": "Tìm theo tên hoặc email, sau đó tick người nhận.",
+    "shareSelectedCount": "Đã chọn {{count}} người",
+    "shareNoPeopleFound": "Không tìm thấy người dùng.",
+    "shareRecipientSearchError": "Không thể tìm người dùng.",
+    "shareSendToPeople": "Gửi liên kết",
+    "shareSendError": "Không thể gửi liên kết cho người đã chọn.",
+    "shareSent": "Đã chia sẻ với {{count}} người.",
+    "sharedInboxTitle": "Được chia sẻ với tôi",
+    "sharedInboxError": "Không thể tải danh sách bản đồ được chia sẻ.",
+    "sharedInboxEmpty": "Chưa có ai chia sẻ bản đồ với bạn.",
+    "sharedBy": "Được chia sẻ bởi {{name}}",
     "shareUnavailable": "Liên kết không tồn tại hoặc đã hết hạn.",
     "sharedMapTitle": "Bản đồ được chia sẻ",
     "backToMap": "Về bản đồ"
@@ -214,7 +228,8 @@
     "welcomeDescription": "Tài khoản đã sẵn sàng. Hãy bắt đầu khám phá bản đồ và các công cụ.",
     "quotaTitle": "Bạn đã dùng hết quota API",
     "quotaDescription": "Các yêu cầu tìm kiếm hoặc định tuyến mới có thể không khả dụng cho đến khi quota được gia hạn.",
-    "viewUsage": "Xem mức sử dụng"
+    "viewUsage": "Xem mức sử dụng",
+    "sharedWithMe": "Bản đồ được chia sẻ với tôi"
   },
   "auth": {
     "forgotPassword": "Quên mật khẩu?",

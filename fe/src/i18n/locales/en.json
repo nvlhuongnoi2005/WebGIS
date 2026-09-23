@@ -175,6 +175,20 @@
     "shareListError": "Could not load the share links.",
     "shareCopyError": "Could not copy the link. Select and copy it manually.",
     "shareRevokeError": "Could not revoke the share link.",
+    "shareChooseRecipients": "Send to people",
+    "shareSearchPeople": "Search people",
+    "shareSearchPeoplePlaceholder": "Enter a name or email (at least 2 characters)",
+    "shareSearchHint": "Search by name or email, then select recipients.",
+    "shareSelectedCount": "{{count}} people selected",
+    "shareNoPeopleFound": "No users found.",
+    "shareRecipientSearchError": "Could not search users.",
+    "shareSendToPeople": "Send link",
+    "shareSendError": "Could not send the link to the selected people.",
+    "shareSent": "Shared with {{count}} people.",
+    "sharedInboxTitle": "Shared with me",
+    "sharedInboxError": "Could not load shared maps.",
+    "sharedInboxEmpty": "No one has shared a map with you yet.",
+    "sharedBy": "Shared by {{name}}",
     "shareUnavailable": "This link does not exist or has expired.",
     "sharedMapTitle": "Shared map",
     "backToMap": "Back to map"
@@ -236,7 +250,8 @@
     "welcomeDescription": "Your account is ready. Start exploring the map and its tools.",
     "quotaTitle": "Your API quota has been reached",
     "quotaDescription": "New search or routing requests may be unavailable until your quota renews.",
-    "viewUsage": "View usage"
+    "viewUsage": "View usage",
+    "sharedWithMe": "Maps shared with me"
   },
   "auth": {
     "brand": "VGIS",

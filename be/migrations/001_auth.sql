@@ -57,6 +57,14 @@ CREATE TABLE IF NOT EXISTS geojson_shares (
 CREATE INDEX IF NOT EXISTS geojson_shares_owner_idx ON geojson_shares (owner_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS geojson_shares_expiry_idx ON geojson_shares (expires_at);
 
+CREATE TABLE IF NOT EXISTS geojson_share_recipients (
+  share_id uuid NOT NULL REFERENCES geojson_shares(id) ON DELETE CASCADE,
+  recipient_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  sent_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (share_id, recipient_id)
+);
+CREATE INDEX IF NOT EXISTS geojson_share_recipients_user_idx ON geojson_share_recipients (recipient_id, sent_at DESC);
+
 CREATE TABLE IF NOT EXISTS sessions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,

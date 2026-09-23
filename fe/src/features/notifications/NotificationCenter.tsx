@@ -78,6 +78,11 @@ export function NotificationButton() {
           <Typography variant="subtitle1">{t("notifications.title")}</Typography>
           {notifications.length > 0 && <Button size="small" startIcon={<CheckCheck size={16} />} onClick={markAllRead}>{t("notifications.markAllRead")}</Button>}
         </Stack>
+        <Box sx={{ px: 1.5, pb: 1 }}>
+          <Button component="a" href="/shared-with-me" size="small" fullWidth startIcon={<Share2 size={16} />}>
+            {t("notifications.sharedWithMe")}
+          </Button>
+        </Box>
         {notifications.length === 0 ? (
           <Box sx={{ px: 2, py: 3 }}><Typography color="text.secondary">{t("notifications.empty")}</Typography></Box>
         ) : (

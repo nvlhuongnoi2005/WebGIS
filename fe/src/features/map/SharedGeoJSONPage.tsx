@@ -5,10 +5,10 @@ import * as maplibregl from "maplibre-gl";
 import { useTranslation } from "react-i18next";
 import { getMapStyle } from "../../tools/map/MapStyleTool";
 import type { DrawFeatureCollection } from "../../tools/draw/DrawTool";
-import { getSharedGeoJSON } from "./geoJSONShareClient";
+import { getReceivedGeoJSON, getSharedGeoJSON } from "./geoJSONShareClient";
 import "maplibre-gl/dist/maplibre-gl.css";
 
-export default function SharedGeoJSONPage({ token }: { token: string }) {
+export default function SharedGeoJSONPage({ token, shareId }: { token?: string; shareId?: string }) {
   const { t } = useTranslation();
   const mapContainer = useRef<HTMLDivElement | null>(null);
   const [geoJSON, setGeoJSON] = useState<DrawFeatureCollection | null>(null);
@@ -17,7 +17,8 @@ export default function SharedGeoJSONPage({ token }: { token: string }) {
 
   useEffect(() => {
     let active = true;
-    void getSharedGeoJSON(token).then(collection => {
+    const load = shareId ? getReceivedGeoJSON(shareId) : getSharedGeoJSON(token ?? "");
+    void load.then(collection => {
       if (active) setGeoJSON(collection);
     }).catch(() => {
       if (active) setError(true);
@@ -25,7 +26,7 @@ export default function SharedGeoJSONPage({ token }: { token: string }) {
       if (active) setLoading(false);
     });
     return () => { active = false; };
-  }, [token]);
+  }, [shareId, token]);
 
   useEffect(() => {
     if (!geoJSON || !mapContainer.current) return;
@@ -79,7 +80,9 @@ export default function SharedGeoJSONPage({ token }: { token: string }) {
     <Box component="main" id="main-content" sx={{ display: "flex", flexDirection: "column", width: "100vw", height: "100dvh" }}>
       <AppBar position="static" color="inherit" elevation={1}>
         <Toolbar sx={{ gap: 1 }}>
-          <Button href="/map" startIcon={<ArrowLeft size={18} />}>{t("draw.backToMap")}</Button>
+          <Button href={shareId ? "/shared-with-me" : "/map"} startIcon={<ArrowLeft size={18} />}>
+            {shareId ? t("shares.backToShares") : t("draw.backToMap")}
+          </Button>
           <Typography variant="h6" sx={{ flex: 1 }}>{t("draw.sharedMapTitle")}</Typography>
           <Button variant="outlined" startIcon={<Download size={17} />} onClick={handleDownload} disabled={!geoJSON}>
             {t("draw.geoJsonExport")}

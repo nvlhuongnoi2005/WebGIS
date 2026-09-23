@@ -1634,8 +1634,26 @@ func (server *Server) ServeHTTP(response http.ResponseWriter, request *http.Requ
 		server.createGeoJSONShare(response, request)
 	case request.Method == http.MethodGet && request.URL.Path == "/api/shares":
 		server.listGeoJSONShares(response, request)
+	case request.Method == http.MethodGet && request.URL.Path == "/api/shares/recipients":
+		server.searchGeoJSONShareRecipients(response, request)
+	case request.Method == http.MethodGet && request.URL.Path == "/api/shares/received":
+		server.listReceivedGeoJSONShares(response, request)
+	case request.Method == http.MethodPost && strings.HasPrefix(request.URL.Path, "/api/shares/") && strings.HasSuffix(request.URL.Path, "/recipients"):
+		id := strings.TrimSuffix(strings.TrimPrefix(request.URL.Path, "/api/shares/"), "/recipients")
+		if strings.Contains(id, "/") || id == "" {
+			clientError(response, http.StatusBadRequest, "Invalid share id")
+		} else {
+			server.sendGeoJSONShare(response, request, id)
+		}
+	case request.Method == http.MethodGet && strings.HasPrefix(request.URL.Path, "/api/shares/received/"):
+		server.getReceivedGeoJSONShare(response, request, strings.TrimPrefix(request.URL.Path, "/api/shares/received/"))
 	case request.Method == http.MethodGet && strings.HasPrefix(request.URL.Path, "/api/shares/"):
-		server.getGeoJSONShare(response, request, strings.TrimPrefix(request.URL.Path, "/api/shares/"))
+		identifier := strings.TrimPrefix(request.URL.Path, "/api/shares/")
+		if strings.Contains(identifier, "/") || identifier == "" {
+			clientError(response, http.StatusNotFound, "Share not found")
+		} else {
+			server.getGeoJSONShare(response, request, identifier)
+		}
 	case request.Method == http.MethodDelete && strings.HasPrefix(request.URL.Path, "/api/shares/"):
 		server.revokeGeoJSONShare(response, request, strings.TrimPrefix(request.URL.Path, "/api/shares/"))
 	case request.Method == http.MethodGet && request.URL.Path == "/api/gateway/map":

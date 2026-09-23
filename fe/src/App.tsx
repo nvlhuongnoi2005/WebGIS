@@ -10,6 +10,7 @@ import AdminDashboard from "./admin/AdminDashboard";
 import BillingPage from "./features/billing/BillingPage";
 import { MapView } from "./features/map";
 import SharedGeoJSONPage from "./features/map/SharedGeoJSONPage";
+import SharedWithMePage from "./features/map/SharedWithMePage";
 import SwaggerPage from "./swagger/SwaggerPage";
 
 // Register the Vite-emitted worker before any map instance is created.
@@ -50,6 +51,14 @@ function AppRoutes() {
     content = <SwaggerPage />;
   } else if (pathname.startsWith("/share/")) {
     content = <SharedGeoJSONPage token={pathname.slice("/share/".length)} />;
+  } else if (pathname.startsWith("/shared-with-me/")) {
+    content = user
+      ? <SharedGeoJSONPage shareId={pathname.slice("/shared-with-me/".length)} />
+      : <Redirect to="/login" navigate={navigate} />;
+  } else if (pathname === "/shared-with-me") {
+    content = user
+      ? <SharedWithMePage />
+      : <Redirect to="/login" navigate={navigate} />;
   } else if (pathname === "/login") {
     content = user
       ? <Redirect to="/map" navigate={navigate} />
