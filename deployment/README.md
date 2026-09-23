@@ -51,9 +51,14 @@ not start with ephemeral JWT keys in production.
 
 ## 3. Deploy the core
 
-Create/update regular resources, wait for the database, then run the migration
-once. The migration Job is omitted from the first command so it can be rerun
-cleanly after a schema change.
+For GitOps deployments, configure Argo CD to sync this directory. The sync
+waves make it wait for Postgres, run the migration Job, then update the
+controller. The CI workflow publishes the controller image (which contains the
+SQL migrations) and updates both controller and migration Job image tags when
+backend files change. Argo CD then runs the migration Job as part of that sync.
+
+For a manual first-time deployment, apply the resources and wait for Postgres
+before rerunning the migration Job:
 
 ```powershell
 kubectl apply -k deployment
@@ -65,9 +70,9 @@ kubectl -n webgis rollout status deployment/controller
 kubectl -n webgis rollout status deployment/frontend
 ```
 
-The migration Job is intentionally kept outside `kustomization.yaml`: it must
-run only after the database is ready and should be explicitly rerun for each
-schema update.
+The migration Job is included in `kustomization.yaml` for Argo CD. For plain
+`kubectl apply`, it may start before Postgres is ready; wait for Postgres, then
+delete and reapply the Job using the commands above if its first attempt failed.
 
 ## 4. Ingress and local access
 

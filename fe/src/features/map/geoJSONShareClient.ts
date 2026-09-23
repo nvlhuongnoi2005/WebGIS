@@ -5,6 +5,9 @@ export interface GeoJSONShareSummary {
   id: string;
   created_at: string;
   expires_at: string;
+  token?: string;
+  feature_count: number;
+  geojson_preview: string;
 }
 
 export interface GeoJSONShareRecipient {
@@ -33,6 +36,13 @@ export async function listGeoJSONShares(): Promise<GeoJSONShareSummary[]> {
   if (!response.ok) throw new Error("shareListFailed");
   const result = await response.json() as { shares: GeoJSONShareSummary[] };
   return result.shares;
+}
+
+export async function getOrCreateGeoJSONShareLink(id: string): Promise<string> {
+  const response = await authFetch(`/api/shares/${encodeURIComponent(id)}/link`, { method: "POST" });
+  if (!response.ok) throw new Error("shareLinkLoadFailed");
+  const result = await response.json() as { token: string };
+  return result.token;
 }
 
 export async function revokeGeoJSONShare(id: string): Promise<void> {

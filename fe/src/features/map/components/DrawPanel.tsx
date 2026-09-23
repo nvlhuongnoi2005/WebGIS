@@ -56,7 +56,7 @@ import {
   MEASURED_AREA_PROPERTY,
   MEASURED_LENGTH_PROPERTY,
 } from "../../../tools/measure/MeasureTool";
-import { createGeoJSONShare, listGeoJSONShares, revokeGeoJSONShare, searchGeoJSONShareRecipients, sendGeoJSONShare, type GeoJSONShareRecipient, type GeoJSONShareSummary } from "../geoJSONShareClient";
+import { createGeoJSONShare, getOrCreateGeoJSONShareLink, listGeoJSONShares, revokeGeoJSONShare, searchGeoJSONShareRecipients, sendGeoJSONShare, type GeoJSONShareRecipient, type GeoJSONShareSummary } from "../geoJSONShareClient";
 
 interface DrawPanelProps {
   drawingCount: number;
@@ -117,6 +117,7 @@ function DrawPanel({
   const [shareBusy, setShareBusy] = useState(false);
   const [shareListBusy, setShareListBusy] = useState(false);
   const [revokingShareId, setRevokingShareId] = useState<string | null>(null);
+  const [openingShareId, setOpeningShareId] = useState<string | null>(null);
   const [shareError, setShareError] = useState<string | null>(null);
   const [shareUrl, setShareUrl] = useState("");
   const [shareCopied, setShareCopied] = useState(false);
@@ -303,6 +304,24 @@ function DrawPanel({
     } catch { /* Try the legacy clipboard path on insecure origins. */ }
     if (copyTextWithLegacyClipboard(shareUrl)) setShareCopied(true);
     else setShareError(t("draw.shareCopyError"));
+  };
+
+  const handleShowShareLink = async (share: GeoJSONShareSummary) => {
+    setOpeningShareId(share.id);
+    setShareError(null);
+    try {
+      const token = share.token || await getOrCreateGeoJSONShareLink(share.id);
+      setShares(current => current.map(item => item.id === share.id ? { ...item, token } : item));
+      setCreatedShareId(share.id);
+      setShareUrl(`${window.location.origin}/share/${token}`);
+      setShareCopied(false);
+      setSelectedRecipients([]);
+      setSendComplete(false);
+    } catch {
+      setShareError(t("draw.shareLinkLoadError"));
+    } finally {
+      setOpeningShareId(null);
+    }
   };
 
   const handleRevokeShare = async (share: GeoJSONShareSummary) => {
@@ -819,7 +838,30 @@ function DrawPanel({
               <Typography variant="body2" color="text.secondary">{t("draw.noActiveShares")}</Typography>
             ) : shares.map(share => (
               <Stack key={share.id} direction="row" spacing={1} sx={{ justifyContent: "space-between", alignItems: "center" }}>
-                <Typography variant="body2">{t("draw.shareExpires", { date: new Date(share.expires_at).toLocaleDateString() })}</Typography>
+                <Button
+                  fullWidth
+                  aria-label={t("draw.showShareLink")}
+                  onClick={() => void handleShowShareLink(share)}
+                  disabled={openingShareId === share.id}
+                  sx={{ minWidth: 0, justifyContent: "flex-start", textAlign: "left", textTransform: "none", px: 1 }}
+                >
+                  {openingShareId === share.id ? <CircularProgress size={18} /> : (
+                    <Stack spacing={0.35} sx={{ minWidth: 0, alignItems: "flex-start" }}>
+                      <Typography variant="body2" sx={{ fontWeight: 650 }}>
+                        {t("draw.sharePreviewCount", { count: share.feature_count })}
+                      </Typography>
+                      <Typography
+                        component="code"
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}
+                      >
+                        {share.geojson_preview}{share.geojson_preview.length >= 512 ? "…" : ""}
+                      </Typography>
+                      <Typography variant="caption" color="primary.main">{t("draw.showShareLink")}</Typography>
+                    </Stack>
+                  )}
+                </Button>
                 <Button
                   size="small"
                   color="error"

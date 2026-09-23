@@ -244,13 +244,12 @@ func (server *Server) createGeoJSONShare(response http.ResponseWriter, request *
 		return
 	}
 	token := hex.EncodeToString(tokenBytes)
-	tokenHash := sha256.Sum256([]byte(token))
 	var id string
 	var expiresAt string
 	err := server.repository.pool.QueryRow(request.Context(), `
-		INSERT INTO geojson_shares (owner_id, token_hash, geojson, expires_at)
+		INSERT INTO geojson_shares (owner_id, token, geojson, expires_at)
 		VALUES ($1, $2, $3::jsonb, now() + interval '30 days')
-		RETURNING id::text, expires_at::text`, claims.Subject, hex.EncodeToString(tokenHash[:]), string(input.GeoJSON)).Scan(&id, &expiresAt)
+		RETURNING id::text, expires_at::text`, claims.Subject, token, string(input.GeoJSON)).Scan(&id, &expiresAt)
 	if err != nil {
 		clientError(response, http.StatusInternalServerError, "Unable to create share")
 		return
@@ -311,7 +310,8 @@ func (server *Server) listGeoJSONShares(response http.ResponseWriter, request *h
 		return
 	}
 	rows, err := server.repository.pool.Query(request.Context(), `
-		SELECT id::text, created_at::text, expires_at::text
+		SELECT id::text, created_at::text, expires_at::text, COALESCE(token,''),
+		jsonb_array_length(geojson->'features'), left(geojson::text, 512)
 		FROM geojson_shares WHERE owner_id=$1 AND expires_at > now() ORDER BY created_at DESC`, claims.Subject)
 	if err != nil {
 		clientError(response, http.StatusInternalServerError, "Unable to list shares")
@@ -319,14 +319,17 @@ func (server *Server) listGeoJSONShares(response http.ResponseWriter, request *h
 	}
 	defer rows.Close()
 	type share struct {
-		ID        string `json:"id"`
-		CreatedAt string `json:"created_at"`
-		ExpiresAt string `json:"expires_at"`
+		ID             string `json:"id"`
+		CreatedAt      string `json:"created_at"`
+		ExpiresAt      string `json:"expires_at"`
+		Token          string `json:"token,omitempty"`
+		FeatureCount   int    `json:"feature_count"`
+		GeoJSONPreview string `json:"geojson_preview"`
 	}
 	shares := make([]share, 0)
 	for rows.Next() {
 		var item share
-		if err := rows.Scan(&item.ID, &item.CreatedAt, &item.ExpiresAt); err != nil {
+		if err := rows.Scan(&item.ID, &item.CreatedAt, &item.ExpiresAt, &item.Token, &item.FeatureCount, &item.GeoJSONPreview); err != nil {
 			clientError(response, http.StatusInternalServerError, "Unable to list shares")
 			return
 		}
@@ -337,6 +340,50 @@ func (server *Server) listGeoJSONShares(response http.ResponseWriter, request *h
 		return
 	}
 	writeJSON(response, http.StatusOK, map[string]any{"shares": shares})
+}
+
+func (server *Server) getOrCreateGeoJSONShareLink(response http.ResponseWriter, request *http.Request, id string) {
+	claims, ok := server.authenticate(response, request)
+	if !ok {
+		return
+	}
+	if !validShareID(id) {
+		clientError(response, http.StatusBadRequest, "Invalid share id")
+		return
+	}
+	tx, err := server.repository.pool.Begin(request.Context())
+	if err != nil {
+		clientError(response, http.StatusInternalServerError, "Unable to show share link")
+		return
+	}
+	defer func() { _ = tx.Rollback(request.Context()) }()
+	var token string
+	err = tx.QueryRow(request.Context(), `SELECT COALESCE(token,'') FROM geojson_shares WHERE id=$1 AND owner_id=$2 AND expires_at>now() FOR UPDATE`, id, claims.Subject).Scan(&token)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			clientError(response, http.StatusNotFound, "Share not found or expired")
+		} else {
+			clientError(response, http.StatusInternalServerError, "Unable to show share link")
+		}
+		return
+	}
+	if token == "" {
+		tokenBytes := make([]byte, 32)
+		if _, err := rand.Read(tokenBytes); err != nil {
+			clientError(response, http.StatusInternalServerError, "Unable to show share link")
+			return
+		}
+		token = hex.EncodeToString(tokenBytes)
+		if _, err := tx.Exec(request.Context(), `UPDATE geojson_shares SET token=$1 WHERE id=$2`, token, id); err != nil {
+			clientError(response, http.StatusInternalServerError, "Unable to show share link")
+			return
+		}
+	}
+	if err := tx.Commit(request.Context()); err != nil {
+		clientError(response, http.StatusInternalServerError, "Unable to show share link")
+		return
+	}
+	writeJSON(response, http.StatusOK, map[string]string{"token": token})
 }
 
 func (server *Server) revokeGeoJSONShare(response http.ResponseWriter, request *http.Request, id string) {
@@ -376,7 +423,7 @@ func (server *Server) getGeoJSONShare(response http.ResponseWriter, request *htt
 	err := server.repository.pool.QueryRow(request.Context(), `
 		SELECT geojson, expires_at::text
 		FROM geojson_shares
-		WHERE token_hash=$1 AND expires_at > now()`, hex.EncodeToString(tokenHash[:])).Scan(&geoJSON, &expiresAt)
+		WHERE (token=$1 OR token_hash=$2) AND expires_at > now()`, token, hex.EncodeToString(tokenHash[:])).Scan(&geoJSON, &expiresAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			clientError(response, http.StatusNotFound, "Share not found or expired")

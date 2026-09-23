@@ -1646,6 +1646,13 @@ func (server *Server) ServeHTTP(response http.ResponseWriter, request *http.Requ
 		server.searchGeoJSONShareRecipients(response, request)
 	case request.Method == http.MethodGet && request.URL.Path == "/api/shares/received":
 		server.listReceivedGeoJSONShares(response, request)
+	case request.Method == http.MethodPost && strings.HasPrefix(request.URL.Path, "/api/shares/") && strings.HasSuffix(request.URL.Path, "/link"):
+		id := strings.TrimSuffix(strings.TrimPrefix(request.URL.Path, "/api/shares/"), "/link")
+		if strings.Contains(id, "/") || id == "" {
+			clientError(response, http.StatusBadRequest, "Invalid share id")
+		} else {
+			server.getOrCreateGeoJSONShareLink(response, request, id)
+		}
 	case request.Method == http.MethodPost && strings.HasPrefix(request.URL.Path, "/api/shares/") && strings.HasSuffix(request.URL.Path, "/recipients"):
 		id := strings.TrimSuffix(strings.TrimPrefix(request.URL.Path, "/api/shares/"), "/recipients")
 		if strings.Contains(id, "/") || id == "" {

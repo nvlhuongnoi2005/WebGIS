@@ -46,16 +46,18 @@ $$;
 
 CREATE UNIQUE INDEX IF NOT EXISTS users_email_lower_unique ON users (lower(email));
 
--- Shared GeoJSON is an immutable, expiring snapshot. Only the token hash is
--- stored so a database read cannot reveal active public links.
+-- Shared GeoJSON is an immutable, expiring snapshot with its reusable token.
 CREATE TABLE IF NOT EXISTS geojson_shares (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   owner_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  token_hash text NOT NULL UNIQUE,
+  token text,
+  token_hash text UNIQUE,
   geojson jsonb NOT NULL CHECK (jsonb_typeof(geojson) = 'object'),
   created_at timestamptz NOT NULL DEFAULT now(),
   expires_at timestamptz NOT NULL
 );
+ALTER TABLE geojson_shares ADD COLUMN IF NOT EXISTS token text;
+ALTER TABLE geojson_shares ALTER COLUMN token_hash DROP NOT NULL;
 CREATE INDEX IF NOT EXISTS geojson_shares_owner_idx ON geojson_shares (owner_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS geojson_shares_expiry_idx ON geojson_shares (expires_at);
 
