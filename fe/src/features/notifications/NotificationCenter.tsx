@@ -3,6 +3,7 @@ import { Badge, Box, Button, IconButton, List, ListItem, ListItemText, Menu, Sta
 import { Bell, CheckCheck, Info, Share2, TriangleAlert } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { listReceivedGeoJSONShares } from "../map/geoJSONShareClient";
+import { AppNavigationContext } from "../../appNavigation";
 import { type AppNotification, type NewNotification, publishNotification, subscribeToNotifications } from "./notificationEvents";
 
 interface NotificationContextValue {
@@ -95,6 +96,7 @@ function useNotificationCenter(): NotificationContextValue {
 export function NotificationButton() {
   const { t } = useTranslation();
   const { notifications, markAllRead } = useNotificationCenter();
+  const navigate = useContext(AppNavigationContext);
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const unreadCount = notifications.filter(notification => !notification.read).length;
   const open = Boolean(anchor);
@@ -128,7 +130,7 @@ export function NotificationButton() {
           {notifications.length > 0 && <Button size="small" startIcon={<CheckCheck size={16} />} onClick={markAllRead}>{t("notifications.markAllRead")}</Button>}
         </Stack>
         <Box sx={{ px: 1.5, pb: 1 }}>
-          <Button component="a" href="/shared-with-me" size="small" fullWidth startIcon={<Share2 size={16} />}>
+          <Button onClick={() => navigate("/shared-with-me")} size="small" fullWidth startIcon={<Share2 size={16} />}>
             {t("notifications.sharedWithMe")}
           </Button>
         </Box>
@@ -144,6 +146,7 @@ export function NotificationButton() {
 
 function NotificationItem({ notification }: { notification: AppNotification }) {
   const { t } = useTranslation();
+  const navigate = useContext(AppNavigationContext);
   const Icon = notification.kind === "quota" ? TriangleAlert : notification.kind === "share" ? Share2 : Info;
   return (
     <ListItem divider sx={{ alignItems: "flex-start", gap: 1.25, py: 1.5, bgcolor: notification.read ? "transparent" : "action.selected" }}>
@@ -157,7 +160,7 @@ function NotificationItem({ notification }: { notification: AppNotification }) {
         }}
       />
       {notification.actionHref && notification.actionLabelKey && (
-        <Button size="small" component="a" href={notification.actionHref} sx={{ flexShrink: 0 }}>{t(notification.actionLabelKey)}</Button>
+        <Button size="small" onClick={() => navigate(notification.actionHref!)} sx={{ flexShrink: 0 }}>{t(notification.actionLabelKey)}</Button>
       )}
     </ListItem>
   );

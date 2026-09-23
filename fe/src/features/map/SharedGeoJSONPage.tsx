@@ -1,15 +1,17 @@
-import { useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { Alert, AppBar, Box, Button, CircularProgress, Stack, Toolbar, Typography } from "@mui/material";
 import { ArrowLeft, Download } from "lucide-react";
 import * as maplibregl from "maplibre-gl";
 import { useTranslation } from "react-i18next";
 import { getMapStyle } from "../../tools/map/MapStyleTool";
+import { AppNavigationContext } from "../../appNavigation";
 import type { DrawFeatureCollection } from "../../tools/draw/DrawTool";
 import { getReceivedGeoJSON, getSharedGeoJSON } from "./geoJSONShareClient";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 export default function SharedGeoJSONPage({ token, shareId }: { token?: string; shareId?: string }) {
   const { t } = useTranslation();
+  const navigate = useContext(AppNavigationContext);
   const mapContainer = useRef<HTMLDivElement | null>(null);
   const [geoJSON, setGeoJSON] = useState<DrawFeatureCollection | null>(null);
   const [loading, setLoading] = useState(true);
@@ -80,7 +82,7 @@ export default function SharedGeoJSONPage({ token, shareId }: { token?: string; 
     <Box component="main" id="main-content" sx={{ display: "flex", flexDirection: "column", width: "100vw", height: "100dvh" }}>
       <AppBar position="static" color="inherit" elevation={1}>
         <Toolbar sx={{ gap: 1 }}>
-          <Button href={shareId ? "/shared-with-me" : "/map"} startIcon={<ArrowLeft size={18} />}>
+          <Button onClick={() => navigate(shareId ? "/shared-with-me" : "/map")} startIcon={<ArrowLeft size={18} />}>
             {shareId ? t("shares.backToShares") : t("draw.backToMap")}
           </Button>
           <Typography variant="h6" sx={{ flex: 1 }}>{t("draw.sharedMapTitle")}</Typography>

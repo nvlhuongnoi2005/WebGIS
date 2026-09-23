@@ -13,6 +13,7 @@ import { MapView } from "./features/map";
 import SharedGeoJSONPage from "./features/map/SharedGeoJSONPage";
 import SharedWithMePage from "./features/map/SharedWithMePage";
 import SwaggerPage from "./swagger/SwaggerPage";
+import { AppNavigationContext } from "./appNavigation";
 
 // Register the Vite-emitted worker before any map instance is created.
 setWorkerUrl(maplibreWorkerUrl);
@@ -90,7 +91,8 @@ function AppRoutes() {
   }
 
   return (
-    <>
+    <AppNavigationContext.Provider value={navigate}>
+      <>
       <a className="skip-link" href="#main-content">{t("accessibility.skipToContent")}</a>
       {content}
       {pathname === "/login" && !user && <AccessibilitySettingsButton />}
@@ -101,7 +103,8 @@ function AppRoutes() {
           <Button variant="contained" onClick={acknowledgeReauthentication}>{t("auth.sessionUpdatedAction")}</Button>
         </DialogActions>
       </Dialog>
-    </>
+      </>
+    </AppNavigationContext.Provider>
   );
 }
 
@@ -122,6 +125,6 @@ function getPathname(): string {
   return window.location.pathname.replace(/\/+$/, "") || "/";
 }
 
-type AppPath = "/login" | "/map" | "/admin" | "/admin/billing" | "/admin/users" | "/admin/audit" | "/billing" | "/swagger";
+type AppPath = string;
 
 export default App;
