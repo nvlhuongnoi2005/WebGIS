@@ -34,7 +34,7 @@ spec:
               done
       containers:
         - name: migrate
-          image: ghcr.io/nvlhuongnoi2005/webgis/controller:sha-f71911df2765ba2a9e44bec675073e152f81512a
+          image: ghcr.io/nvlhuongnoi2005/webgis/controller:sha-446e152c0e76eac5765efd0603a970668b3338aa
           imagePullPolicy: IfNotPresent
           command: ["/controller", "migrate"]
           envFrom:
