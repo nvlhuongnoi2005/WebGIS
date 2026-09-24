@@ -28,9 +28,12 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
     return () => mediaQuery.removeEventListener("change", updateSystemMode);
   }, []);
 
-  const resolvedColorMode = preferences.colorMode === "system"
-    ? systemPrefersDark ? "dark" : "light"
-    : preferences.colorMode;
+  const resolvedColorMode =
+    preferences.colorMode === "system"
+      ? systemPrefersDark
+        ? "dark"
+        : "light"
+      : preferences.colorMode;
 
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(preferences));
@@ -42,18 +45,21 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
   }, [preferences, resolvedColorMode]);
 
   const updatePreferences = useCallback((nextValues: Partial<AccessibilityPreferences>) => {
-    setPreferences(current => ({ ...current, ...nextValues }));
+    setPreferences((current) => ({ ...current, ...nextValues }));
   }, []);
 
-  const value = useMemo<AccessibilityContextValue>(() => ({
-    ...preferences,
-    resolvedColorMode,
-    setColorMode: colorMode => updatePreferences({ colorMode }),
-    setHighContrast: highContrast => updatePreferences({ highContrast }),
-    setLargeText: largeText => updatePreferences({ largeText }),
-    setReduceMotion: reduceMotion => updatePreferences({ reduceMotion }),
-    resetPreferences: () => setPreferences(defaultPreferences),
-  }), [preferences, resolvedColorMode, updatePreferences]);
+  const value = useMemo<AccessibilityContextValue>(
+    () => ({
+      ...preferences,
+      resolvedColorMode,
+      setColorMode: (colorMode) => updatePreferences({ colorMode }),
+      setHighContrast: (highContrast) => updatePreferences({ highContrast }),
+      setLargeText: (largeText) => updatePreferences({ largeText }),
+      setReduceMotion: (reduceMotion) => updatePreferences({ reduceMotion }),
+      resetPreferences: () => setPreferences(defaultPreferences),
+    }),
+    [preferences, resolvedColorMode, updatePreferences]
+  );
   const theme = useMemo(
     () => createAppTheme({ mode: resolvedColorMode, highContrast: preferences.highContrast }),
     [preferences.highContrast, resolvedColorMode]
@@ -80,9 +86,10 @@ function readPreferences(): AccessibilityPreferences {
 
     const parsed = JSON.parse(stored) as Partial<AccessibilityPreferences>;
     return {
-      colorMode: parsed.colorMode === "light" || parsed.colorMode === "dark" || parsed.colorMode === "system"
-        ? parsed.colorMode
-        : defaultPreferences.colorMode,
+      colorMode:
+        parsed.colorMode === "light" || parsed.colorMode === "dark" || parsed.colorMode === "system"
+          ? parsed.colorMode
+          : defaultPreferences.colorMode,
       highContrast: Boolean(parsed.highContrast),
       largeText: Boolean(parsed.largeText),
       reduceMotion: Boolean(parsed.reduceMotion),

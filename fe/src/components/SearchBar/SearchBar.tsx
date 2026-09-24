@@ -1,15 +1,6 @@
-import {
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useRef, useState } from "react";
 
-import type {
-  ChangeEvent,
-  FormEvent,
-  KeyboardEvent,
-  MutableRefObject,
-} from "react";
+import type { ChangeEvent, FormEvent, KeyboardEvent, MutableRefObject } from "react";
 import type { Feature } from "geojson";
 
 import * as maplibregl from "maplibre-gl";
@@ -27,12 +18,7 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import {
-  MapPin,
-  Navigation,
-  Search,
-  X,
-} from "lucide-react";
+import { MapPin, Navigation, Search, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { formatDmsCoordinates } from "../../tools/coordinate/CoordinateTool";
 import {
@@ -41,10 +27,7 @@ import {
   formatGeocodingAddress,
   getGeocodingLanguage,
 } from "../../tools/geocoding/GeocodingTool";
-import type {
-  GeocodingFeature,
-  GeocodingSuggestion,
-} from "../../tools/geocoding/GeocodingTool";
+import type { GeocodingFeature, GeocodingSuggestion } from "../../tools/geocoding/GeocodingTool";
 import type { MapTool } from "../../types/map";
 
 export type { GeocodingFeature } from "../../tools/geocoding/GeocodingTool";
@@ -71,8 +54,7 @@ function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) 
   const { t, i18n } = useTranslation();
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<SearchResult[]>([]);
-  const [selectedFeature, setSelectedFeature] =
-    useState<GeocodingFeature | null>(null);
+  const [selectedFeature, setSelectedFeature] = useState<GeocodingFeature | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -87,9 +69,7 @@ function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) 
       return feature.context || feature.place_name;
     }
 
-    const locationLabel = feature.isArea
-      ? t("search.area")
-      : t("search.address");
+    const locationLabel = feature.isArea ? t("search.area") : t("search.address");
     const location = feature.context?.trim();
     return location ? `${locationLabel}: ${location}` : locationLabel;
   };
@@ -151,10 +131,7 @@ function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) 
     });
   };
 
-  const selectLocation = (
-    feature: GeocodingFeature,
-    closeActiveTool = true
-  ) => {
+  const selectLocation = (feature: GeocodingFeature, closeActiveTool = true) => {
     if (closeActiveTool) {
       onSearch();
     }
@@ -230,18 +207,14 @@ function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) 
     }
   };
 
-  const fetchSuggestions = async (
-    searchQuery: string
-  ): Promise<SearchResult[]> => {
+  const fetchSuggestions = async (searchQuery: string): Promise<SearchResult[]> => {
     const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
 
     if (!normalizedQuery) {
       return [];
     }
 
-    const activeLang = getGeocodingLanguage(
-      i18n.resolvedLanguage || i18n.language
-    );
+    const activeLang = getGeocodingLanguage(i18n.resolvedLanguage || i18n.language);
     const cacheKey = `${activeLang}:${normalizedQuery}`;
     const cachedResults = searchCacheRef.current.get(cacheKey);
 
@@ -286,10 +259,7 @@ function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) 
     requestControllerRef.current = null;
   };
 
-  const selectSearchResult = async (
-    result: SearchResult,
-    closeActiveTool = true
-  ) => {
+  const selectSearchResult = async (result: SearchResult, closeActiveTool = true) => {
     if (isGeocodingFeature(result)) {
       selectLocation(result, closeActiveTool);
       return;
@@ -297,9 +267,7 @@ function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) 
 
     setIsLoading(true);
     try {
-      const activeLang = getGeocodingLanguage(
-        i18n.resolvedLanguage || i18n.language
-      );
+      const activeLang = getGeocodingLanguage(i18n.resolvedLanguage || i18n.language);
       // Elasticsearch ranks the suggestion. Nominatim is the source of truth
       // for its geometry, so selecting an area still draws its real polygon.
       const [feature] = await fetchGeocodingResults(result.resolveQuery, activeLang);
@@ -313,9 +281,7 @@ function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) 
     }
   };
 
-  const handleInputChange = (
-    event: ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     setQuery(value);
     setSelectedFeature(null);
@@ -393,9 +359,7 @@ function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) 
     setSelectedFeature(null);
   };
 
-  const handleKeyDown = (
-    event: KeyboardEvent<HTMLInputElement>
-  ) => {
+  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Escape") {
       setIsOpen(false);
     } else if (event.key === "Enter") {
@@ -406,10 +370,7 @@ function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) 
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
-      ) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     };
@@ -475,7 +436,7 @@ function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) 
           borderColor: "divider",
           "&:focus-within": {
             borderColor: "primary.main",
-            boxShadow: theme => `0 3px 12px ${theme.palette.primary.main}40`,
+            boxShadow: (theme) => `0 3px 12px ${theme.palette.primary.main}40`,
           },
         }}
       >
@@ -526,9 +487,7 @@ function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) 
             </Typography>
             {(() => {
               const address = formatGeocodingAddress(selectedFeature.nominatim.address);
-              const locationLabel = selectedFeature.isArea
-                ? t("search.area")
-                : t("search.address");
+              const locationLabel = selectedFeature.isArea ? t("search.area") : t("search.address");
 
               return (
                 <Stack spacing={0.4}>
@@ -542,10 +501,8 @@ function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) 
               );
             })()}
             <Typography variant="caption" color="text.secondary">
-              {t("search.coordinates")}: {formatDmsCoordinates(
-                selectedFeature.center[0],
-                selectedFeature.center[1]
-              )}
+              {t("search.coordinates")}:{" "}
+              {formatDmsCoordinates(selectedFeature.center[0], selectedFeature.center[1])}
             </Typography>
             <Button
               variant="outlined"
@@ -561,21 +518,44 @@ function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) 
       )}
 
       {isOpen && suggestions.length > 0 && (
-        <Paper className="map-floating-panel" elevation={5} sx={{ mt: 0.75, maxHeight: 280, overflowY: "auto" }}>
+        <Paper
+          className="map-floating-panel"
+          elevation={5}
+          sx={{ mt: 0.75, maxHeight: 280, overflowY: "auto" }}
+        >
           <List disablePadding>
-            {suggestions.map(feature => (
+            {suggestions.map((feature) => (
               <ListItemButton key={feature.id} onClick={() => void selectSearchResult(feature)}>
                 <ListItemIcon sx={{ minWidth: 32, color: "error.main" }}>
                   <MapPin size={16} />
                 </ListItemIcon>
                 <ListItemText
                   primary={
-                    <Box component="span" sx={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13.5, fontWeight: 600 }}>
+                    <Box
+                      component="span"
+                      sx={{
+                        display: "block",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        fontSize: 13.5,
+                        fontWeight: 600,
+                      }}
+                    >
                       {feature.text || feature.place_name}
                     </Box>
                   }
                   secondary={
-                    <Box component="span" sx={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 12 }}>
+                    <Box
+                      component="span"
+                      sx={{
+                        display: "block",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        fontSize: 12,
+                      }}
+                    >
                       {formatSuggestionDetails(feature)}
                     </Box>
                   }

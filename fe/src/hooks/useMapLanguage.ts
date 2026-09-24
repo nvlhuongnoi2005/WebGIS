@@ -10,17 +10,9 @@ interface UseMapLanguageOptions {
   mapStyleVersion: number;
 }
 
-export function useMapLanguage({
-  map,
-  mapLoaded,
-  mapStyleVersion,
-}: UseMapLanguageOptions) {
+export function useMapLanguage({ map, mapLoaded, mapStyleVersion }: UseMapLanguageOptions) {
   const { i18n } = useTranslation();
-  const currentLang = (
-    i18n.resolvedLanguage ||
-    i18n.language ||
-    "vi"
-  ).startsWith("vi")
+  const currentLang = (i18n.resolvedLanguage || i18n.language || "vi").startsWith("vi")
     ? "vi"
     : "en";
 

@@ -56,7 +56,14 @@ func main() {
 		slog.Error("server setup failed", "error", err.Error())
 		os.Exit(1)
 	}
-	httpServer := &http.Server{Addr: ":" + config.Port, Handler: server, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 35 * time.Second, IdleTimeout: 60 * time.Second}
+	httpServer := &http.Server{
+		Addr:              ":" + config.Port,
+		Handler:           server,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      35 * time.Second,
+		IdleTimeout:       60 * time.Second,
+	}
 	go func() {
 		slog.Info("auth gateway listening", "port", config.Port)
 		if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {

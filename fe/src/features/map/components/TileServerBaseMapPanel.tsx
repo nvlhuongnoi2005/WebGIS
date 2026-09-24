@@ -12,10 +12,7 @@ import {
 } from "@mui/material";
 import { useTranslation } from "react-i18next";
 
-import {
-  getTileServerPreviewUrl,
-  type TileServerBaseMap,
-} from "../../../tools/map/MapStyleTool";
+import { getTileServerPreviewUrl, type TileServerBaseMap } from "../../../tools/map/MapStyleTool";
 
 interface TileServerBaseMapPanelProps {
   mode: "base-map" | "layers";
@@ -102,7 +99,12 @@ function TileServerBaseMapPanel({
             <Typography variant="body2" color="error.main">
               {error || t("layers.tileServerError")}
             </Typography>
-            <Button size="small" variant="outlined" onClick={onReload} sx={{ alignSelf: "flex-start" }}>
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={onReload}
+              sx={{ alignSelf: "flex-start" }}
+            >
               {t("layers.reloadTileServer")}
             </Button>
           </Stack>
@@ -110,7 +112,7 @@ function TileServerBaseMapPanel({
 
         {isBaseMapMode && status !== "loading" && baseMaps.length > 0 && (
           <DatasetGrid>
-            {baseMaps.map(baseMap => (
+            {baseMaps.map((baseMap) => (
               <DatasetCard
                 key={baseMap.id}
                 dataset={baseMap}
@@ -136,7 +138,7 @@ function TileServerBaseMapPanel({
 
             {overlays.length > 0 ? (
               <DatasetGrid>
-                {overlays.map(overlay => (
+                {overlays.map((overlay) => (
                   <DatasetCard
                     key={overlay.id}
                     dataset={overlay}
@@ -154,16 +156,23 @@ function TileServerBaseMapPanel({
           </Stack>
         )}
 
-        {status !== "loading" && (isBaseMapMode ? baseMaps.length === 0 : overlays.length === 0) && status !== "error" && (
-          <Stack spacing={1} sx={{ py: 1 }}>
-            <Typography variant="body2" color="text.secondary">
-              {isBaseMapMode ? t("layers.noTileServerData") : t("layers.noOverlays")}
-            </Typography>
-            <Button size="small" variant="outlined" onClick={onReload} sx={{ alignSelf: "flex-start" }}>
-              {t("layers.reloadTileServer")}
-            </Button>
-          </Stack>
-        )}
+        {status !== "loading" &&
+          (isBaseMapMode ? baseMaps.length === 0 : overlays.length === 0) &&
+          status !== "error" && (
+            <Stack spacing={1} sx={{ py: 1 }}>
+              <Typography variant="body2" color="text.secondary">
+                {isBaseMapMode ? t("layers.noTileServerData") : t("layers.noOverlays")}
+              </Typography>
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={onReload}
+                sx={{ alignSelf: "flex-start" }}
+              >
+                {t("layers.reloadTileServer")}
+              </Button>
+            </Stack>
+          )}
       </Stack>
     </Paper>
   );
@@ -197,10 +206,7 @@ function DatasetCard({
   const { t } = useTranslation();
 
   return (
-    <ButtonBase
-      onClick={onClick}
-      sx={{ display: "block", width: "100%", textAlign: "left" }}
-    >
+    <ButtonBase onClick={onClick} sx={{ display: "block", width: "100%", textAlign: "left" }}>
       <Paper
         variant="outlined"
         sx={{
@@ -218,7 +224,8 @@ function DatasetCard({
               height: { xs: 150, sm: 170 },
               color: selected ? "primary.main" : "#64748b",
               bgcolor: selected ? "primary.light" : "grey.100",
-              backgroundImage: "linear-gradient(135deg, transparent 45%, rgba(25, 118, 210, 0.16) 46%, transparent 48%), linear-gradient(45deg, transparent 45%, rgba(229, 57, 53, 0.18) 46%, transparent 48%)",
+              backgroundImage:
+                "linear-gradient(135deg, transparent 45%, rgba(25, 118, 210, 0.16) 46%, transparent 48%), linear-gradient(45deg, transparent 45%, rgba(229, 57, 53, 0.18) 46%, transparent 48%)",
             }}
           >
             <Stack spacing={0.5} sx={{ alignItems: "center" }}>

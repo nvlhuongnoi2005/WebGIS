@@ -10,10 +10,7 @@ import {
   type RouteResult,
   type RoutingVehicle,
 } from "../tools/routing/RoutingTool";
-import {
-  fetchRouteElevation,
-  type ElevationPoint,
-} from "../tools/routing/ElevationTool";
+import { fetchRouteElevation, type ElevationPoint } from "../tools/routing/ElevationTool";
 import type { MapCoordinates } from "../types/map";
 
 interface UseRoutingOptions {
@@ -73,88 +70,96 @@ export function useRouting({ map, mapLoaded, mapStyleVersion }: UseRoutingOption
     setError(null);
   }, []);
 
-  const requestRoute = useCallback(async (requestedVehicle: RoutingVehicle) => {
-    if (!origin || !destination) {
-      return;
-    }
+  const requestRoute = useCallback(
+    async (requestedVehicle: RoutingVehicle) => {
+      if (!origin || !destination) {
+        return;
+      }
 
-    requestController.current?.abort();
-    const controller = new AbortController();
-    requestController.current = controller;
-    lastRequestedLanguage.current = valhallaLanguage;
-    setStatus("loading");
-    setError(null);
-    setElevation([]);
-    setIsElevationLoading(false);
+      requestController.current?.abort();
+      const controller = new AbortController();
+      requestController.current = controller;
+      lastRequestedLanguage.current = valhallaLanguage;
+      setStatus("loading");
+      setError(null);
+      setElevation([]);
+      setIsElevationLoading(false);
 
-    try {
-      const result = await fetchValhallaRoute(
-        origin,
-        destination,
-        requestedVehicle,
-        controller.signal,
-        valhallaLanguage
-      );
-      if (!controller.signal.aborted) {
-        setRoute(result);
-        setStatus("success");
-        setIsElevationLoading(true);
-        try {
-          const profile = await fetchRouteElevation(
-            result.geometry.geometry.coordinates.map(([longitude, latitude]) => [longitude, latitude] as MapCoordinates),
-            result.summary.distanceKm,
-            controller.signal
-          );
-          if (!controller.signal.aborted) {
-            setElevation(profile);
-          }
-        } catch {
-          if (controller.signal.aborted) {
-            return;
-          }
-          // A route remains useful even if a DEM tile is unavailable.
-          setElevation([]);
-        } finally {
-          if (!controller.signal.aborted) {
-            setIsElevationLoading(false);
+      try {
+        const result = await fetchValhallaRoute(
+          origin,
+          destination,
+          requestedVehicle,
+          controller.signal,
+          valhallaLanguage
+        );
+        if (!controller.signal.aborted) {
+          setRoute(result);
+          setStatus("success");
+          setIsElevationLoading(true);
+          try {
+            const profile = await fetchRouteElevation(
+              result.geometry.geometry.coordinates.map(
+                ([longitude, latitude]) => [longitude, latitude] as MapCoordinates
+              ),
+              result.summary.distanceKm,
+              controller.signal
+            );
+            if (!controller.signal.aborted) {
+              setElevation(profile);
+            }
+          } catch {
+            if (controller.signal.aborted) {
+              return;
+            }
+            // A route remains useful even if a DEM tile is unavailable.
+            setElevation([]);
+          } finally {
+            if (!controller.signal.aborted) {
+              setIsElevationLoading(false);
+            }
           }
         }
+      } catch (requestError) {
+        if (controller.signal.aborted) {
+          return;
+        }
+
+        setRoute(null);
+        setStatus("error");
+        const errorKey =
+          requestError instanceof Error ? requestError.message : "routing.errors.unknown";
+        setError(
+          errorKey.startsWith("routing.errors.") ? t(errorKey) : t("routing.errors.unknown")
+        );
       }
-    } catch (requestError) {
-      if (controller.signal.aborted) {
+    },
+    [destination, origin, t, valhallaLanguage]
+  );
+
+  const calculateRoute = useCallback(() => requestRoute(vehicle), [requestRoute, vehicle]);
+
+  const changeVehicle = useCallback(
+    (nextVehicle: RoutingVehicle) => {
+      const shouldRecalculate =
+        Boolean(origin && destination) && (status === "success" || status === "loading");
+
+      requestController.current?.abort();
+      setVehicle(nextVehicle);
+
+      if (shouldRecalculate) {
+        void requestRoute(nextVehicle);
         return;
       }
 
       setRoute(null);
-      setStatus("error");
-      const errorKey = requestError instanceof Error ? requestError.message : "routing.errors.unknown";
-      setError(errorKey.startsWith("routing.errors.") ? t(errorKey) : t("routing.errors.unknown"));
-    }
-  }, [destination, origin, t, valhallaLanguage]);
-
-  const calculateRoute = useCallback(
-    () => requestRoute(vehicle),
-    [requestRoute, vehicle]
+      setElevation([]);
+      setIsElevationLoading(false);
+      setStatus("idle");
+      setError(null);
+    },
+    [destination, origin, requestRoute, status]
   );
-
-  const changeVehicle = useCallback((nextVehicle: RoutingVehicle) => {
-    const shouldRecalculate = Boolean(origin && destination) &&
-      (status === "success" || status === "loading");
-
-    requestController.current?.abort();
-    setVehicle(nextVehicle);
-
-    if (shouldRecalculate) {
-      void requestRoute(nextVehicle);
-      return;
-    }
-
-    setRoute(null);
-    setElevation([]);
-    setIsElevationLoading(false);
-    setStatus("idle");
-    setError(null);
-  }, [destination, origin, requestRoute, status]);
 
   useEffect(() => {
     if (

@@ -1,12 +1,4 @@
-import {
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Paper,
-  Select,
-  Stack,
-  Typography,
-} from "@mui/material";
+import { FormControl, InputLabel, MenuItem, Paper, Select, Stack, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -36,7 +28,11 @@ function CRSPanel({ value, onChange }: CRSPanelProps) {
     <Paper elevation={4} sx={panelSx}>
       <Stack spacing={1.5}>
         <Stack spacing={0.25}>
-          <Typography variant="overline" color="text.secondary" sx={{ lineHeight: 1, fontWeight: 600}}>
+          <Typography
+            variant="overline"
+            color="text.secondary"
+            sx={{ lineHeight: 1, fontWeight: 600 }}
+          >
             {t("crs.title")}
           </Typography>
           <Typography variant="body2" color="text.secondary">
@@ -50,7 +46,7 @@ function CRSPanel({ value, onChange }: CRSPanelProps) {
             labelId="coordinate-system-label"
             value={value}
             label={t("crs.label")}
-            onChange={event => {
+            onChange={(event) => {
               onChange(event.target.value as CoordinateReferenceSystem);
             }}
           >

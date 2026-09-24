@@ -25,7 +25,14 @@ body,
 body {
   overflow: hidden;
   color: #142a32;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Arial,
+    sans-serif;
   text-rendering: optimizeLegibility;
   background: #eef2f1;
 }

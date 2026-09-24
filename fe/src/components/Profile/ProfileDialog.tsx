@@ -23,12 +23,7 @@ interface ProfileDialogProps {
   onSave: (email: string, phone: string) => Promise<AuthResult>;
 }
 
-export default function ProfileDialog({
-  open,
-  user,
-  onClose,
-  onSave,
-}: ProfileDialogProps) {
+export default function ProfileDialog({ open, user, onClose, onSave }: ProfileDialogProps) {
   const { t } = useTranslation();
   const [email, setEmail] = useState(user.email);
   const [phone, setPhone] = useState(user.phone ?? "");
@@ -74,21 +69,44 @@ export default function ProfileDialog({
       maxWidth="sm"
       slotProps={{ paper: { sx: { overflow: "hidden" } } }}
     >
-      <Box component="form" onSubmit={event => void handleSubmit(event)} noValidate>
-        <DialogTitle sx={{ px: 3, pt: 2.5, pb: 2.25, bgcolor: "primary.light", borderBottom: "1px solid", borderColor: "divider" }}>
+      <Box component="form" onSubmit={(event) => void handleSubmit(event)} noValidate>
+        <DialogTitle
+          sx={{
+            px: 3,
+            pt: 2.5,
+            pb: 2.25,
+            bgcolor: "primary.light",
+            borderBottom: "1px solid",
+            borderColor: "divider",
+          }}
+        >
           {t("profile.accountTitle")}
         </DialogTitle>
         <DialogContent sx={{ pt: 2.5 }}>
           <Stack spacing={2.25}>
-            <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", p: 1.5, borderRadius: 3, bgcolor: "action.hover" }}>
+            <Stack
+              direction="row"
+              spacing={1.5}
+              sx={{ alignItems: "center", p: 1.5, borderRadius: 3, bgcolor: "action.hover" }}
+            >
               <Avatar
                 src={user.avatarUrl}
                 alt={user.name}
-                sx={{ width: 56, height: 56, border: "3px solid", borderColor: "background.paper", boxShadow: "0 4px 12px rgb(11 87 208 / 20%)" }}
+                sx={{
+                  width: 56,
+                  height: 56,
+                  border: "3px solid",
+                  borderColor: "background.paper",
+                  boxShadow: "0 4px 12px rgb(11 87 208 / 20%)",
+                }}
               />
               <Box sx={{ minWidth: 0 }}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>{user.name}</Typography>
-                <Typography variant="body2" color="text.secondary">{user.organization ?? "—"}</Typography>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                  {user.name}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {user.organization ?? "—"}
+                </Typography>
               </Box>
             </Stack>
 
@@ -118,7 +136,7 @@ export default function ProfileDialog({
               autoComplete="email"
               label={t("profile.email")}
               value={email}
-              onChange={event => setEmail(event.target.value)}
+              onChange={(event) => setEmail(event.target.value)}
               required
               fullWidth
             />
@@ -127,7 +145,7 @@ export default function ProfileDialog({
               type="tel"
               label={t("profile.phone")}
               value={phone}
-              onChange={event => setPhone(event.target.value)}
+              onChange={(event) => setPhone(event.target.value)}
               required
               fullWidth
             />
@@ -137,7 +155,9 @@ export default function ProfileDialog({
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2.5 }}>
           <Button onClick={onClose}>{t("profile.cancel")}</Button>
-          <Button type="submit" variant="contained">{t("profile.saveChanges")}</Button>
+          <Button type="submit" variant="contained">
+            {t("profile.saveChanges")}
+          </Button>
         </DialogActions>
       </Box>
     </Dialog>

@@ -19,9 +19,9 @@ export async function fetchRouteElevation(
   }
 
   const step = Math.max(1, Math.ceil(coordinates.length / MAX_INPUT_POINTS));
-  const shape = coordinates.filter((_, index) =>
-    index === 0 || index === coordinates.length - 1 || index % step === 0
-  ).map(([longitude, latitude]) => ({ lat: latitude, lon: longitude }));
+  const shape = coordinates
+    .filter((_, index) => index === 0 || index === coordinates.length - 1 || index % step === 0)
+    .map(([longitude, latitude]) => ({ lat: latitude, lon: longitude }));
   const resampleDistance = Math.min(
     1000,
     Math.max(50, Math.ceil((Math.max(distanceKm, 0) * 1000) / MAX_CHART_POINTS))
@@ -46,14 +46,17 @@ export async function fetchRouteElevation(
     throw new Error("routing.errors.elevationFailed");
   }
 
-  const payload = await response.json() as { range_height?: unknown };
+  const payload = (await response.json()) as { range_height?: unknown };
   if (!Array.isArray(payload.range_height)) {
     throw new Error("routing.errors.elevationFailed");
   }
 
   return payload.range_height.flatMap((value): ElevationPoint[] => {
-    if (!Array.isArray(value) || typeof value[0] !== "number" ||
-      (typeof value[1] !== "number" && value[1] !== null)) {
+    if (
+      !Array.isArray(value) ||
+      typeof value[0] !== "number" ||
+      (typeof value[1] !== "number" && value[1] !== null)
+    ) {
       return [];
     }
     return [{ distanceM: value[0], elevationM: value[1] }];

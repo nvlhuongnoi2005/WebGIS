@@ -26,7 +26,7 @@ const listeners = new Set<Listener>();
  * item. Live account and share events use this same function.
  */
 export function publishNotification(notification: NewNotification): void {
-  listeners.forEach(listener => listener(notification));
+  listeners.forEach((listener) => listener(notification));
 }
 
 export function subscribeToNotifications(listener: Listener): () => void {

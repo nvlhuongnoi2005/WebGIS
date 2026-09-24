@@ -41,13 +41,15 @@ export default function ForcePasswordChangePage({ onComplete }: ForcePasswordCha
     const result = await changePassword(currentPassword, newPassword);
     setSubmitting(false);
     if (!result.ok) {
-      setError(result.code === "currentPasswordInvalid"
-        ? t("auth.currentPasswordInvalid")
-        : result.code === "newPasswordInvalid"
-          ? t("auth.passwordPolicy")
-          : result.code === "newPasswordSameAsCurrent"
-            ? t("auth.newPasswordSameAsCurrent")
-          : t("auth.passwordChangeFailed"));
+      setError(
+        result.code === "currentPasswordInvalid"
+          ? t("auth.currentPasswordInvalid")
+          : result.code === "newPasswordInvalid"
+            ? t("auth.passwordPolicy")
+            : result.code === "newPasswordSameAsCurrent"
+              ? t("auth.newPasswordSameAsCurrent")
+              : t("auth.passwordChangeFailed")
+      );
       return;
     }
     onComplete();
@@ -59,18 +61,35 @@ export default function ForcePasswordChangePage({ onComplete }: ForcePasswordCha
   };
 
   return (
-    <Box component="main" id="main-content" sx={{ minHeight: "100dvh", display: "grid", placeItems: "center", bgcolor: "background.default", p: 2 }}>
-      <Paper elevation={3} sx={{ width: "100%", maxWidth: 480, p: { xs: 2.5, sm: 4 }, borderRadius: 3 }}>
-        <Stack component="form" spacing={2} onSubmit={event => void handleSubmit(event)}>
-          <Box sx={{ color: "primary.main" }}><KeyRound size={28} /></Box>
-          <Typography variant="h5" sx={{ fontWeight: 750 }}>{t("auth.temporaryPasswordTitle")}</Typography>
+    <Box
+      component="main"
+      id="main-content"
+      sx={{
+        minHeight: "100dvh",
+        display: "grid",
+        placeItems: "center",
+        bgcolor: "background.default",
+        p: 2,
+      }}
+    >
+      <Paper
+        elevation={3}
+        sx={{ width: "100%", maxWidth: 480, p: { xs: 2.5, sm: 4 }, borderRadius: 3 }}
+      >
+        <Stack component="form" spacing={2} onSubmit={(event) => void handleSubmit(event)}>
+          <Box sx={{ color: "primary.main" }}>
+            <KeyRound size={28} />
+          </Box>
+          <Typography variant="h5" sx={{ fontWeight: 750 }}>
+            {t("auth.temporaryPasswordTitle")}
+          </Typography>
           <Typography color="text.secondary">{t("auth.temporaryPasswordDescription")}</Typography>
           <TextField
             type="password"
             autoComplete="current-password"
             label={t("auth.currentPassword")}
             value={currentPassword}
-            onChange={event => setCurrentPassword(event.target.value)}
+            onChange={(event) => setCurrentPassword(event.target.value)}
             required
             autoFocus
             fullWidth
@@ -81,7 +100,7 @@ export default function ForcePasswordChangePage({ onComplete }: ForcePasswordCha
             label={t("auth.newPassword")}
             helperText={t("auth.passwordPolicy")}
             value={newPassword}
-            onChange={event => setNewPassword(event.target.value)}
+            onChange={(event) => setNewPassword(event.target.value)}
             required
             fullWidth
           />
@@ -90,7 +109,7 @@ export default function ForcePasswordChangePage({ onComplete }: ForcePasswordCha
             autoComplete="new-password"
             label={t("auth.confirmPassword")}
             value={confirmPassword}
-            onChange={event => setConfirmPassword(event.target.value)}
+            onChange={(event) => setConfirmPassword(event.target.value)}
             required
             fullWidth
           />
@@ -98,7 +117,12 @@ export default function ForcePasswordChangePage({ onComplete }: ForcePasswordCha
           <Button type="submit" variant="contained" size="large" disabled={submitting}>
             {t("auth.changePassword")}
           </Button>
-          <Button type="button" variant="text" startIcon={<LogOut size={17} />} onClick={() => void handleLogout()}>
+          <Button
+            type="button"
+            variant="text"
+            startIcon={<LogOut size={17} />}
+            onClick={() => void handleLogout()}
+          >
             {t("profile.signOut")}
           </Button>
         </Stack>

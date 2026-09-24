@@ -14,9 +14,7 @@ export default defineConfig(({ mode }) => {
   return {
     root: frontendRoot,
     envDir: workspaceRoot,
-    plugins: [
-      react(),
-    ],
+    plugins: [react()],
 
     optimizeDeps: {
       exclude: ["maplibre-gl"],
@@ -47,7 +45,7 @@ export default defineConfig(({ mode }) => {
         "/api/valhalla": {
           target: env.VITE_VALHALLA_URL || "http://localhost:8002",
           changeOrigin: true,
-          rewrite: path => path.replace(/^\/api\/valhalla/, ""),
+          rewrite: (path) => path.replace(/^\/api\/valhalla/, ""),
         },
         "/api/tile-catalog": {
           target: env.VITE_AUTH_URL || "http://localhost:3001",

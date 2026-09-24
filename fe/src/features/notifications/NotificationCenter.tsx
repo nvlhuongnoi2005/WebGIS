@@ -1,9 +1,34 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type MouseEvent, type PropsWithChildren } from "react";
-import { Badge, Box, Button, IconButton, List, ListItem, ListItemText, Menu, Stack, Tooltip, Typography } from "@mui/material";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type MouseEvent,
+  type PropsWithChildren,
+} from "react";
+import {
+  Badge,
+  Box,
+  Button,
+  IconButton,
+  List,
+  ListItem,
+  ListItemText,
+  Menu,
+  Stack,
+  Tooltip,
+  Typography,
+} from "@mui/material";
 import { Bell, CheckCheck, Info, Share2, TriangleAlert } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { AppNavigationContext } from "../../appNavigation";
-import { type AppNotification, type NewNotification, subscribeToNotifications } from "./notificationEvents";
+import {
+  type AppNotification,
+  type NewNotification,
+  subscribeToNotifications,
+} from "./notificationEvents";
 
 interface NotificationContextValue {
   notifications: AppNotification[];
@@ -24,15 +49,23 @@ function createNotification(notification: NewNotification): AppNotification {
 export function NotificationProvider({ children }: PropsWithChildren) {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const markAllRead = useCallback(() => {
-    setNotifications(current => current.map(notification => ({ ...notification, read: true })));
+    setNotifications((current) => current.map((notification) => ({ ...notification, read: true })));
   }, []);
 
-  useEffect(() => subscribeToNotifications(notification => {
-    setNotifications(current => {
-      if (notification.dedupeKey && current.some(item => item.dedupeKey === notification.dedupeKey)) return current;
-      return [createNotification(notification), ...current].slice(0, 20);
-    });
-  }), []);
+  useEffect(
+    () =>
+      subscribeToNotifications((notification) => {
+        setNotifications((current) => {
+          if (
+            notification.dedupeKey &&
+            current.some((item) => item.dedupeKey === notification.dedupeKey)
+          )
+            return current;
+          return [createNotification(notification), ...current].slice(0, 20);
+        });
+      }),
+    []
+  );
 
   const value = useMemo(() => ({ notifications, markAllRead }), [markAllRead, notifications]);
   return <NotificationContext.Provider value={value}>{children}</NotificationContext.Provider>;
@@ -49,7 +82,7 @@ export function NotificationButton() {
   const { notifications, markAllRead } = useNotificationCenter();
   const navigate = useContext(AppNavigationContext);
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
-  const unreadCount = notifications.filter(notification => !notification.read).length;
+  const unreadCount = notifications.filter((notification) => !notification.read).length;
   const open = Boolean(anchor);
   const openMenu = (event: MouseEvent<HTMLElement>) => {
     setAnchor(event.currentTarget);
@@ -59,8 +92,20 @@ export function NotificationButton() {
   return (
     <>
       <Tooltip title={t("notifications.open")}>
-        <IconButton type="button" aria-label={t("notifications.open")} aria-haspopup="menu" aria-expanded={open} onClick={openMenu} sx={controlSx}>
-          <Badge badgeContent={unreadCount} color="error" max={9} aria-label={t("notifications.unreadCount", { count: unreadCount })}>
+        <IconButton
+          type="button"
+          aria-label={t("notifications.open")}
+          aria-haspopup="menu"
+          aria-expanded={open}
+          onClick={openMenu}
+          sx={controlSx}
+        >
+          <Badge
+            badgeContent={unreadCount}
+            color="error"
+            max={9}
+            aria-label={t("notifications.unreadCount", { count: unreadCount })}
+          >
             <Bell size={20} />
           </Badge>
         </IconButton>
@@ -73,22 +118,47 @@ export function NotificationButton() {
         transformOrigin={{ vertical: "top", horizontal: "right" }}
         slotProps={{
           list: { "aria-label": t("notifications.title") },
-          paper: { sx: { mt: 1.5, width: { xs: "calc(100vw - 32px)", sm: 360 }, maxHeight: 440, borderRadius: 2 } },
+          paper: {
+            sx: {
+              mt: 1.5,
+              width: { xs: "calc(100vw - 32px)", sm: 360 },
+              maxHeight: 440,
+              borderRadius: 2,
+            },
+          },
         }}
       >
-        <Stack direction="row" sx={{ px: 2, pt: 1.5, pb: 0.75, alignItems: "center", justifyContent: "space-between" }}>
+        <Stack
+          direction="row"
+          sx={{ px: 2, pt: 1.5, pb: 0.75, alignItems: "center", justifyContent: "space-between" }}
+        >
           <Typography variant="subtitle1">{t("notifications.title")}</Typography>
-          {notifications.length > 0 && <Button size="small" startIcon={<CheckCheck size={16} />} onClick={markAllRead}>{t("notifications.markAllRead")}</Button>}
+          {notifications.length > 0 && (
+            <Button size="small" startIcon={<CheckCheck size={16} />} onClick={markAllRead}>
+              {t("notifications.markAllRead")}
+            </Button>
+          )}
         </Stack>
         <Box sx={{ px: 1.5, pb: 1 }}>
-          <Button onClick={() => navigate("/shared-with-me")} size="small" fullWidth startIcon={<Share2 size={16} />}>
+          <Button
+            onClick={() => navigate("/shared-with-me")}
+            size="small"
+            fullWidth
+            startIcon={<Share2 size={16} />}
+          >
             {t("notifications.sharedWithMe")}
           </Button>
         </Box>
         {notifications.length === 0 ? (
-          <Box sx={{ px: 2, py: 3 }}><Typography color="text.secondary">{t("notifications.empty")}</Typography></Box>
+          <Box sx={{ px: 2, py: 3 }}>
+            <Typography color="text.secondary">{t("notifications.empty")}</Typography>
+          </Box>
         ) : (
-          <List disablePadding>{notifications.map(notification => <NotificationItem key={notification.id} notification={notification} />)}</List>
+          <List disablePadding>
+            {notifications.map((notification) => (
+              <NotificationItem key={notification.id} notification={notification} />
+            ))}
+          </List>
         )}
       </Menu>
     </>
@@ -98,10 +168,21 @@ export function NotificationButton() {
 function NotificationItem({ notification }: { notification: AppNotification }) {
   const { t } = useTranslation();
   const navigate = useContext(AppNavigationContext);
-  const Icon = notification.kind === "quota" ? TriangleAlert : notification.kind === "share" ? Share2 : Info;
+  const Icon =
+    notification.kind === "quota" ? TriangleAlert : notification.kind === "share" ? Share2 : Info;
   return (
-    <ListItem divider sx={{ alignItems: "flex-start", gap: 1.25, py: 1.5, bgcolor: notification.read ? "transparent" : "action.selected" }}>
-      <Box sx={{ color: notification.kind === "quota" ? "error.main" : "primary.main", pt: 0.25 }}><Icon size={19} /></Box>
+    <ListItem
+      divider
+      sx={{
+        alignItems: "flex-start",
+        gap: 1.25,
+        py: 1.5,
+        bgcolor: notification.read ? "transparent" : "action.selected",
+      }}
+    >
+      <Box sx={{ color: notification.kind === "quota" ? "error.main" : "primary.main", pt: 0.25 }}>
+        <Icon size={19} />
+      </Box>
       <ListItemText
         primary={t(notification.titleKey, notification.values)}
         secondary={t(notification.descriptionKey, notification.values)}
@@ -111,7 +192,13 @@ function NotificationItem({ notification }: { notification: AppNotification }) {
         }}
       />
       {notification.actionHref && notification.actionLabelKey && (
-        <Button size="small" onClick={() => navigate(notification.actionHref!)} sx={{ flexShrink: 0 }}>{t(notification.actionLabelKey)}</Button>
+        <Button
+          size="small"
+          onClick={() => navigate(notification.actionHref!)}
+          sx={{ flexShrink: 0 }}
+        >
+          {t(notification.actionLabelKey)}
+        </Button>
       )}
     </ListItem>
   );

@@ -5,7 +5,7 @@ let onSessionExpired: (() => void) | null = null;
 let refreshInFlight: Promise<boolean> | null = null;
 
 export function setAccessToken(token: string | null): void {
-	accessToken = token;
+  accessToken = token;
 }
 
 export function setSessionExpiredHandler(handler: (() => void) | null): void {
@@ -13,7 +13,7 @@ export function setSessionExpiredHandler(handler: (() => void) | null): void {
 }
 
 function csrfToken(): string | undefined {
-  const item = document.cookie.split("; ").find(cookie => cookie.startsWith("csrf_token="));
+  const item = document.cookie.split("; ").find((cookie) => cookie.startsWith("csrf_token="));
   return item?.slice("csrf_token=".length);
 }
 
@@ -47,13 +47,16 @@ async function renewAccessToken(): Promise<boolean> {
     if (csrf) headers.set("X-CSRF-Token", csrf);
     try {
       const response = await fetch("/auth/refresh", {
-        method: "POST", headers, credentials: "include", body: "{}",
+        method: "POST",
+        headers,
+        credentials: "include",
+        body: "{}",
       });
       if (!response.ok) {
         expireSession();
         return false;
       }
-      const payload = await response.json() as { access_token?: unknown };
+      const payload = (await response.json()) as { access_token?: unknown };
       if (typeof payload.access_token !== "string" || !payload.access_token) {
         expireSession();
         return false;
@@ -69,7 +72,10 @@ async function renewAccessToken(): Promise<boolean> {
   return refreshInFlight;
 }
 
-export async function authFetch(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
+export async function authFetch(
+  input: RequestInfo | URL,
+  init: RequestInit = {}
+): Promise<Response> {
   const headers = new Headers(init.headers);
   if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
   const csrf = csrfToken();
@@ -83,10 +89,11 @@ export async function authFetch(input: RequestInfo | URL, init: RequestInit = {}
     notifyQuotaExceeded(response);
     return response;
   }
-  if (!await renewAccessToken()) return response;
+  if (!(await renewAccessToken())) return response;
   const retryHeaders = new Headers(init.headers);
   if (accessToken) retryHeaders.set("Authorization", `Bearer ${accessToken}`);
-  if (csrf && !["GET", "HEAD", "OPTIONS"].includes(init.method ?? "GET")) retryHeaders.set("X-CSRF-Token", csrf);
+  if (csrf && !["GET", "HEAD", "OPTIONS"].includes(init.method ?? "GET"))
+    retryHeaders.set("X-CSRF-Token", csrf);
   const retry = await fetch(input, { ...init, headers: retryHeaders, credentials: "include" });
   if (retry.status === 401) expireSession();
   notifyQuotaExceeded(retry);

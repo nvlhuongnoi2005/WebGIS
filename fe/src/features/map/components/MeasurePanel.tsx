@@ -50,12 +50,13 @@ function MeasurePanel({
   const { t } = useTranslation();
   const totalDistance = calculateTotalDistance(measurePoints);
   const area = calculateArea(measurePoints);
-  const resultLabel = measureMode === "distance"
-    ? t("measure.totalDistance")
-    : isAreaComplete ? t("measure.areaLabel") : t("measure.areaPreview");
-  const result = measureMode === "distance"
-    ? formatDistance(totalDistance)
-    : formatArea(area);
+  const resultLabel =
+    measureMode === "distance"
+      ? t("measure.totalDistance")
+      : isAreaComplete
+        ? t("measure.areaLabel")
+        : t("measure.areaPreview");
+  const result = measureMode === "distance" ? formatDistance(totalDistance) : formatArea(area);
 
   return (
     <Paper className="map-floating-panel" elevation={4} sx={panelSx}>
@@ -89,9 +90,16 @@ function MeasurePanel({
           <ToggleButton value="area">{t("measure.area")}</ToggleButton>
         </ToggleButtonGroup>
 
-        <Stack direction="row" sx={{ px: 0.5, justifyContent: "space-between", alignItems: "center" }}>
-          <Typography variant="body2" color="text.secondary">{resultLabel}</Typography>
-          <Typography variant="h6" color="primary.main" sx={{ fontWeight: 700 }}>{result}</Typography>
+        <Stack
+          direction="row"
+          sx={{ px: 0.5, justifyContent: "space-between", alignItems: "center" }}
+        >
+          <Typography variant="body2" color="text.secondary">
+            {resultLabel}
+          </Typography>
+          <Typography variant="h6" color="primary.main" sx={{ fontWeight: 700 }}>
+            {result}
+          </Typography>
         </Stack>
 
         {measureMode === "area" && !isAreaComplete && measurePoints.length >= 3 && (
@@ -100,7 +108,11 @@ function MeasurePanel({
           </Typography>
         )}
 
-        {error && <Alert severity="error" variant="outlined">{t(error)}</Alert>}
+        {error && (
+          <Alert severity="error" variant="outlined">
+            {t(error)}
+          </Alert>
+        )}
 
         <Divider />
 
@@ -125,7 +137,12 @@ function MeasurePanel({
           >
             {t("measure.redo")}
           </Button>
-          <Button size="small" variant="contained" startIcon={<Check size={15} />} onClick={onFinish}>
+          <Button
+            size="small"
+            variant="contained"
+            startIcon={<Check size={15} />}
+            onClick={onFinish}
+          >
             {t("measure.finish")}
           </Button>
           <Button

@@ -107,20 +107,23 @@ function normalizeCatalogItem(item: unknown, index: number): TileServerBaseMap {
   const id = String(record.id ?? record.name ?? record.label ?? `dataset-${index}`);
   const label = String(record.label ?? record.name ?? record.id ?? id);
   const tilePath = String(
-    record.tilePath ?? record.tileUrl ?? record.path ?? record.url ??
-      `/datas/${id}/{z}/{x}/{y}.png`
+    record.tilePath ?? record.tileUrl ?? record.path ?? record.url ?? `/datas/${id}/{z}/{x}/{y}.png`
   );
   // The tile server may expose `type: baselayer` and `format: pbf`.
   // Do not let the non-format `type` value hide the actual vector format.
-  const format = `${String(record.type ?? "")} ${String(record.format ?? "")} ${tilePath}`
-    .toLowerCase();
-  const kind = format.includes("pbf") || format.includes("mvt") || format.includes("vector")
-    ? "vector"
-    : "raster";
+  const format =
+    `${String(record.type ?? "")} ${String(record.format ?? "")} ${tilePath}`.toLowerCase();
+  const kind =
+    format.includes("pbf") || format.includes("mvt") || format.includes("vector")
+      ? "vector"
+      : "raster";
   const sourceLayer = record.sourceLayer ?? record.source_layer;
-  const role = String(record.type ?? "").trim().toLowerCase() === "overlay"
-    ? "overlay"
-    : "basemap";
+  const role =
+    String(record.type ?? "")
+      .trim()
+      .toLowerCase() === "overlay"
+      ? "overlay"
+      : "basemap";
 
   return {
     id,
@@ -130,9 +133,8 @@ function normalizeCatalogItem(item: unknown, index: number): TileServerBaseMap {
     tileSize: positiveNumber(record.tileSize, 256),
     kind,
     role,
-    sourceLayer: typeof sourceLayer === "string" && sourceLayer.trim()
-      ? sourceLayer.trim()
-      : undefined,
+    sourceLayer:
+      typeof sourceLayer === "string" && sourceLayer.trim() ? sourceLayer.trim() : undefined,
   };
 }
 
@@ -142,8 +144,8 @@ export function isTileServerOverlay(dataset: TileServerBaseMap) {
 
 export function splitTileServerDatasets(datasets: TileServerBaseMap[]) {
   return {
-    baseMaps: datasets.filter(dataset => !isTileServerOverlay(dataset)),
-    overlays: datasets.filter(dataset => isTileServerOverlay(dataset)),
+    baseMaps: datasets.filter((dataset) => !isTileServerOverlay(dataset)),
+    overlays: datasets.filter((dataset) => isTileServerOverlay(dataset)),
   };
 }
 
@@ -153,59 +155,56 @@ async function getTileServerRootDatasetIds(html: string) {
     ...html.matchAll(/\/datas\/([a-zA-Z0-9._-]+)\/\{z\}/g),
   ];
 
-  return Array.from(new Set(matches.map(match => match[1])));
+  return Array.from(new Set(matches.map((match) => match[1])));
 }
 
-async function fetchTileServerRootCatalog(
-  html: string
-): Promise<TileServerBaseMap[]> {
+async function fetchTileServerRootCatalog(html: string): Promise<TileServerBaseMap[]> {
   const ids = await getTileServerRootDatasetIds(html);
 
-  const datasets = await Promise.all(ids.map(async (id, index) => {
-    try {
-      const response = await fetch(
-        `${TILE_SERVER_URL}/datas/${encodeURIComponent(id)}.json`
-      );
+  const datasets = await Promise.all(
+    ids.map(async (id, index) => {
+      try {
+        const response = await fetch(`${TILE_SERVER_URL}/datas/${encodeURIComponent(id)}.json`);
 
-      if (response.ok) {
-        const tileJson = await response.json() as Record<string, unknown>;
-        return normalizeCatalogItem({
-          id,
-          name: tileJson.name,
-          tilePath: Array.isArray(tileJson.tiles) ? tileJson.tiles[0] : undefined,
-          type: tileJson.type,
-          maxzoom: tileJson.maxzoom,
-          tileSize: tileJson.tileSize,
-        }, index);
+        if (response.ok) {
+          const tileJson = (await response.json()) as Record<string, unknown>;
+          return normalizeCatalogItem(
+            {
+              id,
+              name: tileJson.name,
+              tilePath: Array.isArray(tileJson.tiles) ? tileJson.tiles[0] : undefined,
+              type: tileJson.type,
+              maxzoom: tileJson.maxzoom,
+              tileSize: tileJson.tileSize,
+            },
+            index
+          );
+        }
+      } catch {
+        // Keep the dataset discoverable even if its TileJSON request fails.
       }
-    } catch {
-      // Keep the dataset discoverable even if its TileJSON request fails.
-    }
 
-    return normalizeCatalogItem({ id }, index);
-  }));
+      return normalizeCatalogItem({ id }, index);
+    })
+  );
 
   return datasets;
 }
 
-export async function fetchTileServerBaseMaps(
-  signal?: AbortSignal
-): Promise<TileServerBaseMap[]> {
+export async function fetchTileServerBaseMaps(signal?: AbortSignal): Promise<TileServerBaseMap[]> {
   // This action is explicitly triggered by the user from the layer panel, so
   // bypass browser caches and inspect the Tile Server's current datasets.
   const response = await fetch(TILE_SERVER_CATALOG_URL, { signal, cache: "no-store" });
 
   if (response.ok && response.headers.get("content-type")?.includes("json")) {
-    const payload = await response.json() as unknown;
+    const payload = (await response.json()) as unknown;
     const datasets = getCatalogItems(payload).map(normalizeCatalogItem);
 
     if (datasets.length === 0) {
       throw new Error("Tile server chưa có dataset nào.");
     }
 
-    return Array.from(
-      new Map(datasets.map(dataset => [dataset.id, dataset])).values()
-    );
+    return Array.from(new Map(datasets.map((dataset) => [dataset.id, dataset])).values());
   }
 
   if (response.ok) {
@@ -289,7 +288,7 @@ export function getTileServerMapStyle(
     },
   ];
 
-  overlays.forEach(overlay => {
+  overlays.forEach((overlay) => {
     const overlaySourceId = getTileServerOverlaySourceId(overlay);
     const overlayTileUrl = resolveTileServerTileUrl(overlay.tilePath);
 
@@ -307,10 +306,7 @@ export function getTileServerMapStyle(
         minzoom: 0,
         maxzoom: overlay.maxzoom,
       };
-      layers.push(...getOpenMapTilesOverlayLayers(
-        overlaySourceId,
-        overlay.sourceLayer
-      ));
+      layers.push(...getOpenMapTilesOverlayLayers(overlaySourceId, overlay.sourceLayer));
       return;
     }
 
@@ -363,7 +359,17 @@ function getOpenMapTilesOverlayLayers(
       "source-layer": "landuse",
       minzoom: 4,
       paint: {
-        "fill-color": ["match", ["get", "class"], "residential", "#eee8dc", "industrial", "#e5d9d1", "commercial", "#eadbe8", "#e2ebcf"],
+        "fill-color": [
+          "match",
+          ["get", "class"],
+          "residential",
+          "#eee8dc",
+          "industrial",
+          "#e5d9d1",
+          "commercial",
+          "#eadbe8",
+          "#e2ebcf",
+        ],
         "fill-opacity": 0.5,
         "fill-outline-color": "#cbd5b0",
       },
@@ -513,16 +519,14 @@ function textLayer(
     "source-layer": sourceLayer,
     minzoom,
     layout: {
-      "text-field": ["coalesce", ["get", textField], ["get", "name:latin"], ["get", "name_int"], ["get", "name"]],
-      "text-size": [
-        "interpolate",
-        ["linear"],
-        ["zoom"],
-        minzoom,
-        10,
-        textSizeEndZoom,
-        13,
+      "text-field": [
+        "coalesce",
+        ["get", textField],
+        ["get", "name:latin"],
+        ["get", "name_int"],
+        ["get", "name"],
       ],
+      "text-size": ["interpolate", ["linear"], ["zoom"], minzoom, 10, textSizeEndZoom, 13],
       "text-offset": [0, textOffset],
       "text-allow-overlap": false,
       "text-font": ["Open Sans Regular"],

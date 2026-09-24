@@ -1,22 +1,27 @@
-import { useEffect, useState } from "react";
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from "@mui/material";
+import { lazy, Suspense, useEffect, useState } from "react";
+import {
+  Box,
+  Button,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Typography,
+} from "@mui/material";
 import { useTranslation } from "react-i18next";
-import { setWorkerUrl } from "maplibre-gl";
-import maplibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import { AccessibilitySettingsButton } from "./features/accessibility";
 import { AuthProvider, LoginPage, useAuth } from "./features/auth";
-import ForcePasswordChangePage from "./features/auth/ForcePasswordChangePage";
 import { NotificationProvider } from "./features/notifications";
-import AdminDashboard from "./admin/AdminDashboard";
-import BillingPage from "./features/billing/BillingPage";
-import { MapView } from "./features/map";
-import SharedGeoJSONPage from "./features/map/SharedGeoJSONPage";
-import SharedWithMePage from "./features/map/SharedWithMePage";
-import SwaggerPage from "./swagger/SwaggerPage";
 import { AppNavigationContext } from "./appNavigation";
 
-// Register the Vite-emitted worker before any map instance is created.
-setWorkerUrl(maplibreWorkerUrl);
+const AdminDashboard = lazy(() => import("./admin/AdminDashboard"));
+const BillingPage = lazy(() => import("./features/billing/BillingPage"));
+const ForcePasswordChangePage = lazy(() => import("./features/auth/ForcePasswordChangePage"));
+const MapView = lazy(() => import("./features/map/MapView"));
+const SharedGeoJSONPage = lazy(() => import("./features/map/SharedGeoJSONPage"));
+const SharedWithMePage = lazy(() => import("./features/map/SharedWithMePage"));
+const SwaggerPage = lazy(() => import("./swagger/SwaggerPage"));
 
 function App() {
   return (
@@ -63,29 +68,39 @@ function AppRoutes() {
   } else if (pathname.startsWith("/share/")) {
     content = <SharedGeoJSONPage token={pathname.slice("/share/".length)} />;
   } else if (pathname.startsWith("/shared-with-me/")) {
-    content = user
-      ? <SharedGeoJSONPage shareId={pathname.slice("/shared-with-me/".length)} />
-      : <Redirect to="/login" navigate={navigate} />;
+    content = user ? (
+      <SharedGeoJSONPage shareId={pathname.slice("/shared-with-me/".length)} />
+    ) : (
+      <Redirect to="/login" navigate={navigate} />
+    );
   } else if (pathname === "/shared-with-me") {
-    content = user
-      ? <SharedWithMePage />
-      : <Redirect to="/login" navigate={navigate} />;
+    content = user ? <SharedWithMePage /> : <Redirect to="/login" navigate={navigate} />;
   } else if (pathname === "/login") {
-    content = user
-      ? <Redirect to="/map" navigate={navigate} />
-      : <LoginPage onAuthenticated={() => navigate("/map", true)} />;
+    content = user ? (
+      <Redirect to="/map" navigate={navigate} />
+    ) : (
+      <LoginPage onAuthenticated={() => navigate("/map", true)} />
+    );
   } else if (pathname === "/map") {
-    content = user
-      ? <MapView onNavigate={navigate} />
-      : <Redirect to="/login" navigate={navigate} />;
+    content = user ? (
+      <MapView onNavigate={navigate} />
+    ) : (
+      <Redirect to="/login" navigate={navigate} />
+    );
   } else if (pathname === "/billing") {
-    content = user
-      ? <BillingPage />
-      : <Redirect to="/login" navigate={navigate} />;
-  } else if (pathname === "/admin" || pathname === "/admin/billing" || pathname === "/admin/users" || pathname === "/admin/audit") {
-    content = user?.role === "admin"
-      ? <AdminDashboard />
-      : <Redirect to={user ? "/map" : "/login"} navigate={navigate} />;
+    content = user ? <BillingPage /> : <Redirect to="/login" navigate={navigate} />;
+  } else if (
+    pathname === "/admin" ||
+    pathname === "/admin/billing" ||
+    pathname === "/admin/users" ||
+    pathname === "/admin/audit"
+  ) {
+    content =
+      user?.role === "admin" ? (
+        <AdminDashboard />
+      ) : (
+        <Redirect to={user ? "/map" : "/login"} navigate={navigate} />
+      );
   } else {
     content = <Redirect to={user ? "/map" : "/login"} navigate={navigate} />;
   }
@@ -93,18 +108,39 @@ function AppRoutes() {
   return (
     <AppNavigationContext.Provider value={navigate}>
       <>
-      <a className="skip-link" href="#main-content">{t("accessibility.skipToContent")}</a>
-      {content}
-      {pathname === "/login" && !user && <AccessibilitySettingsButton />}
-      <Dialog open={reauthenticationRequired} aria-labelledby="session-updated-title">
-        <DialogTitle id="session-updated-title">{t("auth.sessionUpdatedTitle")}</DialogTitle>
-        <DialogContent><Typography>{t("auth.sessionUpdatedDescription")}</Typography></DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2.5 }}>
-          <Button variant="contained" onClick={acknowledgeReauthentication}>{t("auth.sessionUpdatedAction")}</Button>
-        </DialogActions>
-      </Dialog>
+        <a className="skip-link" href="#main-content">
+          {t("accessibility.skipToContent")}
+        </a>
+        <Suspense fallback={<RouteLoadingIndicator />}>{content}</Suspense>
+        {pathname === "/login" && !user && <AccessibilitySettingsButton />}
+        <Dialog open={reauthenticationRequired} aria-labelledby="session-updated-title">
+          <DialogTitle id="session-updated-title">{t("auth.sessionUpdatedTitle")}</DialogTitle>
+          <DialogContent>
+            <Typography>{t("auth.sessionUpdatedDescription")}</Typography>
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 2.5 }}>
+            <Button variant="contained" onClick={acknowledgeReauthentication}>
+              {t("auth.sessionUpdatedAction")}
+            </Button>
+          </DialogActions>
+        </Dialog>
       </>
     </AppNavigationContext.Provider>
+  );
+}
+
+function RouteLoadingIndicator() {
+  return (
+    <Box
+      role="status"
+      sx={{
+        display: "grid",
+        minHeight: "100dvh",
+        placeItems: "center",
+      }}
+    >
+      <CircularProgress />
+    </Box>
   );
 }
 

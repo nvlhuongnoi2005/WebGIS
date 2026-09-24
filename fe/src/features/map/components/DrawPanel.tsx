@@ -4,14 +4,7 @@ import {
   Alert,
   Button,
   Box,
-  Checkbox,
-  CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   Divider,
-  FormControlLabel,
   IconButton,
   Paper,
   Stack,
@@ -29,7 +22,6 @@ import {
   ArrowLeft,
   Braces,
   Download,
-  Copy,
   Eye,
   EyeOff,
   Edit3,
@@ -56,7 +48,7 @@ import {
   MEASURED_AREA_PROPERTY,
   MEASURED_LENGTH_PROPERTY,
 } from "../../../tools/measure/MeasureTool";
-import { createGeoJSONShare, searchGeoJSONShareRecipients, sendGeoJSONShare, type GeoJSONShareRecipient } from "../geoJSONShareClient";
+import GeoJSONShareDialog from "./GeoJSONShareDialog";
 
 interface DrawPanelProps {
   drawingCount: number;
@@ -114,19 +106,7 @@ function DrawPanel({
   const selectedMode = mode === "edit" ? "select" : mode;
   const [panelTab, setPanelTab] = useState<"select" | "geojson">("select");
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
-  const [shareBusy, setShareBusy] = useState(false);
-  const [shareError, setShareError] = useState<string | null>(null);
-  const [shareUrl, setShareUrl] = useState("");
-  const [shareCopied, setShareCopied] = useState(false);
-  const [createdShareId, setCreatedShareId] = useState<string | null>(null);
-  const [recipientSearch, setRecipientSearch] = useState("");
-  const [recipientResults, setRecipientResults] = useState<GeoJSONShareRecipient[]>([]);
-  const [selectedRecipients, setSelectedRecipients] = useState<GeoJSONShareRecipient[]>([]);
-  const [recipientSearchBusy, setRecipientSearchBusy] = useState(false);
-  const [sendBusy, setSendBusy] = useState(false);
-  const [sendComplete, setSendComplete] = useState(false);
-  const recipientSearchSequence = useRef(0);
-  const selectedFeature = geoJSON.features.find(feature => feature.id === selectedFeatureId);
+  const selectedFeature = geoJSON.features.find((feature) => feature.id === selectedFeatureId);
   const selectedFeatureName = selectedFeature ? getFeatureNameProperty(selectedFeature) : "";
   const selectedFeaturePropertiesSignature = selectedFeature
     ? JSON.stringify(selectedFeature.properties)
@@ -136,10 +116,11 @@ function DrawPanel({
     value: "",
     sourceSignature: "",
   });
-  const nameInput = nameDraft.featureId === selectedFeatureId &&
-      nameDraft.sourceSignature === selectedFeaturePropertiesSignature
-    ? nameDraft.value
-    : selectedFeatureName;
+  const nameInput =
+    nameDraft.featureId === selectedFeatureId &&
+    nameDraft.sourceSignature === selectedFeaturePropertiesSignature
+      ? nameDraft.value
+      : selectedFeatureName;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const currentJson = JSON.stringify(geoJSON, null, 2);
   const [jsonDraft, setJsonDraft] = useState(() => ({
@@ -221,89 +202,15 @@ function DrawPanel({
     URL.revokeObjectURL(url);
   };
 
-  const handleCreateShare = async () => {
-    setShareBusy(true);
-    setShareError(null);
-    setSelectedRecipients([]);
-    setSendComplete(false);
-    try {
-      const result = await createGeoJSONShare(shareGeoJSON);
-      setCreatedShareId(result.id);
-      setShareUrl(`${window.location.origin}/share/${result.token}`);
-      setShareCopied(false);
-    } catch {
-      setShareError(t("draw.shareCreateError"));
-    } finally {
-      setShareBusy(false);
-    }
-  };
-
-  const handleRecipientSearch = async (query: string) => {
-    setRecipientSearch(query);
-    setSendComplete(false);
-    const sequence = ++recipientSearchSequence.current;
-    if (query.trim().length < 2) {
-      setRecipientResults([]);
-      setRecipientSearchBusy(false);
-      return;
-    }
-    setRecipientResults([]);
-    setRecipientSearchBusy(true);
-    try {
-      const results = await searchGeoJSONShareRecipients(query.trim());
-      if (recipientSearchSequence.current === sequence) setRecipientResults(results);
-    } catch {
-      if (recipientSearchSequence.current === sequence) setShareError(t("draw.shareRecipientSearchError"));
-    } finally {
-      if (recipientSearchSequence.current === sequence) setRecipientSearchBusy(false);
-    }
-  };
-
-  const toggleRecipient = (recipient: GeoJSONShareRecipient) => {
-    setSendComplete(false);
-    setSelectedRecipients(current => current.some(item => item.id === recipient.id)
-      ? current.filter(item => item.id !== recipient.id)
-      : [...current, recipient]);
-  };
-
-  const handleSendShare = async () => {
-    if (!createdShareId || selectedRecipients.length === 0) return;
-    setSendBusy(true);
-    setShareError(null);
-    try {
-      await sendGeoJSONShare(createdShareId, selectedRecipients.map(recipient => recipient.id));
-      setSendComplete(true);
-    } catch {
-      setShareError(t("draw.shareSendError"));
-    } finally {
-      setSendBusy(false);
-    }
-  };
-
-  const handleCopyShareLink = async () => {
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(shareUrl);
-        setShareCopied(true);
-        return;
-      }
-    } catch { /* Try the legacy clipboard path on insecure origins. */ }
-    if (copyTextWithLegacyClipboard(shareUrl)) setShareCopied(true);
-    else setShareError(t("draw.shareCopyError"));
-  };
-
-  const handleDownloadFeatureGeoJSON = (
-    feature: DrawFeatureCollection["features"][number]
-  ) => {
+  const handleDownloadFeatureGeoJSON = (feature: DrawFeatureCollection["features"][number]) => {
     const featureCollection: DrawFeatureCollection = {
       type: "FeatureCollection",
       crs: geoJSON.crs,
       features: [feature],
     };
-    const blob = new Blob(
-      [JSON.stringify(featureCollection, null, 2)],
-      { type: "application/geo+json" }
-    );
+    const blob = new Blob([JSON.stringify(featureCollection, null, 2)], {
+      type: "application/geo+json",
+    });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -332,10 +239,14 @@ function DrawPanel({
             </Stack>
             <Stack spacing={0}>
               <Typography variant="subtitle2">{t("tools.draw")}</Typography>
-              <Typography variant="caption" color="text.secondary">{t("draw.savedFeatures")}</Typography>
+              <Typography variant="caption" color="text.secondary">
+                {t("draw.savedFeatures")}
+              </Typography>
             </Stack>
           </Stack>
-          <Typography variant="h6" color="primary.main" sx={{ fontWeight: 750 }}>{drawingCount}</Typography>
+          <Typography variant="h6" color="primary.main" sx={{ fontWeight: 750 }}>
+            {drawingCount}
+          </Typography>
         </Stack>
 
         <ToggleButtonGroup
@@ -366,11 +277,24 @@ function DrawPanel({
               : t("draw.modeHint", { count: draftPointCount })}
         </Typography>
 
-        {error && <Alert severity="error" variant="outlined">{t(error)}</Alert>}
+        {error && (
+          <Alert severity="error" variant="outlined">
+            {t(error)}
+          </Alert>
+        )}
 
-        <Stack direction="row" spacing={0.75} sx={{ flexWrap: "wrap", columnGap: 0.75, rowGap: 0.75 }}>
+        <Stack
+          direction="row"
+          spacing={0.75}
+          sx={{ flexWrap: "wrap", columnGap: 0.75, rowGap: 0.75 }}
+        >
           {hasSelection && mode !== "edit" && (
-            <Button size="small" variant="outlined" startIcon={<Edit3 size={15} />} onClick={() => onChangeMode("edit")}>
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<Edit3 size={15} />}
+              onClick={() => onChangeMode("edit")}
+            >
               {t("draw.edit")}
             </Button>
           )}
@@ -380,19 +304,43 @@ function DrawPanel({
             </Button>
           )}
           {(mode === "multipoint" || mode === "line" || mode === "polygon") && (
-            <Button size="small" variant="contained" startIcon={<Save size={15} />} onClick={onFinish} disabled={!canFinish}>
+            <Button
+              size="small"
+              variant="contained"
+              startIcon={<Save size={15} />}
+              onClick={onFinish}
+              disabled={!canFinish}
+            >
               {t("draw.save")}
             </Button>
           )}
           {hasSelection && (
-            <Button size="small" color="error" variant="text" startIcon={<Trash2 size={15} />} onClick={onDelete}>
+            <Button
+              size="small"
+              color="error"
+              variant="text"
+              startIcon={<Trash2 size={15} />}
+              onClick={onDelete}
+            >
               {t("draw.delete")}
             </Button>
           )}
-          <Button size="small" variant="outlined" startIcon={<Undo2 size={15} />} onClick={onUndo} disabled={!canUndo}>
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<Undo2 size={15} />}
+            onClick={onUndo}
+            disabled={!canUndo}
+          >
             {t("draw.undo")}
           </Button>
-          <Button size="small" variant="outlined" startIcon={<Redo2 size={15} />} onClick={onRedo} disabled={!canRedo}>
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<Redo2 size={15} />}
+            onClick={onRedo}
+            disabled={!canRedo}
+          >
             {t("draw.redo")}
           </Button>
           <Button
@@ -424,17 +372,7 @@ function DrawPanel({
                   size="small"
                   variant="contained"
                   startIcon={<Share2 size={15} />}
-                  onClick={() => {
-                    setShareError(null);
-                    setShareUrl("");
-                    setCreatedShareId(null);
-                    setShareCopied(false);
-                    setRecipientSearch("");
-                    setRecipientResults([]);
-                    setSelectedRecipients([]);
-                    setSendComplete(false);
-                    setShareDialogOpen(true);
-                  }}
+                  onClick={() => setShareDialogOpen(true)}
                   disabled={geoJSON.features.length === 0}
                 >
                   {t("draw.share")}
@@ -469,17 +407,13 @@ function DrawPanel({
                       key={feature.id}
                       onClick={() => {
                         onChangeMode("select");
-                        onSelectFeature(
-                          feature.id === selectedFeatureId ? null : feature.id
-                        );
+                        onSelectFeature(feature.id === selectedFeatureId ? null : feature.id);
                       }}
-                      onKeyDown={event => {
+                      onKeyDown={(event) => {
                         if (event.key !== "Enter" && event.key !== " ") return;
                         event.preventDefault();
                         onChangeMode("select");
-                        onSelectFeature(
-                          feature.id === selectedFeatureId ? null : feature.id
-                        );
+                        onSelectFeature(feature.id === selectedFeatureId ? null : feature.id);
                       }}
                       sx={{
                         width: "100%",
@@ -487,7 +421,8 @@ function DrawPanel({
                         border: "1px solid",
                         borderColor: feature.id === selectedFeatureId ? "primary.main" : "divider",
                         borderRadius: 1.5,
-                        bgcolor: feature.id === selectedFeatureId ? "primary.50" : "background.paper",
+                        bgcolor:
+                          feature.id === selectedFeatureId ? "primary.50" : "background.paper",
                         opacity: isVisible ? 1 : 0.58,
                         transition: "border-color 120ms ease, background-color 120ms ease",
                         "&:hover": {
@@ -501,20 +436,40 @@ function DrawPanel({
                         },
                       }}
                     >
-                      <Stack direction="row" sx={{ minWidth: 0, width: "100%", alignItems: "center" }}>
+                      <Stack
+                        direction="row"
+                        sx={{ minWidth: 0, width: "100%", alignItems: "center" }}
+                      >
                         <Stack spacing={0.25} sx={{ minWidth: 0, flex: 1 }}>
-                          <Typography variant="body2" sx={{ fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontWeight: 700,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
                             {name}
                           </Typography>
-                          <Typography variant="caption" color="text.secondary" sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {feature.geometry.type}{hasName ? ` · ID: ${feature.id}` : ""}
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {feature.geometry.type}
+                            {hasName ? ` · ID: ${feature.id}` : ""}
                           </Typography>
                         </Stack>
                         <IconButton
                           size="small"
                           title={t("draw.downloadFeature")}
                           aria-label={t("draw.downloadFeature")}
-                          onClick={event => {
+                          onClick={(event) => {
                             event.stopPropagation();
                             handleDownloadFeatureGeoJSON(feature);
                           }}
@@ -526,7 +481,7 @@ function DrawPanel({
                           color={isVisible ? "default" : "primary"}
                           title={isVisible ? t("draw.hideFeature") : t("draw.showFeature")}
                           aria-label={isVisible ? t("draw.hideFeature") : t("draw.showFeature")}
-                          onClick={event => {
+                          onClick={(event) => {
                             event.stopPropagation();
                             onToggleFeatureVisibility(feature.id);
                           }}
@@ -547,17 +502,19 @@ function DrawPanel({
                   {t("draw.properties")}
                 </Typography>
 
-                <TableContainer sx={{ border: "1px solid", borderColor: "divider", borderRadius: 1.5 }}>
+                <TableContainer
+                  sx={{ border: "1px solid", borderColor: "divider", borderRadius: 1.5 }}
+                >
                   <Table size="small">
                     <TableBody>
                       <TableRow>
-                        <TableCell sx={{ width: "38%", color: "text.secondary" , fontWeight: 700 }}>
+                        <TableCell sx={{ width: "38%", color: "text.secondary", fontWeight: 700 }}>
                           {t("draw.geometryType")}
                         </TableCell>
                         <TableCell>{selectedFeature.geometry.type}</TableCell>
                       </TableRow>
                       <TableRow>
-                        <TableCell sx={{ color: "text.secondary" , fontWeight: 700 }}>
+                        <TableCell sx={{ color: "text.secondary", fontWeight: 700 }}>
                           {t("draw.featureId")}
                         </TableCell>
                         <TableCell sx={{ wordBreak: "break-all" }}>{selectedFeature.id}</TableCell>
@@ -585,7 +542,7 @@ function DrawPanel({
                     label={t("draw.name")}
                     placeholder={t("draw.namePlaceholder")}
                     value={nameInput}
-                    onChange={event => {
+                    onChange={(event) => {
                       setNameDraft({
                         featureId: selectedFeature.id,
                         value: event.target.value,
@@ -654,7 +611,7 @@ function DrawPanel({
                 ref={fileInputRef}
                 type="file"
                 accept=".geojson,.json,application/geo+json,application/json"
-                onChange={event => void handleImportGeoJSON(event)}
+                onChange={(event) => void handleImportGeoJSON(event)}
                 hidden
               />
               <Button
@@ -672,7 +629,7 @@ function DrawPanel({
               multiline
               minRows={11}
               value={jsonText}
-              onChange={event => {
+              onChange={(event) => {
                 setJsonDraft({ sourceJson: currentJson, text: event.target.value, error: null });
               }}
               label={t("draw.geoJsonLabel")}
@@ -726,94 +683,18 @@ function DrawPanel({
           </Stack>
         )}
       </Stack>
-      <Dialog open={shareDialogOpen} onClose={() => setShareDialogOpen(false)} fullWidth maxWidth="sm">
-        <DialogTitle>{t("draw.shareTitle")}</DialogTitle>
-        <DialogContent>
-          <Stack spacing={1.5} sx={{ pt: 1 }}>
-            <Typography color="text.secondary">{t("draw.shareDescription", { count: geoJSON.features.length })}</Typography>
-            {shareError && <Alert severity="error">{shareError}</Alert>}
-            {shareUrl && (
-              <Stack spacing={1}>
-                <TextField
-                  fullWidth
-                  size="small"
-                  label={t("draw.shareLink")}
-                  value={shareUrl}
-                  slotProps={{ htmlInput: { readOnly: true } }}
-                />
-                <Button
-                  variant="outlined"
-                  startIcon={<Copy size={16} />}
-                  onClick={() => void handleCopyShareLink()}
-                >
-                  {shareCopied ? t("draw.shareLinkCopied") : t("draw.copyShareLink")}
-                </Button>
-                <Divider />
-                <Typography variant="subtitle2">{t("draw.shareChooseRecipients")}</Typography>
-                <TextField
-                  fullWidth
-                  size="small"
-                  label={t("draw.shareSearchPeople")}
-                  placeholder={t("draw.shareSearchPeoplePlaceholder")}
-                  value={recipientSearch}
-                  onChange={event => void handleRecipientSearch(event.target.value)}
-                />
-                <Typography variant="caption" color="text.secondary">
-                  {selectedRecipients.length > 0
-                    ? t("draw.shareSelectedCount", { count: selectedRecipients.length })
-                    : t("draw.shareSearchHint")}
-                </Typography>
-                {recipientSearchBusy ? <CircularProgress size={20} /> : recipientSearch.trim().length >= 2 && recipientResults.length === 0 ? (
-                  <Typography variant="body2" color="text.secondary">{t("draw.shareNoPeopleFound")}</Typography>
-                ) : (
-                  <Stack spacing={0.25} sx={{ maxHeight: 190, overflowY: "auto" }}>
-                    {recipientResults.map(recipient => (
-                      <FormControlLabel
-                        key={recipient.id}
-                        control={<Checkbox checked={selectedRecipients.some(item => item.id === recipient.id)} onChange={() => toggleRecipient(recipient)} />}
-                        label={<Box><Typography variant="body2">{recipient.name}</Typography><Typography variant="caption" color="text.secondary">{recipient.email}</Typography></Box>}
-                        sx={{ mx: 0, px: 0.75, borderRadius: 1, "&:hover": { bgcolor: "action.hover" } }}
-                      />
-                    ))}
-                  </Stack>
-                )}
-                {sendComplete && <Alert severity="success">{t("draw.shareSent", { count: selectedRecipients.length })}</Alert>}
-                <Button variant="contained" onClick={() => void handleSendShare()} disabled={!selectedRecipients.length || sendBusy}>
-                  {sendBusy ? <CircularProgress size={18} color="inherit" /> : t("draw.shareSendToPeople")}
-                </Button>
-              </Stack>
-            )}
-            <Button variant="contained" onClick={() => void handleCreateShare()} disabled={shareBusy || geoJSON.features.length === 0}>
-              {shareBusy ? <CircularProgress size={18} color="inherit" /> : t(shareUrl ? "draw.createAnotherShareLink" : "draw.createShareLink")}
-            </Button>
-          </Stack>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setShareDialogOpen(false)}>{t("profile.cancel")}</Button>
-        </DialogActions>
-      </Dialog>
+      {shareDialogOpen && (
+        <GeoJSONShareDialog
+          featureCount={geoJSON.features.length}
+          geoJSON={shareGeoJSON}
+          onClose={() => setShareDialogOpen(false)}
+        />
+      )}
     </Paper>
   );
 }
 
-function copyTextWithLegacyClipboard(value: string): boolean {
-  const textarea = document.createElement("textarea");
-  textarea.value = value;
-  textarea.setAttribute("readonly", "");
-  textarea.style.position = "fixed";
-  textarea.style.opacity = "0";
-  document.body.appendChild(textarea);
-  textarea.select();
-  textarea.setSelectionRange(0, value.length);
-  const copied = document.execCommand("copy");
-  textarea.remove();
-  return copied;
-}
-
-function getFeatureName(
-  feature: DrawFeatureCollection["features"][number],
-  index: number
-): string {
+function getFeatureName(feature: DrawFeatureCollection["features"][number], index: number): string {
   const name = getFeatureNameProperty(feature);
 
   if (name) return name;
@@ -821,9 +702,7 @@ function getFeatureName(
   return feature.id || `Feature ${index + 1}`;
 }
 
-function getFeatureNameProperty(
-  feature: DrawFeatureCollection["features"][number]
-): string {
+function getFeatureNameProperty(feature: DrawFeatureCollection["features"][number]): string {
   const properties = getFeatureProperties(feature);
   const name = properties.name;
 
@@ -836,9 +715,7 @@ function getFeatureNameProperty(
 function getFeatureProperties(
   feature: DrawFeatureCollection["features"][number]
 ): NonNullable<DrawProperties> {
-  return feature.properties && !Array.isArray(feature.properties)
-    ? feature.properties
-    : {};
+  return feature.properties && !Array.isArray(feature.properties) ? feature.properties : {};
 }
 
 function getPropertyLabel(key: string, translate: (key: string) => string): string {

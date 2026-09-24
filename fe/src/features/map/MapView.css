@@ -101,7 +101,9 @@ html[data-high-contrast="true"][data-color-mode="dark"] .map-wrapper {
 }
 
 .map-search-surface:focus-within {
-  box-shadow: 0 0 0 3px rgb(8 127 115 / 24%), var(--map-shadow) !important;
+  box-shadow:
+    0 0 0 3px rgb(8 127 115 / 24%),
+    var(--map-shadow) !important;
 }
 
 .map-tool-rail {
@@ -114,7 +116,10 @@ html[data-high-contrast="true"][data-color-mode="dark"] .map-wrapper {
 
 .map-wrapper .MuiIconButton-root,
 .map-wrapper .MuiButton-root {
-  transition: transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    background-color 160ms ease;
 }
 
 .map-wrapper .MuiIconButton-root:hover,
@@ -125,7 +130,10 @@ html[data-high-contrast="true"][data-color-mode="dark"] .map-wrapper {
 .search-popup-container {
   padding: 2px 4px;
   color: var(--map-popup-text);
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
 }
 
 .maplibregl-popup.map-position-popup-container {

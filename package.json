@@ -12,6 +12,8 @@
     "test": "go -C be test ./...",
     "build": "go -C be build ./... && npm run build:fe",
     "build:fe": "tsc -b && vite build --config fe/vite.config.ts",
+    "format": "prettier --write \"fe/src/**/*.{ts,tsx,css,json}\" fe/vite.config.ts",
+    "format:check": "prettier --check \"fe/src/**/*.{ts,tsx,css,json}\" fe/vite.config.ts",
     "lint": "eslint .",
     "preview": "vite preview --config fe/vite.config.ts"
   },
@@ -59,6 +61,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.3",
     "globals": "^17.7.0",
+    "prettier": "^3.9.9",
     "tsx": "^4.23.13",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.65.0",

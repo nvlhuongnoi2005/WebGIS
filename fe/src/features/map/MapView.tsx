@@ -3,6 +3,7 @@ import { Box, IconButton, Stack, Tooltip } from "@mui/material";
 import { LayoutDashboard } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import "maplibre-gl/dist/maplibre-gl.css";
+import "./maplibreWorker";
 
 import LanguageSwitcher from "../../components/LanguageSwitcher/LanguageSwitcher";
 import Profile from "../../components/Profile/Profile";
@@ -47,20 +48,17 @@ function MapView({ onNavigate }: MapViewProps) {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [activeTool, setActiveTool] = useState<MapTool>(null);
-  const [tileServerPanelMode, setTileServerPanelMode] = useState<"base-map" | "layers" | null>(null);
+  const [tileServerPanelMode, setTileServerPanelMode] = useState<"base-map" | "layers" | null>(
+    null
+  );
   const [coordinateReferenceSystem, setCoordinateReferenceSystem] =
     useState<CoordinateReferenceSystem>(DEFAULT_COORDINATE_REFERENCE_SYSTEM);
-  const {
-    mapContainer,
-    map,
-    mapLoaded,
-    hoveredCoordinate,
-    placeMarkerAtCurrentLocation,
-  } = useMapInstance(
-    coordinateReferenceSystem,
-    activeTool !== "draw" && activeTool !== "measure",
-    () => setActiveTool(currentTool => currentTool === "marker" ? null : currentTool)
-  );
+  const { mapContainer, map, mapLoaded, hoveredCoordinate, placeMarkerAtCurrentLocation } =
+    useMapInstance(
+      coordinateReferenceSystem,
+      activeTool !== "draw" && activeTool !== "measure",
+      () => setActiveTool((currentTool) => (currentTool === "marker" ? null : currentTool))
+    );
   const {
     tileServerBaseMap,
     tileServerOverlays,
@@ -160,27 +158,21 @@ function MapView({ onNavigate }: MapViewProps) {
     }
   };
 
-  const hoveredDisplayCoordinate = transformFromWgs84(
-    hoveredCoordinate,
-    coordinateReferenceSystem
-  );
+  const hoveredDisplayCoordinate = transformFromWgs84(hoveredCoordinate, coordinateReferenceSystem);
   const displayedGeoJSON = useMemo(
-    () => transformDrawFeatureCollection(
-      draw.geoJSON,
-      DEFAULT_COORDINATE_REFERENCE_SYSTEM,
-      coordinateReferenceSystem
-    ),
+    () =>
+      transformDrawFeatureCollection(
+        draw.geoJSON,
+        DEFAULT_COORDINATE_REFERENCE_SYSTEM,
+        coordinateReferenceSystem
+      ),
     [coordinateReferenceSystem, draw.geoJSON]
   );
   const handleApplyGeoJSON = (nextGeoJSON: DrawFeatureCollection) => {
     const sourceCrs = getDrawGeoJSONCrs(nextGeoJSON);
     setCoordinateReferenceSystem(sourceCrs);
     draw.applyGeoJSON(
-      transformDrawFeatureCollection(
-        nextGeoJSON,
-        sourceCrs,
-        DEFAULT_COORDINATE_REFERENCE_SYSTEM
-      )
+      transformDrawFeatureCollection(nextGeoJSON, sourceCrs, DEFAULT_COORDINATE_REFERENCE_SYSTEM)
     );
   };
 
@@ -221,7 +213,7 @@ function MapView({ onNavigate }: MapViewProps) {
             <IconButton
               type="button"
               aria-label={t("admin.openDashboard")}
-              onClick={() => onNavigate ? onNavigate("/admin") : window.location.assign("/admin")}
+              onClick={() => (onNavigate ? onNavigate("/admin") : window.location.assign("/admin"))}
               sx={{
                 width: 44,
                 height: 44,
@@ -230,7 +222,10 @@ function MapView({ onNavigate }: MapViewProps) {
                 borderColor: "background.paper",
                 bgcolor: "background.paper",
                 boxShadow: "0 8px 20px rgb(20 45 82 / 16%)",
-                "&:hover": { bgcolor: "action.hover", boxShadow: "0 10px 24px rgb(20 45 82 / 20%)" },
+                "&:hover": {
+                  bgcolor: "action.hover",
+                  boxShadow: "0 10px 24px rgb(20 45 82 / 20%)",
+                },
               }}
             >
               <LayoutDashboard size={20} />
@@ -255,7 +250,7 @@ function MapView({ onNavigate }: MapViewProps) {
           selectedBaseMap={tileServerBaseMap}
           baseMaps={tileServerDatasets.baseMaps}
           overlays={tileServerDatasets.overlays}
-          selectedOverlayIds={tileServerOverlays.map(overlay => overlay.id)}
+          selectedOverlayIds={tileServerOverlays.map((overlay) => overlay.id)}
           status={tileServerCatalogStatus}
           error={tileServerCatalogError}
           onReload={loadTileServerBaseMaps}
@@ -288,11 +283,11 @@ function MapView({ onNavigate }: MapViewProps) {
           vehicle={routing.vehicle}
           status={routing.status}
           error={routing.error}
-            distanceKm={routing.route?.summary.distanceKm}
-            timeSeconds={routing.route?.summary.timeSeconds}
-            instructions={routing.route?.instructions}
-            elevation={routing.elevation}
-            isElevationLoading={routing.isElevationLoading}
+          distanceKm={routing.route?.summary.distanceKm}
+          timeSeconds={routing.route?.summary.timeSeconds}
+          instructions={routing.route?.instructions}
+          elevation={routing.elevation}
+          isElevationLoading={routing.isElevationLoading}
           onOriginChange={routing.setOrigin}
           onDestinationChange={routing.setDestination}
           onVehicleChange={routing.setVehicle}

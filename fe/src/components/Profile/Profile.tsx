@@ -1,14 +1,5 @@
-import {
-  Avatar,
-  Box,
-  IconButton,
-  Popover,
-  Tooltip,
-} from "@mui/material";
-import {
-  type MouseEvent,
-  useState,
-} from "react";
+import { Avatar, Box, IconButton, Popover, Tooltip } from "@mui/material";
+import { type MouseEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AccessibilitySettingsDialog } from "../../features/accessibility";
 import { useAuth } from "../../features/auth";

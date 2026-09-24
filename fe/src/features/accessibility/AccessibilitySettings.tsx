@@ -40,14 +40,24 @@ export function AccessibilitySettingsDialog({ open, onClose }: AccessibilitySett
   } = useAccessibility();
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs" aria-describedby="accessibility-settings-description">
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullWidth
+      maxWidth="xs"
+      aria-describedby="accessibility-settings-description"
+    >
       <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1 }}>
         <AccessibilityIcon size={22} aria-hidden />
         {t("accessibility.settings")}
       </DialogTitle>
       <DialogContent>
         <Stack spacing={2.25} sx={{ pt: 0.5 }}>
-          <Typography id="accessibility-settings-description" variant="body2" color="text.secondary">
+          <Typography
+            id="accessibility-settings-description"
+            variant="body2"
+            color="text.secondary"
+          >
             {t("accessibility.settingsDescription")}
           </Typography>
 
@@ -73,9 +83,15 @@ export function AccessibilitySettingsDialog({ open, onClose }: AccessibilitySett
               </ToggleButton>
             </ToggleButtonGroup>
             <Stack direction="row" sx={{ mt: 0.75, justifyContent: "space-between" }}>
-              <Typography variant="caption" color="text.secondary">{t("accessibility.system")}</Typography>
-              <Typography variant="caption" color="text.secondary">{t("accessibility.light")}</Typography>
-              <Typography variant="caption" color="text.secondary">{t("accessibility.dark")}</Typography>
+              <Typography variant="caption" color="text.secondary">
+                {t("accessibility.system")}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {t("accessibility.light")}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {t("accessibility.dark")}
+              </Typography>
             </Stack>
           </Box>
 
@@ -105,7 +121,9 @@ export function AccessibilitySettingsDialog({ open, onClose }: AccessibilitySett
         <Button color="inherit" startIcon={<RotateCcw size={16} />} onClick={resetPreferences}>
           {t("accessibility.reset")}
         </Button>
-        <Button variant="contained" onClick={onClose}>{t("auth.close")}</Button>
+        <Button variant="contained" onClick={onClose}>
+          {t("auth.close")}
+        </Button>
       </DialogActions>
     </Dialog>
   );
@@ -122,11 +140,13 @@ function PreferenceSwitch({ checked, description, onChange, title }: PreferenceS
   return (
     <FormControlLabel
       sx={{ alignItems: "flex-start", gap: 1, m: 0 }}
-      control={<Switch checked={checked} onChange={event => onChange(event.target.checked)} />}
+      control={<Switch checked={checked} onChange={(event) => onChange(event.target.checked)} />}
       label={
         <Box sx={{ pt: 0.4 }}>
           <Typography variant="subtitle2">{title}</Typography>
-          <Typography variant="body2" color="text.secondary">{description}</Typography>
+          <Typography variant="body2" color="text.secondary">
+            {description}
+          </Typography>
         </Box>
       }
     />

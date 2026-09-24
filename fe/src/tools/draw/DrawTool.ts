@@ -1,10 +1,4 @@
-import type {
-  Feature,
-  FeatureCollection,
-  GeoJsonProperties,
-  Geometry,
-  Position,
-} from "geojson";
+import type { Feature, FeatureCollection, GeoJsonProperties, Geometry, Position } from "geojson";
 import {
   DEFAULT_COORDINATE_REFERENCE_SYSTEM,
   normalizeCoordinateReferenceSystem,
@@ -42,13 +36,7 @@ export type DrawFeatureCollection = Omit<
   features: DrawFeature[];
   crs: DrawGeoJSONCrs;
 };
-export type DrawMode =
-  | "select"
-  | "point"
-  | "multipoint"
-  | "line"
-  | "polygon"
-  | "edit";
+export type DrawMode = "select" | "point" | "multipoint" | "line" | "polygon" | "edit";
 
 export function emptyDrawFeatureCollection(): DrawFeatureCollection {
   return {
@@ -62,30 +50,39 @@ export function createPointFeature(
   coordinate: DrawCoordinate,
   existingIds: Iterable<DrawFeatureId> = []
 ): DrawFeature {
-  return createFeature({
-    type: "Point",
-    coordinates: coordinate,
-  }, existingIds);
+  return createFeature(
+    {
+      type: "Point",
+      coordinates: coordinate,
+    },
+    existingIds
+  );
 }
 
 export function createMultiPointFeature(
   coordinates: DrawCoordinate[],
   existingIds: Iterable<DrawFeatureId> = []
 ): DrawFeature {
-  return createFeature({
-    type: "MultiPoint",
-    coordinates,
-  }, existingIds);
+  return createFeature(
+    {
+      type: "MultiPoint",
+      coordinates,
+    },
+    existingIds
+  );
 }
 
 export function createLineFeature(
   coordinates: DrawCoordinate[],
   existingIds: Iterable<DrawFeatureId> = []
 ): DrawFeature {
-  return createFeature({
-    type: "LineString",
-    coordinates,
-  }, existingIds);
+  return createFeature(
+    {
+      type: "LineString",
+      coordinates,
+    },
+    existingIds
+  );
 }
 
 export function createPolygonFeature(
@@ -94,16 +91,16 @@ export function createPolygonFeature(
 ): DrawFeature {
   const ring = closeRing(coordinates);
 
-  return createFeature({
-    type: "Polygon",
-    coordinates: [ring],
-  }, existingIds);
+  return createFeature(
+    {
+      type: "Polygon",
+      coordinates: [ring],
+    },
+    existingIds
+  );
 }
 
-function createFeature(
-  geometry: DrawGeometry,
-  existingIds: Iterable<DrawFeatureId>
-): DrawFeature {
+function createFeature(geometry: DrawGeometry, existingIds: Iterable<DrawFeatureId>): DrawFeature {
   const id = createDrawId(geometry, existingIds);
 
   return syncDrawFeatureMeasurements({
@@ -119,12 +116,9 @@ function createFeature(
  * Values are stored as numbers in meters and square meters so they remain
  * useful in exported GeoJSON; the property panel formats them for display.
  */
-export function syncDrawFeatureMeasurements(
-  feature: DrawFeature
-): DrawFeature {
-  const properties = feature.properties && !Array.isArray(feature.properties)
-    ? feature.properties
-    : {};
+export function syncDrawFeatureMeasurements(feature: DrawFeature): DrawFeature {
+  const properties =
+    feature.properties && !Array.isArray(feature.properties) ? feature.properties : {};
   const customProperties = { ...properties };
   delete customProperties[MEASURED_AREA_PROPERTY];
   delete customProperties[MEASURED_LENGTH_PROPERTY];
@@ -148,10 +142,7 @@ export function syncDrawFeatureCollectionMeasurements(
 
 const nextDrawIdByPrefix: Record<string, number> = {};
 
-function createDrawId(
-  geometry: DrawGeometry,
-  existingIds: Iterable<DrawFeatureId>
-): DrawFeatureId {
+function createDrawId(geometry: DrawGeometry, existingIds: Iterable<DrawFeatureId>): DrawFeatureId {
   const prefix = getDrawIdPrefix(geometry);
   const usedIds = new Set(existingIds);
   let nextNumber = nextDrawIdByPrefix[prefix] ?? 1;
@@ -212,11 +203,7 @@ function isDrawFeature(value: unknown): value is Feature<DrawGeometry, DrawPrope
     properties?: unknown;
     geometry?: unknown;
   };
-  if (
-    feature.type !== "Feature" ||
-    !feature.geometry ||
-    typeof feature.geometry !== "object"
-  ) {
+  if (feature.type !== "Feature" || !feature.geometry || typeof feature.geometry !== "object") {
     return false;
   }
 
@@ -240,9 +227,7 @@ function isDrawFeature(value: unknown): value is Feature<DrawGeometry, DrawPrope
   return isSupportedGeometry(geometry);
 }
 
-export function normalizeDrawFeatureCollection(
-  value: unknown
-): DrawFeatureCollection | null {
+export function normalizeDrawFeatureCollection(value: unknown): DrawFeatureCollection | null {
   if (!isDrawFeatureCollection(value)) return null;
 
   const rawCrs = (value as { crs?: unknown }).crs;
@@ -250,10 +235,9 @@ export function normalizeDrawFeatureCollection(
   if (rawCrs !== undefined && !crs) return null;
 
   const usedIds = new Set<string>();
-  const features = value.features.map(feature => {
-    let id = feature.id === undefined
-      ? createDrawId(feature.geometry, usedIds)
-      : String(feature.id);
+  const features = value.features.map((feature) => {
+    let id =
+      feature.id === undefined ? createDrawId(feature.geometry, usedIds) : String(feature.id);
     while (usedIds.has(id)) id = createDrawId(feature.geometry, usedIds);
     usedIds.add(id);
 
@@ -267,9 +251,7 @@ export function normalizeDrawFeatureCollection(
   };
 }
 
-export function createDrawGeoJSONCrs(
-  crs: CoordinateReferenceSystem
-): DrawGeoJSONCrs {
+export function createDrawGeoJSONCrs(crs: CoordinateReferenceSystem): DrawGeoJSONCrs {
   return {
     type: "name",
     properties: { name: crs },
@@ -280,11 +262,11 @@ export function getDrawGeoJSONCrs(
   value: unknown,
   fallback: CoordinateReferenceSystem = DEFAULT_COORDINATE_REFERENCE_SYSTEM
 ): CoordinateReferenceSystem {
-  return parseDrawGeoJSONCrs(
-    value && typeof value === "object"
-      ? (value as { crs?: unknown }).crs
-      : undefined
-  ) ?? fallback;
+  return (
+    parseDrawGeoJSONCrs(
+      value && typeof value === "object" ? (value as { crs?: unknown }).crs : undefined
+    ) ?? fallback
+  );
 }
 
 function parseDrawGeoJSONCrs(value: unknown): CoordinateReferenceSystem | null {
@@ -300,9 +282,7 @@ function parseDrawGeoJSONCrs(value: unknown): CoordinateReferenceSystem | null {
   };
   const name = crs.properties?.name;
 
-  return crs.type === "name"
-    ? normalizeCoordinateReferenceSystem(name)
-    : null;
+  return crs.type === "name" ? normalizeCoordinateReferenceSystem(name) : null;
 }
 
 export function transformDrawFeatureCollection(
@@ -313,7 +293,7 @@ export function transformDrawFeatureCollection(
   return {
     ...collection,
     crs: createDrawGeoJSONCrs(targetCrs),
-    features: collection.features.map(feature => ({
+    features: collection.features.map((feature) => ({
       ...feature,
       geometry: transformDrawGeometry(feature.geometry, sourceCrs, targetCrs),
     })),
@@ -328,7 +308,7 @@ function transformDrawGeometry(
   if (geometry.type === "GeometryCollection") {
     return {
       ...geometry,
-      geometries: geometry.geometries.map(child =>
+      geometries: geometry.geometries.map((child) =>
         transformDrawGeometry(child, sourceCrs, targetCrs)
       ),
     };
@@ -337,18 +317,14 @@ function transformDrawGeometry(
   if (geometry.type === "Point") {
     return {
       ...geometry,
-      coordinates: transformDrawPosition(
-        geometry.coordinates,
-        sourceCrs,
-        targetCrs
-      ),
+      coordinates: transformDrawPosition(geometry.coordinates, sourceCrs, targetCrs),
     };
   }
 
   if (geometry.type === "MultiPoint" || geometry.type === "LineString") {
     return {
       ...geometry,
-      coordinates: geometry.coordinates.map(position =>
+      coordinates: geometry.coordinates.map((position) =>
         transformDrawPosition(position, sourceCrs, targetCrs)
       ),
     };
@@ -357,21 +333,17 @@ function transformDrawGeometry(
   if (geometry.type === "MultiLineString" || geometry.type === "Polygon") {
     return {
       ...geometry,
-      coordinates: geometry.coordinates.map(line =>
-        line.map(position =>
-          transformDrawPosition(position, sourceCrs, targetCrs)
-        )
+      coordinates: geometry.coordinates.map((line) =>
+        line.map((position) => transformDrawPosition(position, sourceCrs, targetCrs))
       ),
     };
   }
 
   return {
     ...geometry,
-    coordinates: geometry.coordinates.map(polygon =>
-      polygon.map(ring =>
-        ring.map(position =>
-          transformDrawPosition(position, sourceCrs, targetCrs)
-        )
+    coordinates: geometry.coordinates.map((polygon) =>
+      polygon.map((ring) =>
+        ring.map((position) => transformDrawPosition(position, sourceCrs, targetCrs))
       )
     ),
   };
@@ -382,11 +354,7 @@ function transformDrawPosition(
   sourceCrs: CoordinateReferenceSystem,
   targetCrs: CoordinateReferenceSystem
 ): Position {
-  const [x, y] = transformCoordinate(
-    [position[0], position[1]],
-    sourceCrs,
-    targetCrs
-  );
+  const [x, y] = transformCoordinate([position[0], position[1]], sourceCrs, targetCrs);
 
   return position.length > 2 ? [x, y, ...position.slice(2)] : [x, y];
 }
@@ -414,10 +382,7 @@ function isSupportedGeometry(value: unknown): value is DrawGeometry {
     case "MultiPolygon":
       return isMultiPolygonCoordinates(geometry.coordinates);
     case "GeometryCollection":
-      return (
-        Array.isArray(geometry.geometries) &&
-        geometry.geometries.every(isSupportedGeometry)
-      );
+      return Array.isArray(geometry.geometries) && geometry.geometries.every(isSupportedGeometry);
     default:
       return false;
   }
@@ -427,7 +392,7 @@ function isCoordinate(value: unknown): value is DrawCoordinate {
   return (
     Array.isArray(value) &&
     value.length >= 2 &&
-    value.every(item => typeof item === "number" && Number.isFinite(item))
+    value.every((item) => typeof item === "number" && Number.isFinite(item))
   );
 }
 
@@ -447,7 +412,7 @@ function isPolygonCoordinates(value: unknown): value is DrawCoordinate[][] {
   return (
     Array.isArray(value) &&
     value.length > 0 &&
-    value.every(ring => isCoordinateArray(ring) && isClosedRing(ring))
+    value.every((ring) => isCoordinateArray(ring) && isClosedRing(ring))
   );
 }
 
@@ -460,12 +425,7 @@ function isClosedRing(ring: DrawCoordinate[]): boolean {
 
   const first = ring[0];
   const last = ring.at(-1);
-  return Boolean(
-    first &&
-      last &&
-      first[0] === last[0] &&
-      first[1] === last[1]
-  );
+  return Boolean(first && last && first[0] === last[0] && first[1] === last[1]);
 }
 
 export function encodeDrawPath(path: number[]): string {
@@ -477,14 +437,9 @@ export function decodeDrawPath(value: unknown): number[] | null {
   if (value === "") return [];
 
   const path = value.split(".").map(Number);
-  return path.every(index => Number.isInteger(index) && index >= 0) ? path : null;
+  return path.every((index) => Number.isInteger(index) && index >= 0) ? path : null;
 }
 
-export function replaceDrawCoordinate(
-  current: Position,
-  coordinate: DrawCoordinate
-): Position {
-  return current.length > 2
-    ? [coordinate[0], coordinate[1], ...current.slice(2)]
-    : coordinate;
+export function replaceDrawCoordinate(current: Position, coordinate: DrawCoordinate): Position {
+  return current.length > 2 ? [coordinate[0], coordinate[1], ...current.slice(2)] : coordinate;
 }

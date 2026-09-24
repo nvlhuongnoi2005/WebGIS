@@ -65,17 +65,14 @@ export const COORDINATE_SYSTEMS = {
 export type CoordinateReferenceSystem = keyof typeof COORDINATE_SYSTEMS;
 export type Coordinate = [x: number, y: number];
 
-export const DEFAULT_COORDINATE_REFERENCE_SYSTEM: CoordinateReferenceSystem =
-  "EPSG:4326";
+export const DEFAULT_COORDINATE_REFERENCE_SYSTEM: CoordinateReferenceSystem = "EPSG:4326";
 
 const GEOGRAPHIC_COORDINATE_REFERENCE_SYSTEMS: CoordinateReferenceSystem[] = [
   "EPSG:4326",
   "EPSG:4756",
 ];
 
-export function isGeographicCoordinateReferenceSystem(
-  crs: CoordinateReferenceSystem
-): boolean {
+export function isGeographicCoordinateReferenceSystem(crs: CoordinateReferenceSystem): boolean {
   return GEOGRAPHIC_COORDINATE_REFERENCE_SYSTEMS.includes(crs);
 }
 
@@ -84,11 +81,7 @@ export function formatDmsCoordinates(longitude: number, latitude: number): strin
   return `${formatDms(latitude, "N", "S")} ${formatDms(longitude, "E", "W")}`;
 }
 
-function formatDms(
-  value: number,
-  positiveDirection: string,
-  negativeDirection: string
-): string {
+function formatDms(value: number, positiveDirection: string, negativeDirection: string): string {
   const absoluteValue = Math.abs(value);
   let degrees = Math.floor(absoluteValue);
   const minutesValue = (absoluteValue - degrees) * 60;
@@ -123,12 +116,11 @@ export function normalizeCoordinateReferenceSystem(
   if (!normalized) return null;
 
   const directMatch = Object.keys(COORDINATE_SYSTEMS).find(
-    crs => crs.toLowerCase() === normalized.toLowerCase()
+    (crs) => crs.toLowerCase() === normalized.toLowerCase()
   );
   if (directMatch) return directMatch as CoordinateReferenceSystem;
 
-  const epsgCode = normalized.match(/^epsg\s*:\s*(\d+)$/i)?.[1]
-    ?? normalized.match(/^\d+$/)?.[0];
+  const epsgCode = normalized.match(/^epsg\s*:\s*(\d+)$/i)?.[1] ?? normalized.match(/^\d+$/)?.[0];
 
   if (epsgCode) {
     const epsgCrs = `EPSG:${epsgCode}`;
@@ -145,22 +137,14 @@ export function transformFromWgs84(
   coordinate: Coordinate,
   targetCrs: CoordinateReferenceSystem
 ): Coordinate {
-  return transformCoordinate(
-    coordinate,
-    DEFAULT_COORDINATE_REFERENCE_SYSTEM,
-    targetCrs
-  );
+  return transformCoordinate(coordinate, DEFAULT_COORDINATE_REFERENCE_SYSTEM, targetCrs);
 }
 
 export function transformToWgs84(
   coordinate: Coordinate,
   sourceCrs: CoordinateReferenceSystem
 ): Coordinate {
-  return transformCoordinate(
-    coordinate,
-    sourceCrs,
-    DEFAULT_COORDINATE_REFERENCE_SYSTEM
-  );
+  return transformCoordinate(coordinate, sourceCrs, DEFAULT_COORDINATE_REFERENCE_SYSTEM);
 }
 
 export function transformCoordinate(
@@ -170,11 +154,7 @@ export function transformCoordinate(
 ): Coordinate {
   if (sourceCrs === targetCrs) return coordinate;
 
-  const transformed = proj4(
-    sourceCrs,
-    targetCrs,
-    coordinate,
-  );
+  const transformed = proj4(sourceCrs, targetCrs, coordinate);
 
   return [transformed[0], transformed[1]];
 }

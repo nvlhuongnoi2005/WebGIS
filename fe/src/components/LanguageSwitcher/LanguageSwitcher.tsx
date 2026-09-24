@@ -1,9 +1,4 @@
-import {
-  Box,
-  ButtonBase,
-  Tooltip,
-  Typography,
-} from "@mui/material";
+import { Box, ButtonBase, Tooltip, Typography } from "@mui/material";
 import ReactCountryFlag from "react-country-flag";
 import { useTranslation } from "react-i18next";
 

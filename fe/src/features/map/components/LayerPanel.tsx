@@ -18,11 +18,7 @@ const panelSx = {
   p: 1.5,
 };
 
-function LayerPanel({
-  onOpenBaseMap,
-  onOpenLayers,
-  selectedOverlayCount,
-}: LayerPanelProps) {
+function LayerPanel({ onOpenBaseMap, onOpenLayers, selectedOverlayCount }: LayerPanelProps) {
   const { t } = useTranslation();
 
   return (

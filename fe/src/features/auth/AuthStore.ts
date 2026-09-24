@@ -26,9 +26,19 @@ export interface RegisterDetails {
 export type AuthResult =
   | { ok: true }
   | {
-    ok: false;
-    code: "emailInUse" | "invalidCredentials" | "accountDisabled" | "accountLocked" | "registrationFailed" | "serviceUnavailable" | "storageFailed" | "currentPasswordInvalid" | "newPasswordInvalid" | "newPasswordSameAsCurrent";
-  };
+      ok: false;
+      code:
+        | "emailInUse"
+        | "invalidCredentials"
+        | "accountDisabled"
+        | "accountLocked"
+        | "registrationFailed"
+        | "serviceUnavailable"
+        | "storageFailed"
+        | "currentPasswordInvalid"
+        | "newPasswordInvalid"
+        | "newPasswordSameAsCurrent";
+    };
 
 export interface AuthContextValue {
   user: AuthUser | null;

@@ -31,20 +31,22 @@ export async function createGeoJSONShare(geojson: DrawFeatureCollection) {
     body: JSON.stringify({ geojson }),
   });
   if (!response.ok) throw new Error("shareCreateFailed");
-  return await response.json() as { id: string; token: string; expires_at: string };
+  return (await response.json()) as { id: string; token: string; expires_at: string };
 }
 
 export async function listGeoJSONShares(): Promise<GeoJSONShareSummary[]> {
   const response = await authFetch("/api/shares");
   if (!response.ok) throw new Error("shareListFailed");
-  const result = await response.json() as { shares: GeoJSONShareSummary[] };
+  const result = (await response.json()) as { shares: GeoJSONShareSummary[] };
   return result.shares;
 }
 
 export async function getOrCreateGeoJSONShareLink(id: string): Promise<string> {
-  const response = await authFetch(`/api/shares/${encodeURIComponent(id)}/link`, { method: "POST" });
+  const response = await authFetch(`/api/shares/${encodeURIComponent(id)}/link`, {
+    method: "POST",
+  });
   if (!response.ok) throw new Error("shareLinkLoadFailed");
-  const result = await response.json() as { token: string };
+  const result = (await response.json()) as { token: string };
   return result.token;
 }
 
@@ -53,10 +55,12 @@ export async function revokeGeoJSONShare(id: string): Promise<void> {
   if (!response.ok) throw new Error("shareRevokeFailed");
 }
 
-export async function searchGeoJSONShareRecipients(query: string): Promise<GeoJSONShareRecipient[]> {
+export async function searchGeoJSONShareRecipients(
+  query: string
+): Promise<GeoJSONShareRecipient[]> {
   const response = await authFetch(`/api/shares/recipients?q=${encodeURIComponent(query)}`);
   if (!response.ok) throw new Error("shareRecipientSearchFailed");
-  const result = await response.json() as { users: GeoJSONShareRecipient[] };
+  const result = (await response.json()) as { users: GeoJSONShareRecipient[] };
   return result.users;
 }
 
@@ -72,20 +76,22 @@ export async function sendGeoJSONShare(id: string, recipientIds: string[]): Prom
 export async function listReceivedGeoJSONShares(): Promise<ReceivedGeoJSONShare[]> {
   const response = await authFetch("/api/shares/received");
   if (!response.ok) throw new Error("receivedSharesFailed");
-  const result = await response.json() as { shares: ReceivedGeoJSONShare[] };
+  const result = (await response.json()) as { shares: ReceivedGeoJSONShare[] };
   return result.shares;
 }
 
 export async function getReceivedGeoJSON(id: string): Promise<DrawFeatureCollection> {
-  const response = await authFetch(`/api/shares/received/${encodeURIComponent(id)}`, { cache: "no-store" });
+  const response = await authFetch(`/api/shares/received/${encodeURIComponent(id)}`, {
+    cache: "no-store",
+  });
   if (!response.ok) throw new Error("shareUnavailable");
-  const result = await response.json() as { geojson: DrawFeatureCollection };
+  const result = (await response.json()) as { geojson: DrawFeatureCollection };
   return result.geojson;
 }
 
 export async function getSharedGeoJSON(token: string): Promise<DrawFeatureCollection> {
   const response = await fetch(`/api/shares/${encodeURIComponent(token)}`, { cache: "no-store" });
   if (!response.ok) throw new Error("shareUnavailable");
-  const result = await response.json() as { geojson: DrawFeatureCollection };
+  const result = (await response.json()) as { geojson: DrawFeatureCollection };
   return result.geojson;
 }

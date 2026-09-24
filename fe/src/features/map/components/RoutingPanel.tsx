@@ -42,10 +42,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import {
-  fetchGeocoding,
-  getGeocodingLanguage,
-} from "../../../tools/geocoding/GeocodingTool";
+import { fetchGeocoding, getGeocodingLanguage } from "../../../tools/geocoding/GeocodingTool";
 import type { GeocodingFeature } from "../../../tools/geocoding/GeocodingTool";
 import {
   formatRouteDuration,
@@ -108,9 +105,7 @@ function RoutingPanel({
 }: RoutingPanelProps) {
   const { t } = useTranslation();
   const canCalculate = Boolean(origin && destination) && status !== "loading";
-  const duration = typeof timeSeconds === "number"
-    ? formatRouteDuration(timeSeconds)
-    : null;
+  const duration = typeof timeSeconds === "number" ? formatRouteDuration(timeSeconds) : null;
   const durationLabel = duration
     ? duration.hours > 0
       ? t("routing.durationHoursMinutes", duration)
@@ -137,17 +132,36 @@ function RoutingPanel({
           ...(isRouteResult ? { height: "100%", overflowY: "auto", pr: 0.25 } : {}),
         }}
       >
-          <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between" }}>
-            <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-            <Box sx={{ display: "grid", placeItems: "center", width: 32, height: 32, borderRadius: 2, bgcolor: "primary.light", color: "primary.main" }}>
+        <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between" }}>
+          <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+            <Box
+              sx={{
+                display: "grid",
+                placeItems: "center",
+                width: 32,
+                height: 32,
+                borderRadius: 2,
+                bgcolor: "primary.light",
+                color: "primary.main",
+              }}
+            >
               <RouteIcon size={18} />
             </Box>
             <Box>
-              <Typography variant="subtitle1" sx={{ fontWeight: 700, lineHeight: 1.2 }}>{t("routing.title")}</Typography>
-              <Typography variant="caption" color="text.secondary">{t("routing.description")}</Typography>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
+                {t("routing.title")}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {t("routing.description")}
+              </Typography>
             </Box>
           </Stack>
-          <IconButton size="small" onClick={onReset} title={t("routing.resetPoints")} aria-label={t("routing.resetPoints")}>
+          <IconButton
+            size="small"
+            onClick={onReset}
+            title={t("routing.resetPoints")}
+            aria-label={t("routing.resetPoints")}
+          >
             <RotateCcw size={17} />
           </IconButton>
         </Stack>
@@ -169,7 +183,15 @@ function RoutingPanel({
 
         <Divider />
         {!isRouteSearchActive && (
-          <Typography variant="caption" sx={{ fontWeight: 700, color: "text.secondary", textTransform: "uppercase", letterSpacing: 0.5 }}>
+          <Typography
+            variant="caption"
+            sx={{
+              fontWeight: 700,
+              color: "text.secondary",
+              textTransform: "uppercase",
+              letterSpacing: 0.5,
+            }}
+          >
             {t("routing.vehicle")}
           </Typography>
         )}
@@ -218,28 +240,48 @@ function RoutingPanel({
           ))}
         </ToggleButtonGroup>
 
-        {error && <Alert severity="error" variant="outlined" sx={{ fontSize: 12 }}>{error}</Alert>}
-
-        {status === "success" && typeof distanceKm === "number" && typeof timeSeconds === "number" && (
-          <Stack direction="row" spacing={1} sx={{ p: 1.25, borderRadius: 2, bgcolor: "success.50", color: "success.900", alignItems: "center" }}>
-            <CheckCircle2 size={20} color="#15803d" />
-            <Box>
-              <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                {durationLabel} · {distanceKm.toFixed(1)} {t("routing.distanceUnit")}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">{t("routing.routeSuitable")}</Typography>
-            </Box>
-          </Stack>
+        {error && (
+          <Alert severity="error" variant="outlined" sx={{ fontSize: 12 }}>
+            {error}
+          </Alert>
         )}
+
+        {status === "success" &&
+          typeof distanceKm === "number" &&
+          typeof timeSeconds === "number" && (
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{
+                p: 1.25,
+                borderRadius: 2,
+                bgcolor: "success.50",
+                color: "success.900",
+                alignItems: "center",
+              }}
+            >
+              <CheckCircle2 size={20} color="#15803d" />
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                  {durationLabel} · {distanceKm.toFixed(1)} {t("routing.distanceUnit")}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {t("routing.routeSuitable")}
+                </Typography>
+              </Box>
+            </Stack>
+          )}
 
         {status === "success" && (
           <Box>
             <CollapsibleSectionLabel
               label={t("routing.elevation.title")}
               isOpen={isElevationOpen}
-              onClick={() => setIsElevationOpen(open => !open)}
+              onClick={() => setIsElevationOpen((open) => !open)}
             />
-            {isElevationOpen && <ElevationProfile points={elevation} isLoading={isElevationLoading} />}
+            {isElevationOpen && (
+              <ElevationProfile points={elevation} isLoading={isElevationLoading} />
+            )}
           </Box>
         )}
 
@@ -249,7 +291,7 @@ function RoutingPanel({
             <CollapsibleSectionLabel
               label={t("routing.instructions")}
               isOpen={isInstructionsOpen}
-              onClick={() => setIsInstructionsOpen(open => !open)}
+              onClick={() => setIsInstructionsOpen((open) => !open)}
             />
             {isInstructionsOpen && (
               <Stack
@@ -298,7 +340,13 @@ function RoutingPanel({
         <Button
           fullWidth
           variant="contained"
-          startIcon={status === "loading" ? <CircularProgress size={16} color="inherit" /> : <Search size={17} />}
+          startIcon={
+            status === "loading" ? (
+              <CircularProgress size={16} color="inherit" />
+            ) : (
+              <Search size={17} />
+            )
+          }
           disabled={!canCalculate}
           onClick={() => onCalculate()}
         >
@@ -306,9 +354,15 @@ function RoutingPanel({
         </Button>
 
         {(!origin || !destination) && (
-          <Stack direction="row" spacing={0.75} sx={{ color: "text.secondary", alignItems: "center" }}>
+          <Stack
+            direction="row"
+            spacing={0.75}
+            sx={{ color: "text.secondary", alignItems: "center" }}
+          >
             <LocateFixed size={15} />
-            <Typography variant="caption">{origin ? t("routing.chooseDestination") : t("routing.chooseOrigin")}</Typography>
+            <Typography variant="caption">
+              {origin ? t("routing.chooseDestination") : t("routing.chooseOrigin")}
+            </Typography>
           </Stack>
         )}
       </Stack>
@@ -316,15 +370,39 @@ function RoutingPanel({
   );
 }
 
-function CollapsibleSectionLabel({ label, isOpen, onClick }: { label: string; isOpen: boolean; onClick: () => void }) {
+function CollapsibleSectionLabel({
+  label,
+  isOpen,
+  onClick,
+}: {
+  label: string;
+  isOpen: boolean;
+  onClick: () => void;
+}) {
   const Icon = isOpen ? ChevronUp : ChevronDown;
   return (
     <ButtonBase
       onClick={onClick}
       aria-expanded={isOpen}
-      sx={{ display: "flex", width: "100%", justifyContent: "space-between", alignItems: "center", mb: 0.75, borderRadius: 1, textAlign: "left" }}
+      sx={{
+        display: "flex",
+        width: "100%",
+        justifyContent: "space-between",
+        alignItems: "center",
+        mb: 0.75,
+        borderRadius: 1,
+        textAlign: "left",
+      }}
     >
-      <Typography variant="caption" sx={{ fontWeight: 700, color: "text.secondary", textTransform: "uppercase", letterSpacing: 0.5 }}>
+      <Typography
+        variant="caption"
+        sx={{
+          fontWeight: 700,
+          color: "text.secondary",
+          textTransform: "uppercase",
+          letterSpacing: 0.5,
+        }}
+      >
         {label}
       </Typography>
       <Icon size={16} />
@@ -335,7 +413,9 @@ function CollapsibleSectionLabel({ label, isOpen, onClick }: { label: string; is
 function ElevationProfile({ points, isLoading }: { points: ElevationPoint[]; isLoading: boolean }) {
   const { t } = useTranslation();
   const elevationGradientId = useId().replace(/:/g, "");
-  const knownPoints = points.filter((point): point is ElevationPoint & { elevationM: number } => point.elevationM !== null);
+  const knownPoints = points.filter(
+    (point): point is ElevationPoint & { elevationM: number } => point.elevationM !== null
+  );
   if (isLoading) {
     return (
       <Stack direction="row" spacing={1} sx={{ alignItems: "center", color: "text.secondary" }}>
@@ -345,10 +425,14 @@ function ElevationProfile({ points, isLoading }: { points: ElevationPoint[]; isL
     );
   }
   if (knownPoints.length < 2) {
-    return <Typography variant="caption" color="text.secondary">{t("routing.elevation.unavailable")}</Typography>;
+    return (
+      <Typography variant="caption" color="text.secondary">
+        {t("routing.elevation.unavailable")}
+      </Typography>
+    );
   }
 
-  const elevations = knownPoints.map(point => point.elevationM);
+  const elevations = knownPoints.map((point) => point.elevationM);
   const highest = Math.max(...elevations);
   const lowest = Math.min(...elevations);
   let ascent = 0;
@@ -360,16 +444,24 @@ function ElevationProfile({ points, isLoading }: { points: ElevationPoint[]; isL
   }
   const endDistance = Math.max(knownPoints[knownPoints.length - 1].distanceM, 1);
   const elevationRange = Math.max(highest - lowest, 1);
-  const chartPoints = knownPoints.map(point => {
-    const x = 4 + (point.distanceM / endDistance) * 312;
-    const y = 68 - ((point.elevationM - lowest) / elevationRange) * 56;
-    return `${x.toFixed(1)},${y.toFixed(1)}`;
-  }).join(" ");
+  const chartPoints = knownPoints
+    .map((point) => {
+      const x = 4 + (point.distanceM / endDistance) * 312;
+      const y = 68 - ((point.elevationM - lowest) / elevationRange) * 56;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(" ");
   const chartArea = `M4 68 L${chartPoints} L316 68 Z`;
 
   return (
     <Box sx={{ p: 1.25, border: "1px solid", borderColor: "divider", borderRadius: 2 }}>
-      <Box component="svg" viewBox="0 0 320 72" role="img" aria-label={t("routing.elevation.chartLabel")} sx={{ display: "block", width: "100%", height: 76, mb: 0.75 }}>
+      <Box
+        component="svg"
+        viewBox="0 0 320 72"
+        role="img"
+        aria-label={t("routing.elevation.chartLabel")}
+        sx={{ display: "block", width: "100%", height: 76, mb: 0.75 }}
+      >
         <defs>
           <linearGradient id={elevationGradientId} x1="0" y1="1" x2="0" y2="0">
             <stop offset="0%" stopColor="#2e7d32" />
@@ -379,23 +471,51 @@ function ElevationProfile({ points, isLoading }: { points: ElevationPoint[]; isL
         </defs>
         <path d="M4 68H316" stroke="currentColor" strokeOpacity="0.16" />
         <path d={chartArea} fill={`url(#${elevationGradientId})`} fillOpacity="0.35" />
-        <polyline points={chartPoints} fill="none" stroke={`url(#${elevationGradientId})`} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+        <polyline
+          points={chartPoints}
+          fill="none"
+          stroke={`url(#${elevationGradientId})`}
+          strokeWidth="2.5"
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
       </Box>
       <Stack direction="row" spacing={1.25} useFlexGap sx={{ flexWrap: "wrap" }}>
         <ElevationMetric label={t("routing.elevation.highest")} value={highest} />
         <ElevationMetric label={t("routing.elevation.lowest")} value={lowest} />
-        <ElevationMetric label={t("routing.elevation.ascent")} value={ascent} icon={<TrendingUp size={14} />} />
-        <ElevationMetric label={t("routing.elevation.descent")} value={descent} icon={<TrendingDown size={14} />} />
+        <ElevationMetric
+          label={t("routing.elevation.ascent")}
+          value={ascent}
+          icon={<TrendingUp size={14} />}
+        />
+        <ElevationMetric
+          label={t("routing.elevation.descent")}
+          value={descent}
+          icon={<TrendingDown size={14} />}
+        />
       </Stack>
     </Box>
   );
 }
 
-function ElevationMetric({ label, value, icon }: { label: string; value: number; icon?: ReactNode }) {
+function ElevationMetric({
+  label,
+  value,
+  icon,
+}: {
+  label: string;
+  value: number;
+  icon?: ReactNode;
+}) {
   return (
     <Stack direction="row" spacing={0.35} sx={{ alignItems: "center", color: "text.secondary" }}>
       {icon}
-      <Typography variant="caption">{label}: <Box component="span" sx={{ fontWeight: 700, color: "text.primary" }}>{Math.round(value)} m</Box></Typography>
+      <Typography variant="caption">
+        {label}:{" "}
+        <Box component="span" sx={{ fontWeight: 700, color: "text.primary" }}>
+          {Math.round(value)} m
+        </Box>
+      </Typography>
     </Stack>
   );
 }
@@ -407,12 +527,7 @@ interface LocationSearchFieldProps {
   onChange: (point: MapCoordinates | null) => void;
 }
 
-function LocationSearchField({
-  label,
-  placeholder,
-  value,
-  onChange,
-}: LocationSearchFieldProps) {
+function LocationSearchField({ label, placeholder, value, onChange }: LocationSearchFieldProps) {
   const { i18n } = useTranslation();
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<GeocodingFeature[]>([]);
@@ -423,12 +538,8 @@ function LocationSearchField({
   const requestControllerRef = useRef<AbortController | null>(null);
   const searchCacheRef = useRef<Map<string, GeocodingFeature[]>>(new Map());
 
-  const activeLanguage = getGeocodingLanguage(
-    i18n.resolvedLanguage || i18n.language
-  );
-  const displayValue = value
-    ? query || formatCoordinate(value, "")
-    : query;
+  const activeLanguage = getGeocodingLanguage(i18n.resolvedLanguage || i18n.language);
+  const displayValue = value ? query || formatCoordinate(value, "") : query;
 
   const cancelPendingSearch = () => {
     requestControllerRef.current?.abort();
@@ -449,11 +560,7 @@ function LocationSearchField({
     requestControllerRef.current = controller;
 
     try {
-      const results = await fetchGeocoding(
-        searchQuery,
-        activeLanguage,
-        controller.signal
-      );
+      const results = await fetchGeocoding(searchQuery, activeLanguage, controller.signal);
       searchCacheRef.current.set(cacheKey, results);
       return results;
     } catch (error) {
@@ -513,10 +620,7 @@ function LocationSearchField({
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
-      ) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     };
@@ -542,7 +646,7 @@ function LocationSearchField({
         value={displayValue}
         onChange={handleInputChange}
         onFocus={() => suggestions.length > 0 && setIsOpen(true)}
-        onKeyDown={event => {
+        onKeyDown={(event) => {
           if (event.key === "Escape") {
             setIsOpen(false);
           } else if (event.key === "Enter" && suggestions.length > 0) {
@@ -566,11 +670,7 @@ function LocationSearchField({
               </InputAdornment>
             ) : displayValue ? (
               <InputAdornment position="end">
-                <IconButton
-                  size="small"
-                  onClick={handleClear}
-                  aria-label={`${label}: clear`}
-                >
+                <IconButton size="small" onClick={handleClear} aria-label={`${label}: clear`}>
                   <X size={15} />
                 </IconButton>
               </InputAdornment>
@@ -593,7 +693,7 @@ function LocationSearchField({
           }}
         >
           <List disablePadding>
-            {suggestions.map(feature => (
+            {suggestions.map((feature) => (
               <ListItemButton key={feature.id} onClick={() => handleSelect(feature)}>
                 <ListItemIcon sx={{ minWidth: 32, color: "error.main" }}>
                   <MapPin size={16} />

@@ -4,7 +4,9 @@ export type AdminSection = "overview" | "billing" | "users" | "audit";
 
 export function sectionFromPath(path: string): AdminSection {
   const match = path.match(/^\/admin\/(billing|users|audit)$/);
-  return match ? match[1] as AdminSection : "overview";
+  return match ? (match[1] as AdminSection) : "overview";
 }
 
-export function pathFor(section: AdminSection) { return section === "overview" ? "/admin" : `/admin/${section}`; }
+export function pathFor(section: AdminSection) {
+  return section === "overview" ? "/admin" : `/admin/${section}`;
+}

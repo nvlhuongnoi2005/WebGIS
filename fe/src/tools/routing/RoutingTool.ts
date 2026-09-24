@@ -4,14 +4,7 @@ import type { MapCoordinates } from "../../types/map";
 import { authFetch } from "../../features/auth/authClient";
 
 export type RoutingVehicle =
-  | "auto"
-  | "bicycle"
-  | "pedestrian"
-  | "motorcycle"
-  | "truck"
-  | "bus"
-  | "taxi"
-  | "hov";
+  "auto" | "bicycle" | "pedestrian" | "motorcycle" | "truck" | "bus" | "taxi" | "hov";
 
 export interface RouteSummary {
   distanceKm: number;
@@ -60,7 +53,7 @@ export async function fetchValhallaRoute(
         directions_type: "instructions",
         shape_format: "polyline6",
       }),
-    }); 
+    });
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {
       throw error;
@@ -73,7 +66,7 @@ export async function fetchValhallaRoute(
     throw new Error("routing.errors.requestFailed");
   }
 
-  const payload = await response.json() as ValhallaResponse;
+  const payload = (await response.json()) as ValhallaResponse;
   if (!payload.trip?.legs?.length) {
     throw new Error("routing.errors.noRoute");
   }
@@ -88,23 +81,19 @@ export async function fetchValhallaRoute(
   }
 
   const summary = payload.trip.summary;
-  const instructions = payload.trip.legs.flatMap(leg =>
+  const instructions = payload.trip.legs.flatMap((leg) =>
     (leg.maneuvers ?? [])
-      .map(maneuver => ({
+      .map((maneuver) => ({
         instruction: maneuver.instruction?.trim() || "",
         distanceKm: Number(maneuver.length ?? 0),
         timeSeconds: Number(maneuver.time ?? 0),
         type: typeof maneuver.type === "number" ? maneuver.type : null,
         beginShapeIndex:
-          typeof maneuver.begin_shape_index === "number"
-            ? maneuver.begin_shape_index
-            : null,
+          typeof maneuver.begin_shape_index === "number" ? maneuver.begin_shape_index : null,
         endShapeIndex:
-          typeof maneuver.end_shape_index === "number"
-            ? maneuver.end_shape_index
-            : null,
+          typeof maneuver.end_shape_index === "number" ? maneuver.end_shape_index : null,
       }))
-      .filter(maneuver => maneuver.instruction.length > 0)
+      .filter((maneuver) => maneuver.instruction.length > 0)
   );
 
   return {
@@ -147,8 +136,8 @@ function decodeShape(shape: string | { coordinates?: number[][] } | undefined): 
 
   if (typeof shape !== "string") {
     return (shape.coordinates ?? [])
-      .filter(coordinate => coordinate.length >= 2)
-      .map(coordinate => [coordinate[0], coordinate[1]]);
+      .filter((coordinate) => coordinate.length >= 2)
+      .map((coordinate) => [coordinate[0], coordinate[1]]);
   }
 
   const coordinates: MapCoordinates[] = [];
@@ -191,7 +180,7 @@ function decodeValue(shape: string, nextIndex: () => number): number | null {
     }
   }
 
-  return (result & 1) ? ~(result >> 1) : result >> 1;
+  return result & 1 ? ~(result >> 1) : result >> 1;
 }
 
 export function formatRouteDuration(seconds: number) {

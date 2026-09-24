@@ -130,7 +130,11 @@ export default function LoginPage({ onAuthenticated }: LoginPageProps) {
       <Container maxWidth="md" disableGutters className="auth-shell">
         <Paper elevation={0} className="auth-card">
           <Box className="auth-showcase">
-            <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", position: "relative" }}>
+            <Stack
+              direction="row"
+              spacing={1.5}
+              sx={{ alignItems: "center", position: "relative" }}
+            >
               <Box className="auth-showcase__logo">
                 <Map size={26} aria-hidden />
               </Box>
@@ -147,16 +151,31 @@ export default function LoginPage({ onAuthenticated }: LoginPageProps) {
             <Box className="auth-map-illustration" aria-hidden>
               <Box className="auth-map-illustration__glow" />
               <svg viewBox="0 0 520 350" focusable="false">
-                <path className="auth-map-illustration__route auth-map-illustration__route--soft" d="M12 285C98 270 94 104 190 116s53 150 151 118c88-29 59-155 166-178" />
-                <path className="auth-map-illustration__route" d="M24 297C117 283 112 144 199 138s52 129 132 105c76-26 68-139 165-182" />
-                <path className="auth-map-illustration__route auth-map-illustration__route--thin" d="M58 69c92 6 82 90 150 96 72 6 100-96 238-89" />
+                <path
+                  className="auth-map-illustration__route auth-map-illustration__route--soft"
+                  d="M12 285C98 270 94 104 190 116s53 150 151 118c88-29 59-155 166-178"
+                />
+                <path
+                  className="auth-map-illustration__route"
+                  d="M24 297C117 283 112 144 199 138s52 129 132 105c76-26 68-139 165-182"
+                />
+                <path
+                  className="auth-map-illustration__route auth-map-illustration__route--thin"
+                  d="M58 69c92 6 82 90 150 96 72 6 100-96 238-89"
+                />
               </svg>
-              <Box className="auth-map-pin auth-map-pin--start"><Navigation size={18} fill="currentColor" /></Box>
-              <Box className="auth-map-pin auth-map-pin--end"><MapPin size={22} fill="currentColor" /></Box>
+              <Box className="auth-map-pin auth-map-pin--start">
+                <Navigation size={18} fill="currentColor" />
+              </Box>
+              <Box className="auth-map-pin auth-map-pin--end">
+                <MapPin size={22} fill="currentColor" />
+              </Box>
               <Box className="auth-map-node auth-map-node--one" />
               <Box className="auth-map-node auth-map-node--two" />
               <Box className="auth-map-node auth-map-node--three" />
-              <Box className="auth-map-illustration__caption">10.8231° N&nbsp;&nbsp;•&nbsp;&nbsp;106.6297° E</Box>
+              <Box className="auth-map-illustration__caption">
+                10.8231° N&nbsp;&nbsp;•&nbsp;&nbsp;106.6297° E
+              </Box>
             </Box>
 
             <Stack spacing={1} className="auth-showcase__copy">
@@ -171,10 +190,16 @@ export default function LoginPage({ onAuthenticated }: LoginPageProps) {
 
           <Box className={`auth-form auth-form--${mode}`}>
             <Stack direction="row" spacing={1.25} className="auth-form__mobile-brand">
-              <Box className="auth-form__mobile-logo"><Map size={21} aria-hidden /></Box>
+              <Box className="auth-form__mobile-logo">
+                <Map size={21} aria-hidden />
+              </Box>
               <Box>
-                <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>{t("auth.brand")}</Typography>
-                <Typography variant="caption" color="text.secondary">{t("auth.subtitle")}</Typography>
+                <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>
+                  {t("auth.brand")}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {t("auth.subtitle")}
+                </Typography>
               </Box>
             </Stack>
             <Tabs
@@ -197,14 +222,19 @@ export default function LoginPage({ onAuthenticated }: LoginPageProps) {
               </Typography>
             </Stack>
 
-            <Box component="form" onSubmit={event => void handleSubmit(event)} noValidate className="auth-form__fields">
+            <Box
+              component="form"
+              onSubmit={(event) => void handleSubmit(event)}
+              noValidate
+              className="auth-form__fields"
+            >
               <Stack spacing={isRegister ? 1.25 : 2}>
                 {isRegister && (
                   <TextField
                     autoComplete="name"
                     label={t("auth.name")}
                     value={name}
-                    onChange={event => setName(event.target.value)}
+                    onChange={(event) => setName(event.target.value)}
                     required
                     fullWidth
                     autoFocus
@@ -217,7 +247,7 @@ export default function LoginPage({ onAuthenticated }: LoginPageProps) {
                       type="date"
                       label={t("auth.dateOfBirth")}
                       value={dateOfBirth}
-                      onChange={event => setDateOfBirth(event.target.value)}
+                      onChange={(event) => setDateOfBirth(event.target.value)}
                       slotProps={{ inputLabel: { shrink: true } }}
                       required
                       fullWidth
@@ -227,7 +257,7 @@ export default function LoginPage({ onAuthenticated }: LoginPageProps) {
                       type="tel"
                       label={t("auth.phone")}
                       value={phone}
-                      onChange={event => setPhone(event.target.value)}
+                      onChange={(event) => setPhone(event.target.value)}
                       required
                       fullWidth
                     />
@@ -238,7 +268,7 @@ export default function LoginPage({ onAuthenticated }: LoginPageProps) {
                     autoComplete="organization"
                     label={t("auth.organization")}
                     value={organization}
-                    onChange={event => setOrganization(event.target.value)}
+                    onChange={(event) => setOrganization(event.target.value)}
                     required
                     fullWidth
                   />
@@ -247,7 +277,7 @@ export default function LoginPage({ onAuthenticated }: LoginPageProps) {
                   autoComplete="email"
                   label={t("auth.email")}
                   value={email}
-                  onChange={event => setEmail(event.target.value)}
+                  onChange={(event) => setEmail(event.target.value)}
                   required
                   fullWidth
                   autoFocus={!isRegister}
@@ -259,7 +289,7 @@ export default function LoginPage({ onAuthenticated }: LoginPageProps) {
                       type="password"
                       label={t("auth.password")}
                       value={password}
-                      onChange={event => setPassword(event.target.value)}
+                      onChange={(event) => setPassword(event.target.value)}
                       required
                       fullWidth
                     />
@@ -268,7 +298,7 @@ export default function LoginPage({ onAuthenticated }: LoginPageProps) {
                       type="password"
                       label={t("auth.confirmPassword")}
                       value={confirmPassword}
-                      onChange={event => setConfirmPassword(event.target.value)}
+                      onChange={(event) => setConfirmPassword(event.target.value)}
                       required
                       fullWidth
                     />
@@ -279,7 +309,7 @@ export default function LoginPage({ onAuthenticated }: LoginPageProps) {
                     type="password"
                     label={t("auth.password")}
                     value={password}
-                    onChange={event => setPassword(event.target.value)}
+                    onChange={(event) => setPassword(event.target.value)}
                     required
                     fullWidth
                   />

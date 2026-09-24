@@ -1,16 +1,9 @@
-import {
-  createElement,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { createElement, useEffect, useRef, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 import * as maplibregl from "maplibre-gl";
 
-import {
-  getMapStyle,
-} from "../tools/map/MapStyleTool";
+import { getMapStyle } from "../tools/map/MapStyleTool";
 import MapPositionPopup from "../features/map/components/MapPositionPopup";
 import {
   transformFromWgs84,
@@ -24,32 +17,23 @@ export function useMapInstance(
   coordinatePickingEnabled: boolean,
   onPositionMarkerClose?: () => void
 ) {
-  const mapContainer =
-    useRef<HTMLDivElement | null>(null);
+  const mapContainer = useRef<HTMLDivElement | null>(null);
 
-  const map =
-    useRef<maplibregl.Map | null>(null);
+  const map = useRef<maplibregl.Map | null>(null);
 
-  const [mapLoaded, setMapLoaded] =
-    useState(false);
+  const [mapLoaded, setMapLoaded] = useState(false);
 
-  const marker =
-    useRef<maplibregl.Marker | null>(null);
+  const marker = useRef<maplibregl.Marker | null>(null);
 
-  const popupRoot =
-    useRef<Root | null>(null);
+  const popupRoot = useRef<Root | null>(null);
 
-  const [hoveredCoordinate, setHoveredCoordinate] =
-    useState<[number, number]>(INITIAL_MAP_CENTER);
+  const [hoveredCoordinate, setHoveredCoordinate] = useState<[number, number]>(INITIAL_MAP_CENTER);
 
-  const lastClickedCoordinate =
-    useRef<[number, number] | null>(null);
+  const lastClickedCoordinate = useRef<[number, number] | null>(null);
 
-  const coordinateReferenceSystemRef =
-    useRef(coordinateReferenceSystem);
+  const coordinateReferenceSystemRef = useRef(coordinateReferenceSystem);
 
-  const coordinatePickingEnabledRef =
-    useRef(coordinatePickingEnabled);
+  const coordinatePickingEnabledRef = useRef(coordinatePickingEnabled);
 
   const clearPositionMarker = () => {
     const activeMarker = marker.current;
@@ -63,17 +47,11 @@ export function useMapInstance(
     activeMarker?.remove();
   };
 
-  const placeMarkerAtCoordinate = (
-    mapInstance: maplibregl.Map,
-    coordinate: [number, number]
-  ) => {
+  const placeMarkerAtCoordinate = (mapInstance: maplibregl.Map, coordinate: [number, number]) => {
     clearPositionMarker();
     lastClickedCoordinate.current = coordinate;
 
-    const transformed = transformFromWgs84(
-      coordinate,
-      coordinateReferenceSystemRef.current
-    );
+    const transformed = transformFromWgs84(coordinate, coordinateReferenceSystemRef.current);
 
     const popupContent = document.createElement("div");
     const popup = new maplibregl.Popup({
@@ -123,7 +101,7 @@ export function useMapInstance(
     if (!mapInstance || !mapLoaded) {
       return;
     }
-    
+
     if (!navigator.geolocation) {
       console.error("Geolocation is not supported by this browser.");
       return;
@@ -137,10 +115,7 @@ export function useMapInstance(
           return;
         }
 
-        const coordinate: [number, number] = [
-          coords.longitude,
-          coords.latitude,
-        ];
+        const coordinate: [number, number] = [coords.longitude, coords.latitude];
 
         placeMarkerAtCoordinate(currentMap, coordinate);
         currentMap.flyTo({
@@ -149,7 +124,7 @@ export function useMapInstance(
           essential: true,
         });
       },
-      error => {
+      (error) => {
         console.error("Unable to get the current location:", error.message);
       }
     );
@@ -174,7 +149,6 @@ export function useMapInstance(
         crs: coordinateReferenceSystem,
       })
     );
-
   }, [coordinateReferenceSystem]);
 
   useEffect(() => {
@@ -188,35 +162,26 @@ export function useMapInstance(
   }, [coordinatePickingEnabled]);
 
   useEffect(() => {
-    if (
-      !mapContainer.current ||
-      map.current
-    ) {
+    if (!mapContainer.current || map.current) {
       return;
     }
 
-    const mapInstance =
-      new maplibregl.Map({
-        container: mapContainer.current,
-        style: getMapStyle(),
-        center: INITIAL_MAP_CENTER,
-        zoom: 4,
-      });
+    const mapInstance = new maplibregl.Map({
+      container: mapContainer.current,
+      style: getMapStyle(),
+      center: INITIAL_MAP_CENTER,
+      zoom: 4,
+    });
 
     map.current = mapInstance;
 
-    mapInstance.addControl(
-      new maplibregl.NavigationControl(),
-      "bottom-left"
-    );
+    mapInstance.addControl(new maplibregl.NavigationControl(), "bottom-left");
 
     // MapLibre navigation buttons are outside React tree, so we set title manually.
     const applyNavigationTooltips = () => {
-      const controls = mapContainer.current?.querySelectorAll(
-        ".maplibregl-ctrl-group button"
-      );
+      const controls = mapContainer.current?.querySelectorAll(".maplibregl-ctrl-group button");
 
-      controls?.forEach(button => {
+      controls?.forEach((button) => {
         const label = button.getAttribute("aria-label")?.trim();
 
         if (label && !button.getAttribute("title")) {
@@ -238,11 +203,8 @@ export function useMapInstance(
 
     mapInstance.on("mousemove", handleMapMouseMove);
 
-    mapInstance.on("error", event => {
-      console.error(
-        "MapLibre error:",
-        event
-      );
+    mapInstance.on("error", (event) => {
+      console.error("MapLibre error:", event);
     });
 
     return () => {

@@ -117,7 +117,7 @@ function MapPositionPopup({
                   },
                   marginThreshold: 12,
                 }}
-                onChange={event => {
+                onChange={(event) => {
                   onCrsChange(event.target.value as CoordinateReferenceSystem);
                 }}
                 renderValue={() => crs}
@@ -192,11 +192,7 @@ function MapPositionPopup({
         spacing={{ xs: 0.5, sm: 2 }}
         sx={{ px: 2, py: 1.5 }}
       >
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{ minWidth: 92 }}
-        >
+        <Typography variant="body2" color="text.secondary" sx={{ minWidth: 92 }}>
           {t("coordinates.label")}
         </Typography>
 

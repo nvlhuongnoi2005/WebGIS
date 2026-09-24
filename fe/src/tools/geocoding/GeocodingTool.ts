@@ -91,17 +91,17 @@ function isGeoJSONGeometry(value: unknown): value is Geometry {
 }
 
 function isVietnameseLanguage(acceptLanguage: string) {
-  return acceptLanguage.toLowerCase().split(",").some(language => language.trim().startsWith("vi"));
+  return acceptLanguage
+    .toLowerCase()
+    .split(",")
+    .some((language) => language.trim().startsWith("vi"));
 }
 
-export function formatGeocodingAddress(
-  address: Record<string, string> | undefined,
-  fallback = ""
-) {
+export function formatGeocodingAddress(address: Record<string, string> | undefined, fallback = "") {
   if (!address) return fallback;
 
   const seen = new Set<string>();
-  const parts = ADDRESS_FIELDS.flatMap(field => {
+  const parts = ADDRESS_FIELDS.flatMap((field) => {
     const value = address[field]?.trim();
     const key = value?.toLocaleLowerCase();
     if (!value || !key || seen.has(key)) return [];
@@ -117,9 +117,11 @@ function isAreaGeometry(geometry: Geometry) {
 }
 
 function isMapCoordinates(value: unknown): value is MapCoordinates {
-  return Array.isArray(value)
-    && value.length === 2
-    && value.every(coordinate => typeof coordinate === "number" && Number.isFinite(coordinate));
+  return (
+    Array.isArray(value) &&
+    value.length === 2 &&
+    value.every((coordinate) => typeof coordinate === "number" && Number.isFinite(coordinate))
+  );
 }
 
 export async function fetchGeocodingSuggestions(
@@ -137,19 +139,21 @@ export async function fetchGeocodingSuggestions(
   }
 
   const data = (await response.json()) as SuggestionResult[];
-  return data.flatMap(result => {
+  return data.flatMap((result) => {
     const placeName = result.place_name?.trim();
     if (!result.id || !placeName || !isMapCoordinates(result.center)) return [];
 
-    return [{
-      id: result.id,
-      place_name: placeName,
-      text: result.text?.trim() || placeName,
-      context: result.context?.trim(),
-      center: result.center,
-      isArea: result.is_area === true,
-      resolveQuery: placeName,
-    }];
+    return [
+      {
+        id: result.id,
+        place_name: placeName,
+        text: result.text?.trim() || placeName,
+        context: result.context?.trim(),
+        center: result.center,
+        isArea: result.is_area === true,
+        resolveQuery: placeName,
+      },
+    ];
   });
 }
 
@@ -181,7 +185,7 @@ export async function fetchGeocoding(
 
   const data = (await response.json()) as NominatimResult[];
 
-  return data.map(result => {
+  return data.map((result) => {
     const longitude = Number(result.lon);
     const latitude = Number(result.lat);
     const coordinates: MapCoordinates = [longitude, latitude];
@@ -189,21 +193,22 @@ export async function fetchGeocoding(
       type: "Point",
       coordinates,
     };
-    const geometry = isGeoJSONGeometry(result.geojson)
-      ? result.geojson
-      : fallbackGeometry;
+    const geometry = isGeoJSONGeometry(result.geojson) ? result.geojson : fallbackGeometry;
     const isArea = isAreaGeometry(geometry);
     const address = formatGeocodingAddress(result.address, result.display_name);
     const label = isArea
-      ? (isVietnameseLanguage(acceptLanguage) ? "Khu vực" : "Area")
-      : (isVietnameseLanguage(acceptLanguage) ? "Địa chỉ" : "Address");
-    const bbox: [number, number, number, number] | undefined =
-      result.boundingbox && [
-        Number(result.boundingbox[2]),
-        Number(result.boundingbox[0]),
-        Number(result.boundingbox[3]),
-        Number(result.boundingbox[1]),
-      ];
+      ? isVietnameseLanguage(acceptLanguage)
+        ? "Khu vực"
+        : "Area"
+      : isVietnameseLanguage(acceptLanguage)
+        ? "Địa chỉ"
+        : "Address";
+    const bbox: [number, number, number, number] | undefined = result.boundingbox && [
+      Number(result.boundingbox[2]),
+      Number(result.boundingbox[0]),
+      Number(result.boundingbox[3]),
+      Number(result.boundingbox[1]),
+    ];
 
     return {
       id: `${result.osm_type || "place"}-${result.osm_id || result.place_id}`,

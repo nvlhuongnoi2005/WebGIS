@@ -5,4 +5,54 @@ import { useTranslation } from "react-i18next";
 import { fetchAdminDashboard, type AdminDashboardMetrics } from "../features/billing/billingApi";
 import { DonutChart, LoadingOrError, MetricCard, PageTitle } from "./AdminShared";
 
-export function AdminOverviewPage() { const { t } = useTranslation(); const [metrics, setMetrics] = useState<AdminDashboardMetrics | null>(null); const [error, setError] = useState(false); useEffect(() => { let active = true; void fetchAdminDashboard().then(value => active && setMetrics(value)).catch(() => active && setError(true)); return () => { active = false; }; }, []); const ageGroups = metrics?.ageGroups ?? []; const organizationGroups = metrics?.organizationGroups ?? []; return <><PageTitle title={t("admin.overview")} description={t("admin.overviewDescription")} /><LoadingOrError loading={!metrics} error={error} />{metrics && <Stack spacing={2.5}><Stack direction={{ xs: "column", sm: "row" }} spacing={2}><MetricCard icon={<Users size={23} />} label={t("admin.totalAccounts")} value={metrics.totalAccounts} /><MetricCard icon={<Activity size={23} />} label={t("admin.onlineUsers")} value={metrics.onlineUsers} tone="blue" /></Stack><Stack direction={{ xs: "column", lg: "row" }} spacing={2.5}><DonutChart title={t("admin.ageDistribution")} description={t("admin.ageDescription")} groups={ageGroups} /><DonutChart title={t("admin.organizationDistribution")} description={t("admin.organizationDescription")} groups={organizationGroups} /></Stack></Stack>}</>; }
+export function AdminOverviewPage() {
+  const { t } = useTranslation();
+  const [metrics, setMetrics] = useState<AdminDashboardMetrics | null>(null);
+  const [error, setError] = useState(false);
+  useEffect(() => {
+    let active = true;
+    void fetchAdminDashboard()
+      .then((value) => active && setMetrics(value))
+      .catch(() => active && setError(true));
+    return () => {
+      active = false;
+    };
+  }, []);
+  const ageGroups = metrics?.ageGroups ?? [];
+  const organizationGroups = metrics?.organizationGroups ?? [];
+  return (
+    <>
+      <PageTitle title={t("admin.overview")} description={t("admin.overviewDescription")} />
+      <LoadingOrError loading={!metrics} error={error} />
+      {metrics && (
+        <Stack spacing={2.5}>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            <MetricCard
+              icon={<Users size={23} />}
+              label={t("admin.totalAccounts")}
+              value={metrics.totalAccounts}
+            />
+            <MetricCard
+              icon={<Activity size={23} />}
+              label={t("admin.onlineUsers")}
+              value={metrics.onlineUsers}
+              tone="blue"
+            />
+          </Stack>
+          <Stack direction={{ xs: "column", lg: "row" }} spacing={2.5}>
+            <DonutChart
+              title={t("admin.ageDistribution")}
+              description={t("admin.ageDescription")}
+              groups={ageGroups}
+            />
+            <DonutChart
+              title={t("admin.organizationDistribution")}
+              description={t("admin.organizationDescription")}
+              groups={organizationGroups}
+            />
+          </Stack>
+        </Stack>
+      )}
+    </>
+  );
+}

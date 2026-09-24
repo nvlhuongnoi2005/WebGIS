@@ -1,17 +1,15 @@
+import { Alert, Avatar, Button, Divider, Stack, Typography } from "@mui/material";
 import {
-  Alert,
-  Avatar,
-  Button,
-  Divider,
-  Stack,
-  Typography,
-} from "@mui/material";
-import { Accessibility, Building2, Camera, Link2, LogOut, Mail, ReceiptText, UserRound } from "lucide-react";
-import {
-  type ChangeEvent,
-  useRef,
-  useState,
-} from "react";
+  Accessibility,
+  Building2,
+  Camera,
+  Link2,
+  LogOut,
+  Mail,
+  ReceiptText,
+  UserRound,
+} from "lucide-react";
+import { type ChangeEvent, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { AuthResult } from "../../features/auth/AuthStore";
 interface ProfilePanelProps {
@@ -129,14 +127,26 @@ export default function ProfilePanel({
           {userName}
         </Typography>
         <Stack spacing={0.5} sx={{ width: "100%" }}>
-          <Stack direction="row" spacing={0.75} sx={{ minWidth: 0, alignItems: "center", color: "text.secondary" }}>
+          <Stack
+            direction="row"
+            spacing={0.75}
+            sx={{ minWidth: 0, alignItems: "center", color: "text.secondary" }}
+          >
             <Mail size={15} />
-            <Typography variant="caption" noWrap>{userEmail}</Typography>
+            <Typography variant="caption" noWrap>
+              {userEmail}
+            </Typography>
           </Stack>
           {organization && (
-            <Stack direction="row" spacing={0.75} sx={{ minWidth: 0, alignItems: "center", color: "text.secondary" }}>
+            <Stack
+              direction="row"
+              spacing={0.75}
+              sx={{ minWidth: 0, alignItems: "center", color: "text.secondary" }}
+            >
               <Building2 size={15} />
-              <Typography variant="caption" noWrap>{organization}</Typography>
+              <Typography variant="caption" noWrap>
+                {organization}
+              </Typography>
             </Stack>
           )}
         </Stack>
@@ -152,7 +162,12 @@ export default function ProfilePanel({
             <Typography component="span" variant="body2" sx={{ fontWeight: 700 }}>
               {t("profile.uploadAvatar")}
             </Typography>
-            <Typography component="span" variant="caption" color="text.secondary" sx={{ fontSize: 10 }}>
+            <Typography
+              component="span"
+              variant="caption"
+              color="text.secondary"
+              sx={{ fontSize: 10 }}
+            >
               {t("profile.avatarFormats")}
             </Typography>
           </Stack>
@@ -166,7 +181,11 @@ export default function ProfilePanel({
           onChange={handleAvatarUpload}
         />
 
-        {avatarError && <Alert severity="error" sx={{ width: "100%", py: 0 }}>{avatarError}</Alert>}
+        {avatarError && (
+          <Alert severity="error" sx={{ width: "100%", py: 0 }}>
+            {avatarError}
+          </Alert>
+        )}
       </Stack>
 
       <Divider sx={{ my: 0.5 }} />
@@ -212,7 +231,7 @@ export default function ProfilePanel({
         variant="text"
         color="error"
         startIcon={<LogOut size={17} />}
-          onClick={() => void handleSignOut()}
+        onClick={() => void handleSignOut()}
         fullWidth
       >
         {t("profile.signOut")}
@@ -222,8 +241,7 @@ export default function ProfilePanel({
 }
 
 function isSupportedAvatarFile(file: File): boolean {
-  return ["image/jpeg", "image/png"].includes(file.type)
-    || /\.jpe?g$|\.png$/i.test(file.name);
+  return ["image/jpeg", "image/png"].includes(file.type) || /\.jpe?g$|\.png$/i.test(file.name);
 }
 
 async function createAvatarDataUrl(file: File): Promise<string> {

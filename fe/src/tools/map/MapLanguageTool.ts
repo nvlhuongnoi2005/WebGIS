@@ -35,11 +35,7 @@ export function setMapLanguage(map: Map, lang: MapLanguage) {
       ];
 
   for (const layer of style.layers) {
-    if (
-      layer.type === "symbol" &&
-      layer.layout &&
-      "text-field" in layer.layout
-    ) {
+    if (layer.type === "symbol" && layer.layout && "text-field" in layer.layout) {
       // Keep application-specific measure or search layers intact
       if (layer.id.startsWith("measure-") || layer.id.startsWith("search-")) {
         continue;

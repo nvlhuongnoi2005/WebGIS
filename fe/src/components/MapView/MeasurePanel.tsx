@@ -6,10 +6,7 @@ import {
   formatDistance,
 } from "../../tools/measure/MeasureTool";
 
-import type {
-  Coordinate,
-  MeasureMode,
-} from "../../tools/measure/MeasureTool";
+import type { Coordinate, MeasureMode } from "../../tools/measure/MeasureTool";
 
 interface MeasurePanelProps {
   error: string | null;
@@ -47,18 +44,14 @@ function MeasurePanel({
     <div className="measure-panel">
       <div className="measure-mode-switch">
         <button
-          className={
-            measureMode === "distance" ? "measure-mode active" : "measure-mode"
-          }
+          className={measureMode === "distance" ? "measure-mode active" : "measure-mode"}
           onClick={() => onChangeMode("distance")}
         >
           {t("measure.distance")}
         </button>
 
         <button
-          className={
-            measureMode === "area" ? "measure-mode active" : "measure-mode"
-          }
+          className={measureMode === "area" ? "measure-mode active" : "measure-mode"}
           onClick={() => onChangeMode("area")}
         >
           {t("measure.area")}
@@ -75,25 +68,17 @@ function MeasurePanel({
       {measureMode === "area" && (
         <>
           <div className="measure-total">
-            <span>
-              {isAreaComplete ? t("measure.areaLabel") : t("measure.areaPreview")}
-            </span>
+            <span>{isAreaComplete ? t("measure.areaLabel") : t("measure.areaPreview")}</span>
             <strong>{formatArea(area)}</strong>
           </div>
 
           {!isAreaComplete && measurePoints.length >= 3 && (
-            <div className="measure-hint">
-              {t("measure.closeAreaHint")}
-            </div>
+            <div className="measure-hint">{t("measure.closeAreaHint")}</div>
           )}
         </>
       )}
 
-      {error && (
-        <div className="measure-error">
-          {t(error)}
-        </div>
-      )}
+      {error && <div className="measure-error">{t(error)}</div>}
 
       <div className="measure-actions">
         <button
@@ -114,18 +99,11 @@ function MeasurePanel({
           {t("measure.redo")}
         </button>
 
-        <button
-          className="measure-finish"
-          onClick={onFinish}
-        >
+        <button className="measure-finish" onClick={onFinish}>
           {t("measure.finish")}
         </button>
 
-        <button
-          className="measure-clear"
-          onClick={onClear}
-          disabled={measurePoints.length === 0}
-        >
+        <button className="measure-clear" onClick={onClear} disabled={measurePoints.length === 0}>
           {t("measure.clear")}
         </button>
       </div>

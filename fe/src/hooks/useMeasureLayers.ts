@@ -1,30 +1,14 @@
-import {
-  useEffect,
-} from "react";
+import { useEffect } from "react";
 
-import type {
-  MutableRefObject,
-} from "react";
+import type { MutableRefObject } from "react";
 
 import * as maplibregl from "maplibre-gl";
 
-import type {
-  Feature,
-  FeatureCollection,
-  LineString,
-  Point,
-  Polygon,
-} from "geojson";
+import type { Feature, FeatureCollection, LineString, Point, Polygon } from "geojson";
 
-import {
-  calculateDistance,
-  formatDistance,
-} from "../tools/measure/MeasureTool";
+import { calculateDistance, formatDistance } from "../tools/measure/MeasureTool";
 
-import type {
-  Coordinate,
-  MeasureMode,
-} from "../tools/measure/MeasureTool";
+import type { Coordinate, MeasureMode } from "../tools/measure/MeasureTool";
 
 interface UseMeasureLayersOptions {
   map: MutableRefObject<maplibregl.Map | null>;
@@ -57,28 +41,12 @@ export function useMeasureLayers({
     const mapInstance = map.current;
 
     updatePointData(mapInstance, measurePoints);
-    updateAreaData(
-      mapInstance,
-      measureMode,
-      measurePoints
-    );
-    updateLineAndLabelData(
-      mapInstance,
-      measureMode,
-      measurePoints
-    );
-  }, [
-    map,
-    mapLoaded,
-    mapStyleVersion,
-    measureMode,
-    measurePoints,
-  ]);
+    updateAreaData(mapInstance, measureMode, measurePoints);
+    updateLineAndLabelData(mapInstance, measureMode, measurePoints);
+  }, [map, mapLoaded, mapStyleVersion, measureMode, measurePoints]);
 }
 
-function ensureMeasureLayers(
-  map: maplibregl.Map
-) {
+function ensureMeasureLayers(map: maplibregl.Map) {
   addSourceIfMissing(map, "measure-points");
   addSourceIfMissing(map, "measure-area");
   addSourceIfMissing(map, "measure-lines");
@@ -147,10 +115,7 @@ function ensureMeasureLayers(
   }
 }
 
-function addSourceIfMissing(
-  map: maplibregl.Map,
-  id: string
-) {
+function addSourceIfMissing(map: maplibregl.Map, id: string) {
   if (map.getSource(id)) {
     return;
   }
@@ -161,20 +126,15 @@ function addSourceIfMissing(
   });
 }
 
-function updatePointData(
-  map: maplibregl.Map,
-  points: Coordinate[]
-) {
-  const features:
-    Feature<Point>[] =
-    points.map((point, index) => ({
-      type: "Feature",
-      properties: { index },
-      geometry: {
-        type: "Point",
-        coordinates: point,
-      },
-    }));
+function updatePointData(map: maplibregl.Map, points: Coordinate[]) {
+  const features: Feature<Point>[] = points.map((point, index) => ({
+    type: "Feature",
+    properties: { index },
+    geometry: {
+      type: "Point",
+      coordinates: point,
+    },
+  }));
 
   setSourceData(map, "measure-points", {
     type: "FeatureCollection",
@@ -182,27 +142,16 @@ function updatePointData(
   });
 }
 
-function updateAreaData(
-  map: maplibregl.Map,
-  measureMode: MeasureMode,
-  points: Coordinate[]
-) {
-  const features:
-    Feature<Polygon>[] = [];
+function updateAreaData(map: maplibregl.Map, measureMode: MeasureMode, points: Coordinate[]) {
+  const features: Feature<Polygon>[] = [];
 
-  if (
-    measureMode === "area" &&
-    points.length >= 3
-  ) {
+  if (measureMode === "area" && points.length >= 3) {
     features.push({
       type: "Feature",
       properties: {},
       geometry: {
         type: "Polygon",
-        coordinates: [[
-          ...points,
-          points[0],
-        ]],
+        coordinates: [[...points, points[0]]],
       },
     });
   }
@@ -218,16 +167,11 @@ function updateLineAndLabelData(
   measureMode: MeasureMode,
   points: Coordinate[]
 ) {
-  const linePoints =
-    measureMode === "area" && points.length >= 3
-      ? [...points, points[0]]
-      : points;
+  const linePoints = measureMode === "area" && points.length >= 3 ? [...points, points[0]] : points;
 
-  const lineFeatures:
-    Feature<LineString>[] = [];
+  const lineFeatures: Feature<LineString>[] = [];
 
-  const labelFeatures:
-    Feature<Point>[] = [];
+  const labelFeatures: Feature<Point>[] = [];
 
   for (let index = 1; index < linePoints.length; index++) {
     const point1 = linePoints[index - 1];
@@ -246,9 +190,7 @@ function updateLineAndLabelData(
       labelFeatures.push({
         type: "Feature",
         properties: {
-          label: formatDistance(
-            calculateDistance(point1, point2)
-          ),
+          label: formatDistance(calculateDistance(point1, point2)),
         },
         geometry: {
           type: "Point",
@@ -269,27 +211,14 @@ function updateLineAndLabelData(
   });
 }
 
-function setSourceData(
-  map: maplibregl.Map,
-  id: string,
-  data: FeatureCollection
-) {
-  const source =
-    map.getSource(id) as
-      | maplibregl.GeoJSONSource
-      | undefined;
+function setSourceData(map: maplibregl.Map, id: string, data: FeatureCollection) {
+  const source = map.getSource(id) as maplibregl.GeoJSONSource | undefined;
 
   source?.setData(data);
 }
 
-function midpoint(
-  point1: Coordinate,
-  point2: Coordinate
-): Coordinate {
-  return [
-    (point1[0] + point2[0]) / 2,
-    (point1[1] + point2[1]) / 2,
-  ];
+function midpoint(point1: Coordinate, point2: Coordinate): Coordinate {
+  return [(point1[0] + point2[0]) / 2, (point1[1] + point2[1]) / 2];
 }
 
 function emptyFeatureCollection(): FeatureCollection {

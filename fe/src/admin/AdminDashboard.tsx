@@ -7,10 +7,16 @@ import { sectionFromPath } from "./adminNavigation";
 
 export default function AdminDashboard() {
   const section = sectionFromPath(window.location.pathname);
-  const page = section === "overview" ? <AdminOverviewPage />
-    : section === "billing" ? <AdminBillingPage />
-      : section === "users" ? <AdminUsersPage />
-        : <AdminAuditPage />;
+  const page =
+    section === "overview" ? (
+      <AdminOverviewPage />
+    ) : section === "billing" ? (
+      <AdminBillingPage />
+    ) : section === "users" ? (
+      <AdminUsersPage />
+    ) : (
+      <AdminAuditPage />
+    );
 
   return <AdminShell section={section}>{page}</AdminShell>;
 }

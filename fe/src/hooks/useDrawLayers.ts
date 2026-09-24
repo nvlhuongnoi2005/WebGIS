@@ -57,19 +57,20 @@ export function useDrawLayers({
       createRenderableDrawings(drawings, hiddenFeatureIds)
     );
 
-    const selectedFeature = drawings.features.find(
-      feature => feature.id === selectedFeatureId
-    );
-    const visibleSelectedFeature = selectedFeature && !hiddenFeatureIds.has(selectedFeature.id)
-      ? selectedFeature
-      : undefined;
+    const selectedFeature = drawings.features.find((feature) => feature.id === selectedFeatureId);
+    const visibleSelectedFeature =
+      selectedFeature && !hiddenFeatureIds.has(selectedFeature.id) ? selectedFeature : undefined;
     setSourceData(mapInstance, SELECTION_SOURCE_ID, {
       type: "FeatureCollection",
       features: visibleSelectedFeature ? [visibleSelectedFeature] : [],
     });
 
     setSourceData(mapInstance, DRAFT_SOURCE_ID, createDraftCollection(draftCoordinates, mode));
-    setSourceData(mapInstance, VERTICES_SOURCE_ID, createVertexCollection(visibleSelectedFeature, mode));
+    setSourceData(
+      mapInstance,
+      VERTICES_SOURCE_ID,
+      createVertexCollection(visibleSelectedFeature, mode)
+    );
     setSourceData(
       mapInstance,
       DRAFT_VERTICES_SOURCE_ID,
@@ -94,56 +95,16 @@ function ensureDrawLayers(map: maplibregl.Map) {
   addSourceIfMissing(map, VERTICES_SOURCE_ID);
   addSourceIfMissing(map, DRAFT_VERTICES_SOURCE_ID);
 
-  addFillLayer(
-    map,
-    "drawings-fill-layer",
-    DRAWINGS_SOURCE_ID,
-    "#e0002b",
-    0.18
-  );
-  addLineLayer(
-    map,
-    "drawings-line-layer",
-    DRAWINGS_SOURCE_ID,
-    "#a90020",
-    3,
-    0.9
-  );
+  addFillLayer(map, "drawings-fill-layer", DRAWINGS_SOURCE_ID, "#e0002b", 0.18);
+  addLineLayer(map, "drawings-line-layer", DRAWINGS_SOURCE_ID, "#a90020", 3, 0.9);
   addPointLayer(map, "drawings-point-layer", DRAWINGS_SOURCE_ID, "#e0002b");
 
-  addFillLayer(
-    map,
-    "drawings-selection-fill-layer",
-    SELECTION_SOURCE_ID,
-    "#ff5b75",
-    0.28
-  );
-  addLineLayer(
-    map,
-    "drawings-selection-line-layer",
-    SELECTION_SOURCE_ID,
-    "#ff5b75",
-    5,
-    1
-  );
+  addFillLayer(map, "drawings-selection-fill-layer", SELECTION_SOURCE_ID, "#ff5b75", 0.28);
+  addLineLayer(map, "drawings-selection-line-layer", SELECTION_SOURCE_ID, "#ff5b75", 5, 1);
   addPointLayer(map, "drawings-selection-point-layer", SELECTION_SOURCE_ID, "#ff5b75");
 
-  addFillLayer(
-    map,
-    "drawings-draft-fill-layer",
-    DRAFT_SOURCE_ID,
-    "#ff5b75",
-    0.12
-  );
-  addLineLayer(
-    map,
-    "drawings-draft-line-layer",
-    DRAFT_SOURCE_ID,
-    "#ff5b75",
-    4,
-    1,
-    [2, 1]
-  );
+  addFillLayer(map, "drawings-draft-fill-layer", DRAFT_SOURCE_ID, "#ff5b75", 0.12);
+  addLineLayer(map, "drawings-draft-line-layer", DRAFT_SOURCE_ID, "#ff5b75", 4, 1, [2, 1]);
   addPointLayer(map, "drawings-vertices-layer", VERTICES_SOURCE_ID, "#ff5b75");
   addPointLayer(map, "drawings-draft-vertices-layer", DRAFT_VERTICES_SOURCE_ID, "#ff5b75");
 
@@ -160,7 +121,7 @@ function ensureDrawLayers(map: maplibregl.Map) {
     "drawings-draft-line-layer",
     "drawings-vertices-layer",
     "drawings-draft-vertices-layer",
-  ].forEach(id => {
+  ].forEach((id) => {
     if (map.getLayer(id)) map.moveLayer(id);
   });
 }
@@ -173,13 +134,13 @@ function createRenderableDrawings(
     type: drawings.type,
     ...(drawings.bbox ? { bbox: drawings.bbox } : {}),
     features: drawings.features
-      .filter(feature => !hiddenFeatureIds.has(feature.id))
-      .map(feature => ({
-      ...feature,
-      properties: {
-        ...(feature.properties ?? {}),
-        [DRAW_FEATURE_ID_PROPERTY]: feature.id,
-      },
+      .filter((feature) => !hiddenFeatureIds.has(feature.id))
+      .map((feature) => ({
+        ...feature,
+        properties: {
+          ...(feature.properties ?? {}),
+          [DRAW_FEATURE_ID_PROPERTY]: feature.id,
+        },
       })),
   };
 }
@@ -220,12 +181,7 @@ function addLineLayer(
   opacity: number,
   dasharray?: [number, number]
 ) {
-  const geometryFilter: maplibregl.FilterSpecification = [
-    "in",
-    "$type",
-    "LineString",
-    "Polygon",
-  ];
+  const geometryFilter: maplibregl.FilterSpecification = ["in", "$type", "LineString", "Polygon"];
 
   if (map.getLayer(id)) {
     map.setFilter(id, geometryFilter);
@@ -383,21 +339,25 @@ function collectEditableCoordinates(
 
   if (geometry.type === "Polygon") {
     return geometry.coordinates.flatMap((ring, ringIndex) =>
-      ring.slice(0, -1).map((coordinate, coordinateIndex) =>
-        createEditableCoordinate(coordinate, geometryPath, [ringIndex, coordinateIndex])
-      )
+      ring
+        .slice(0, -1)
+        .map((coordinate, coordinateIndex) =>
+          createEditableCoordinate(coordinate, geometryPath, [ringIndex, coordinateIndex])
+        )
     );
   }
 
   return geometry.coordinates.flatMap((polygon, polygonIndex) =>
     polygon.flatMap((ring, ringIndex) =>
-      ring.slice(0, -1).map((coordinate, coordinateIndex) =>
-        createEditableCoordinate(coordinate, geometryPath, [
-          polygonIndex,
-          ringIndex,
-          coordinateIndex,
-        ])
-      )
+      ring
+        .slice(0, -1)
+        .map((coordinate, coordinateIndex) =>
+          createEditableCoordinate(coordinate, geometryPath, [
+            polygonIndex,
+            ringIndex,
+            coordinateIndex,
+          ])
+        )
     )
   );
 }
@@ -420,11 +380,7 @@ function createEditableCoordinate(
   };
 }
 
-function setSourceData(
-  map: maplibregl.Map,
-  id: string,
-  data: FeatureCollection<Geometry>
-) {
+function setSourceData(map: maplibregl.Map, id: string, data: FeatureCollection<Geometry>) {
   const source = map.getSource(id) as maplibregl.GeoJSONSource | undefined;
   source?.setData(data);
 }
