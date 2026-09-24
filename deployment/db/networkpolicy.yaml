@@ -1,20 +1,20 @@
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: controller-private
+  name: auth-postgres-private
 spec:
   podSelector:
     matchLabels:
-      app.kubernetes.io/name: controller
+      app.kubernetes.io/name: auth-postgres
   policyTypes: [Ingress]
   ingress:
     - from:
         - podSelector:
             matchLabels:
-              app.kubernetes.io/name: frontend
-        - namespaceSelector:
+              app.kubernetes.io/name: controller
+        - podSelector:
             matchLabels:
-              kubernetes.io/metadata.name: ingress-nginx
+              app.kubernetes.io/name: auth-migrate
       ports:
         - protocol: TCP
-          port: 3001
+          port: 5432

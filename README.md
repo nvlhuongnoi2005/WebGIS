@@ -170,22 +170,27 @@ Thư mục `deployment/` có Kustomize base cho:
 
 - `frontend`
 - `controller`
-- `auth-postgres`
 - ingress, config map và network policy
+
+Database xác thực `auth-postgres` có Kustomize base riêng tại
+`deployment/db/` và được quản lý bởi Argo CD Application
+`webgis-auth-db`.
 
 Tạo secret từ mẫu, tuyệt đối không commit secret thật:
 
 ```powershell
 Copy-Item deployment/secret.example.yaml deployment/secret.yaml
 # Điền password DB, refresh-token pepper và cặp Ed25519 key vào secret.yaml
+kubectl apply -f deployment/namespace.yaml
 kubectl apply -f deployment/secret.yaml
 ```
 
 Triển khai core và chạy migration:
 
 ```powershell
-kubectl apply -k deployment
+kubectl apply -k deployment/db
 kubectl -n webgis rollout status statefulset/auth-postgres
+kubectl apply -k deployment
 kubectl -n webgis apply -f deployment/migration-job.yaml
 kubectl -n webgis wait --for=condition=complete job/auth-migrate --timeout=180s
 kubectl -n webgis rollout status deployment/controller

@@ -4,8 +4,12 @@ This folder deploys the application core into the `webgis` namespace:
 
 - `frontend`: static Vite application served by Nginx.
 - `controller`: Go authentication API and protected API gateway.
-- `auth-postgres`: a dedicated PostGIS-backed authentication database.
 - `auth-migrate`: database migration Job.
+
+The dedicated authentication database is rendered separately from
+`db/kustomization.yaml`. `argocd/webgis-auth-db.yaml` defines its independent
+Argo CD Application while the existing WebGIS Application continues to sync
+the `deployment/` core.
 
 The map workers are in `workers.yaml` but intentionally are **not** part of
 `kustomization.yaml`. Their Docker data is not automatically copied into a
@@ -42,6 +46,7 @@ needed in `DATABASE_URL`.
 ```powershell
 go run ./be/cmd/keygen -out-dir deployment/.secrets
 Copy-Item deployment/secret.example.yaml deployment/secret.yaml
+kubectl apply -f deployment/namespace.yaml
 kubectl apply -f deployment/secret.yaml
 ```
 
@@ -51,18 +56,21 @@ not start with ephemeral JWT keys in production.
 
 ## 3. Deploy the core
 
-For GitOps deployments, configure Argo CD to sync this directory. The sync
-waves make it wait for Postgres, run the migration Job, then update the
-controller. The CI workflow publishes the controller image (which contains the
-SQL migrations) and updates both controller and migration Job image tags when
-backend files change. Argo CD then runs the migration Job as part of that sync.
+For GitOps deployments, keep the existing WebGIS Application pointed at this
+directory and apply `argocd/webgis-auth-db.yaml` once to create the independent
+database Application. The migration Job waits for `auth-postgres`, runs the SQL
+migrations, then the sync wave updates the controller. The CI workflow
+publishes the controller image (which contains the SQL migrations) and updates
+both controller and migration Job image tags when backend files change.
 
 For a manual first-time deployment, apply the resources and wait for Postgres
 before rerunning the migration Job:
 
 ```powershell
-kubectl apply -k deployment
+kubectl apply -f deployment/namespace.yaml
+kubectl apply -k deployment/db
 kubectl -n webgis rollout status statefulset/auth-postgres
+kubectl apply -k deployment
 kubectl -n webgis delete job auth-migrate --ignore-not-found
 kubectl -n webgis apply -f deployment/migration-job.yaml
 kubectl -n webgis wait --for=condition=complete job/auth-migrate --timeout=180s
@@ -70,9 +78,8 @@ kubectl -n webgis rollout status deployment/controller
 kubectl -n webgis rollout status deployment/frontend
 ```
 
-The migration Job is included in `kustomization.yaml` for Argo CD. For plain
-`kubectl apply`, it may start before Postgres is ready; wait for Postgres, then
-delete and reapply the Job using the commands above if its first attempt failed.
+The migration Job is included in the core `kustomization.yaml` and has an init
+container that waits up to ten minutes for the independently managed database.
 
 ## 4. Ingress and local access
 

@@ -10,6 +10,7 @@ metadata:
     app.kubernetes.io/name: auth-migrate
     app.kubernetes.io/part-of: webgis
 spec:
+  activeDeadlineSeconds: 600
   backoffLimit: 4
   ttlSecondsAfterFinished: 3600
   template:
@@ -21,6 +22,16 @@ spec:
       restartPolicy: OnFailure
       imagePullSecrets:
         - name: ghcr-pull
+      initContainers:
+        - name: wait-for-auth-postgres
+          image: postgres:16
+          command: ["sh", "-ec"]
+          args:
+            - |
+              until pg_isready -h auth-postgres -p 5432 -U webgis_auth -d webgis; do
+                echo "Waiting for auth-postgres..."
+                sleep 2
+              done
       containers:
         - name: migrate
           image: ghcr.io/nvlhuongnoi2005/webgis/controller:sha-f71911df2765ba2a9e44bec675073e152f81512a

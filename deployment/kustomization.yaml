@@ -4,7 +4,6 @@ namespace: webgis
 resources:
   - namespace.yaml
   - configmap.yaml
-  - auth-postgres.yaml
   - migration-job.yaml
   - controller.yaml
   - frontend.yaml
