@@ -20,12 +20,12 @@
 
 | Thông tin             | Nội dung                                                 |
 | --------------------- | -------------------------------------------------------- |
-| Đơn vị thực tập       | Tổng Công ty Công nghiệp Công nghệ cao Viettel           |
-| Bộ phận               | Phòng Phát triển sản phẩm – Trung tâm Chỉ huy điều khiển |
+| Đơn vị thực tập       |          |
+| Bộ phận               ||
 | Cán bộ hướng dẫn      | ........................................                 |
 | Giảng viên đánh giá   | ........................................                 |
 | Sinh viên             | Nguyễn Văn Lập                                           |
-| Mã học viên/sinh viên | 496181                                                   |
+| Mã học viên/sinh viên |                                                  |
 | Lớp                   | ........................................                 |
 
 <div align="center">
