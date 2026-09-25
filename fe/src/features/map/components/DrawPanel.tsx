@@ -49,6 +49,7 @@ import {
   MEASURED_LENGTH_PROPERTY,
 } from "../../../tools/measure/MeasureTool";
 import GeoJSONShareDialog from "./GeoJSONShareDialog";
+import type { GeoJSONShareMapState } from "../geoJSONShareClient";
 
 interface DrawPanelProps {
   drawingCount: number;
@@ -61,6 +62,7 @@ interface DrawPanelProps {
   canUndo: boolean;
   geoJSON: DrawFeatureCollection;
   shareGeoJSON: DrawFeatureCollection;
+  shareMapState: GeoJSONShareMapState;
   hiddenFeatureIds: ReadonlySet<string>;
   selectedFeatureId: string | null;
   onChangeMode: (mode: DrawMode) => void;
@@ -89,6 +91,7 @@ function DrawPanel({
   canUndo,
   geoJSON,
   shareGeoJSON,
+  shareMapState,
   hiddenFeatureIds,
   selectedFeatureId,
   onChangeMode,
@@ -687,6 +690,7 @@ function DrawPanel({
         <GeoJSONShareDialog
           featureCount={geoJSON.features.length}
           geoJSON={shareGeoJSON}
+          mapState={shareMapState}
           onClose={() => setShareDialogOpen(false)}
         />
       )}

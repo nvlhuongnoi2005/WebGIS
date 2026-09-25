@@ -12,10 +12,18 @@ import {
 import { ArrowLeft, Download } from "lucide-react";
 import * as maplibregl from "maplibre-gl";
 import { useTranslation } from "react-i18next";
-import { getMapStyle } from "../../tools/map/MapStyleTool";
+import {
+  DEFAULT_TILE_SERVER_BASE_MAP,
+  fetchTileServerBaseMaps,
+  getMapStyle,
+} from "../../tools/map/MapStyleTool";
 import { AppNavigationContext } from "../../appNavigation";
 import type { DrawFeatureCollection } from "../../tools/draw/DrawTool";
-import { getReceivedGeoJSON, getSharedGeoJSON } from "./geoJSONShareClient";
+import {
+  getReceivedGeoJSON,
+  getSharedGeoJSON,
+  type GeoJSONShareMapState,
+} from "./geoJSONShareClient";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./maplibreWorker";
 
@@ -29,17 +37,23 @@ export default function SharedGeoJSONPage({
   const { t } = useTranslation();
   const navigate = useContext(AppNavigationContext);
   const mapContainer = useRef<HTMLDivElement | null>(null);
-  const [geoJSON, setGeoJSON] = useState<DrawFeatureCollection | null>(null);
+  const [sharedMap, setSharedMap] = useState<LoadedSharedMap | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
   useEffect(() => {
     let active = true;
-    const load = shareId ? getReceivedGeoJSON(shareId) : getSharedGeoJSON(token ?? "");
-    void load
-      .then((collection) => {
-        if (active) setGeoJSON(collection);
-      })
+    const load = async () => {
+      const snapshot = shareId
+        ? await getReceivedGeoJSON(shareId)
+        : await getSharedGeoJSON(token ?? "");
+      const resolvedStyle = await resolveSharedMapStyle(snapshot.map_state);
+
+      if (active) {
+        setSharedMap({ geoJSON: snapshot.geojson, ...resolvedStyle });
+      }
+    };
+    void load()
       .catch(() => {
         if (active) setError(true);
       })
@@ -52,16 +66,16 @@ export default function SharedGeoJSONPage({
   }, [shareId, token]);
 
   useEffect(() => {
-    if (!geoJSON || !mapContainer.current) return;
+    if (!sharedMap || !mapContainer.current) return;
     const map = new maplibregl.Map({
       container: mapContainer.current,
-      style: getMapStyle(),
+      style: sharedMap.style,
       center: [0, 0],
       zoom: 2,
     });
     map.addControl(new maplibregl.NavigationControl(), "top-right");
     map.once("load", () => {
-      map.addSource("shared-geojson", { type: "geojson", data: geoJSON as never });
+      map.addSource("shared-geojson", { type: "geojson", data: sharedMap.geoJSON as never });
       map.addLayer({
         id: "shared-polygons",
         type: "fill",
@@ -94,16 +108,16 @@ export default function SharedGeoJSONPage({
           "circle-stroke-width": 2,
         },
       });
-      const bounds = getCoordinateBounds(geoJSON);
+      const bounds = getCoordinateBounds(sharedMap.geoJSON);
       if (bounds) map.fitBounds(bounds, { padding: 56, maxZoom: 15, duration: 0 });
     });
     return () => map.remove();
-  }, [geoJSON]);
+  }, [sharedMap]);
 
   const handleDownload = () => {
-    if (!geoJSON) return;
+    if (!sharedMap) return;
     const url = URL.createObjectURL(
-      new Blob([JSON.stringify(geoJSON, null, 2)], { type: "application/geo+json" })
+      new Blob([JSON.stringify(sharedMap.geoJSON, null, 2)], { type: "application/geo+json" })
     );
     const link = document.createElement("a");
     link.href = url;
@@ -133,7 +147,7 @@ export default function SharedGeoJSONPage({
             variant="outlined"
             startIcon={<Download size={17} />}
             onClick={handleDownload}
-            disabled={!geoJSON}
+            disabled={!sharedMap}
           >
             {t("draw.geoJsonExport")}
           </Button>
@@ -148,10 +162,66 @@ export default function SharedGeoJSONPage({
           <Alert severity="warning">{t("draw.shareUnavailable")}</Alert>
         </Stack>
       ) : (
-        <Box ref={mapContainer} sx={{ flex: 1, minHeight: 0 }} />
+        <Box sx={{ position: "relative", flex: 1, minHeight: 0 }}>
+          <Box ref={mapContainer} sx={{ width: "100%", height: "100%" }} />
+          {sharedMap && sharedMap.unavailableLayerCount > 0 && (
+            <Alert
+              severity="warning"
+              sx={{ position: "absolute", top: 16, left: 16, right: 72, zIndex: 1 }}
+            >
+              {t("draw.shareLayersUnavailable", {
+                count: sharedMap.unavailableLayerCount,
+              })}
+            </Alert>
+          )}
+        </Box>
       )}
     </Box>
   );
+}
+
+interface LoadedSharedMap {
+  geoJSON: DrawFeatureCollection;
+  style: maplibregl.StyleSpecification | string;
+  unavailableLayerCount: number;
+}
+
+async function resolveSharedMapStyle(mapState: GeoJSONShareMapState) {
+  const baseMapID = mapState.basemap_id?.trim();
+  const overlayIDs = Array.from(new Set(mapState.overlay_ids));
+  const needsCatalog =
+    overlayIDs.length > 0 || Boolean(baseMapID && baseMapID !== DEFAULT_TILE_SERVER_BASE_MAP.id);
+
+  if (!needsCatalog) {
+    return { style: getMapStyle(), unavailableLayerCount: 0 };
+  }
+
+  try {
+    const datasets = await fetchTileServerBaseMaps();
+    const datasetsByID = new Map(datasets.map((dataset) => [dataset.id, dataset]));
+    const requestedBaseMap =
+      !baseMapID || baseMapID === DEFAULT_TILE_SERVER_BASE_MAP.id
+        ? DEFAULT_TILE_SERVER_BASE_MAP
+        : datasetsByID.get(baseMapID);
+    const baseMap = requestedBaseMap?.role === "basemap" ? requestedBaseMap : undefined;
+    const overlays = overlayIDs.flatMap((id) => {
+      const dataset = datasetsByID.get(id);
+      return dataset?.role === "overlay" ? [dataset] : [];
+    });
+    const unavailableLayerCount =
+      (baseMapID && !baseMap ? 1 : 0) + (overlayIDs.length - overlays.length);
+
+    return {
+      style: getMapStyle(baseMap ?? DEFAULT_TILE_SERVER_BASE_MAP, overlays),
+      unavailableLayerCount,
+    };
+  } catch {
+    return {
+      style: getMapStyle(),
+      unavailableLayerCount:
+        overlayIDs.length + (baseMapID && baseMapID !== DEFAULT_TILE_SERVER_BASE_MAP.id ? 1 : 0),
+    };
+  }
 }
 
 function getCoordinateBounds(collection: DrawFeatureCollection): maplibregl.LngLatBounds | null {

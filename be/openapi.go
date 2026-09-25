@@ -63,7 +63,7 @@ func openAPISpec() map[string]any {
 			"/api/gateway/route":     map[string]any{"post": securedOperation("Map", "Tính tuyến Valhalla; yêu cầu scope route:calculate", requestBody("Route request", map[string]any{"locations": "[{lat, lon}]", "costing": "auto|bicycle|pedestrian"}), nil)},
 			"/api/gateway/elevation": map[string]any{"post": securedOperation("Map", "Lấy profile độ cao", requestBody("Elevation request", map[string]any{"shape": "[{lat, lon}]", "resample_distance": "number"}), nil)},
 			"/api/shares": map[string]any{
-				"post": securedOperation("Sharing", "Create a view-only GeoJSON link that expires after 30 days", requestBody("GeoJSON share", map[string]any{"geojson": map[string]any{"type": "object", "description": "GeoJSON FeatureCollection"}}), map[string]any{"responses": map[string]any{"201": map[string]string{"description": "Share created"}, "400": map[string]string{"description": "Invalid GeoJSON"}, "429": map[string]string{"description": "Active share limit reached"}}}),
+				"post": securedOperation("Sharing", "Create a view-only map snapshot that expires after 30 days", requestBody("Map share", map[string]any{"geojson": map[string]any{"type": "object", "description": "GeoJSON FeatureCollection"}, "map_state": map[string]any{"type": "object", "description": "Selected basemap and overlay dataset IDs"}}), map[string]any{"responses": map[string]any{"201": map[string]string{"description": "Share created"}, "400": map[string]string{"description": "Invalid map snapshot"}, "429": map[string]string{"description": "Active share limit reached"}}}),
 				"get":  securedOperation("Sharing", "List active share links owned by the current user", nil, nil),
 			},
 			"/api/shares/{identifier}": map[string]any{

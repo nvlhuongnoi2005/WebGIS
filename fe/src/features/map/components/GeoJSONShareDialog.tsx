@@ -22,18 +22,21 @@ import {
   createGeoJSONShare,
   searchGeoJSONShareRecipients,
   sendGeoJSONShare,
+  type GeoJSONShareMapState,
   type GeoJSONShareRecipient,
 } from "../geoJSONShareClient";
 
 interface GeoJSONShareDialogProps {
   featureCount: number;
   geoJSON: DrawFeatureCollection;
+  mapState: GeoJSONShareMapState;
   onClose: () => void;
 }
 
 export default function GeoJSONShareDialog({
   featureCount,
   geoJSON,
+  mapState,
   onClose,
 }: GeoJSONShareDialogProps) {
   const { t } = useTranslation();
@@ -56,7 +59,7 @@ export default function GeoJSONShareDialog({
     setSendComplete(false);
 
     try {
-      const result = await createGeoJSONShare(geoJSON);
+      const result = await createGeoJSONShare(geoJSON, mapState);
       setCreatedShareId(result.id);
       setShareUrl(`${window.location.origin}/share/${result.token}`);
     } catch {

@@ -308,6 +308,10 @@ function MapView({ onNavigate }: MapViewProps) {
           canUndo={draw.canUndo}
           geoJSON={displayedGeoJSON}
           shareGeoJSON={draw.geoJSON}
+          shareMapState={{
+            basemap_id: tileServerBaseMap?.id,
+            overlay_ids: tileServerOverlays.map((overlay) => overlay.id),
+          }}
           hiddenFeatureIds={draw.hiddenFeatureIds}
           selectedFeatureId={draw.selectedFeatureId}
           onChangeMode={draw.changeMode}

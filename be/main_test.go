@@ -134,3 +134,19 @@ func TestTileProxyForwardsOnlySafeTilePaths(t *testing.T) {
 		t.Fatalf("unsafe path returned %d, want 404", blocked.Code)
 	}
 }
+
+func TestValidSharedMapState(t *testing.T) {
+	valid := sharedMapState{
+		BaseMapID:  "asia_full",
+		OverlayIDs: []string{"vietnam-osm", "administrative.boundaries"},
+	}
+	if !validSharedMapState(valid) {
+		t.Fatal("valid shared map state was rejected")
+	}
+	if validSharedMapState(sharedMapState{OverlayIDs: []string{"vietnam-osm", "vietnam-osm"}}) {
+		t.Fatal("duplicate overlay ids were accepted")
+	}
+	if validSharedMapState(sharedMapState{BaseMapID: "https://example.com/tiles"}) {
+		t.Fatal("an arbitrary tile URL was accepted as a dataset id")
+	}
+}

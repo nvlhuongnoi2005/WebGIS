@@ -161,7 +161,7 @@
     "geoJsonInvalidStructure": "Hãy dùng FeatureCollection có hình học.",
     "share": "Chia sẻ",
     "shareTitle": "Chia sẻ GeoJSON",
-    "shareDescription": "Tạo bản chụp chỉ xem gồm {{count}} hình. Liên kết hết hạn sau 30 ngày.",
+    "shareDescription": "Tạo bản chụp chỉ xem gồm {{count}} hình, bản đồ nền và các lớp phủ đang hiển thị. Liên kết hết hạn sau 30 ngày.",
     "shareLink": "Liên kết chia sẻ",
     "createAnotherShareLink": "Tạo thêm liên kết chia sẻ",
     "createShareLink": "Tạo liên kết",
@@ -192,6 +192,7 @@
     "sharedInboxEmpty": "Chưa có ai chia sẻ bản đồ với bạn.",
     "sharedBy": "Được chia sẻ bởi {{name}}",
     "shareUnavailable": "Liên kết không tồn tại hoặc đã hết hạn.",
+    "shareLayersUnavailable": "{{count}} lớp bản đồ được chia sẻ hiện không còn khả dụng.",
     "sharedMapTitle": "Bản đồ được chia sẻ",
     "backToMap": "Về bản đồ",
     "backToShares": "Về danh sách bản đồ được chia sẻ"

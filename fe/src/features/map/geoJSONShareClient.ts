@@ -24,11 +24,24 @@ export interface ReceivedGeoJSONShare {
   owner_email: string;
 }
 
-export async function createGeoJSONShare(geojson: DrawFeatureCollection) {
+export interface GeoJSONShareMapState {
+  basemap_id?: string;
+  overlay_ids: string[];
+}
+
+export interface GeoJSONShareSnapshot {
+  geojson: DrawFeatureCollection;
+  map_state: GeoJSONShareMapState;
+}
+
+export async function createGeoJSONShare(
+  geojson: DrawFeatureCollection,
+  mapState: GeoJSONShareMapState
+) {
   const response = await authFetch("/api/shares", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ geojson }),
+    body: JSON.stringify({ geojson, map_state: mapState }),
   });
   if (!response.ok) throw new Error("shareCreateFailed");
   return (await response.json()) as { id: string; token: string; expires_at: string };
@@ -80,18 +93,35 @@ export async function listReceivedGeoJSONShares(): Promise<ReceivedGeoJSONShare[
   return result.shares;
 }
 
-export async function getReceivedGeoJSON(id: string): Promise<DrawFeatureCollection> {
+export async function getReceivedGeoJSON(id: string): Promise<GeoJSONShareSnapshot> {
   const response = await authFetch(`/api/shares/received/${encodeURIComponent(id)}`, {
     cache: "no-store",
   });
   if (!response.ok) throw new Error("shareUnavailable");
-  const result = (await response.json()) as { geojson: DrawFeatureCollection };
-  return result.geojson;
+  return normalizeGeoJSONShareSnapshot(await response.json());
 }
 
-export async function getSharedGeoJSON(token: string): Promise<DrawFeatureCollection> {
+export async function getSharedGeoJSON(token: string): Promise<GeoJSONShareSnapshot> {
   const response = await fetch(`/api/shares/${encodeURIComponent(token)}`, { cache: "no-store" });
   if (!response.ok) throw new Error("shareUnavailable");
-  const result = (await response.json()) as { geojson: DrawFeatureCollection };
-  return result.geojson;
+  return normalizeGeoJSONShareSnapshot(await response.json());
+}
+
+function normalizeGeoJSONShareSnapshot(payload: unknown): GeoJSONShareSnapshot {
+  const result = payload as {
+    geojson: DrawFeatureCollection;
+    map_state?: { basemap_id?: unknown; overlay_ids?: unknown };
+  };
+  const baseMapID = result.map_state?.basemap_id;
+  const overlayIDs = result.map_state?.overlay_ids;
+
+  return {
+    geojson: result.geojson,
+    map_state: {
+      basemap_id: typeof baseMapID === "string" ? baseMapID : undefined,
+      overlay_ids: Array.isArray(overlayIDs)
+        ? overlayIDs.filter((id): id is string => typeof id === "string")
+        : [],
+    },
+  };
 }

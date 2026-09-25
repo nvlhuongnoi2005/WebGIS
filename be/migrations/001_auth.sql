@@ -59,6 +59,7 @@ CREATE TABLE IF NOT EXISTS geojson_shares (
 );
 ALTER TABLE geojson_shares ADD COLUMN IF NOT EXISTS token text;
 ALTER TABLE geojson_shares ADD COLUMN IF NOT EXISTS preview_svg text NOT NULL DEFAULT '';
+ALTER TABLE geojson_shares ADD COLUMN IF NOT EXISTS map_state jsonb NOT NULL DEFAULT '{}'::jsonb;
 ALTER TABLE geojson_shares ALTER COLUMN token_hash DROP NOT NULL;
 CREATE INDEX IF NOT EXISTS geojson_shares_owner_idx ON geojson_shares (owner_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS geojson_shares_expiry_idx ON geojson_shares (expires_at);

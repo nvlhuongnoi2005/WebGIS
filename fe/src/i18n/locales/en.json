@@ -161,7 +161,7 @@
     "geoJsonInvalidStructure": "Use a valid drawing FeatureCollection with supported geometries.",
     "share": "Share",
     "shareTitle": "Share GeoJSON",
-    "shareDescription": "Create a view-only snapshot with {{count}} feature(s). The link expires in 30 days.",
+    "shareDescription": "Create a view-only snapshot with {{count}} feature(s), the current base map, and visible overlays. The link expires in 30 days.",
     "shareLink": "Share link",
     "createAnotherShareLink": "Create another share link",
     "createShareLink": "Create link",
@@ -192,6 +192,7 @@
     "sharedInboxEmpty": "No one has shared a map with you yet.",
     "sharedBy": "Shared by {{name}}",
     "shareUnavailable": "This link does not exist or has expired.",
+    "shareLayersUnavailable": "{{count}} shared map layer(s) are no longer available.",
     "sharedMapTitle": "Shared map",
     "backToMap": "Back to map",
     "backToShares": "Back to shared maps"

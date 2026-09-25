@@ -21,7 +21,13 @@ import (
 const maxSharedGeoJSONBytes = 2 << 20
 
 type createGeoJSONShareInput struct {
-	GeoJSON json.RawMessage `json:"geojson"`
+	GeoJSON  json.RawMessage `json:"geojson"`
+	MapState sharedMapState  `json:"map_state"`
+}
+
+type sharedMapState struct {
+	BaseMapID  string   `json:"basemap_id,omitempty"`
+	OverlayIDs []string `json:"overlay_ids,omitempty"`
 }
 
 type geoJSONShareRecipientsInput struct {
@@ -218,11 +224,12 @@ func (server *Server) getReceivedGeoJSONShare(response http.ResponseWriter, requ
 		return
 	}
 	var geoJSON []byte
+	var mapState []byte
 	var expiresAt string
 	err := server.repository.pool.QueryRow(request.Context(), `
-		SELECT s.geojson, s.expires_at::text FROM geojson_shares s
+		SELECT s.geojson, s.map_state, s.expires_at::text FROM geojson_shares s
 		JOIN geojson_share_recipients r ON r.share_id=s.id
-		WHERE s.id=$1 AND r.recipient_id=$2 AND s.expires_at>now()`, id, claims.Subject).Scan(&geoJSON, &expiresAt)
+		WHERE s.id=$1 AND r.recipient_id=$2 AND s.expires_at>now()`, id, claims.Subject).Scan(&geoJSON, &mapState, &expiresAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			clientError(response, http.StatusNotFound, "Share not found or expired")
@@ -232,7 +239,11 @@ func (server *Server) getReceivedGeoJSONShare(response http.ResponseWriter, requ
 		return
 	}
 	response.Header().Set("Cache-Control", "no-store")
-	writeJSON(response, http.StatusOK, map[string]any{"geojson": json.RawMessage(geoJSON), "expires_at": expiresAt})
+	writeJSON(response, http.StatusOK, map[string]any{
+		"geojson":    json.RawMessage(geoJSON),
+		"map_state":  json.RawMessage(mapState),
+		"expires_at": expiresAt,
+	})
 }
 
 func validShareID(id string) bool {
@@ -276,6 +287,15 @@ func (server *Server) createGeoJSONShare(response http.ResponseWriter, request *
 		clientError(response, http.StatusBadRequest, "Invalid GeoJSON share")
 		return
 	}
+	if !validSharedMapState(input.MapState) {
+		clientError(response, http.StatusBadRequest, "Invalid shared map state")
+		return
+	}
+	mapState, err := json.Marshal(input.MapState)
+	if err != nil {
+		clientError(response, http.StatusBadRequest, "Invalid shared map state")
+		return
+	}
 
 	tokenBytes := make([]byte, 32)
 	if _, err := rand.Read(tokenBytes); err != nil {
@@ -286,10 +306,10 @@ func (server *Server) createGeoJSONShare(response http.ResponseWriter, request *
 	previewSVG := createGeoJSONPreviewSVG(input.GeoJSON)
 	var id string
 	var expiresAt string
-	err := server.repository.pool.QueryRow(request.Context(), `
-		INSERT INTO geojson_shares (owner_id, token, geojson, preview_svg, expires_at)
-		VALUES ($1, $2, $3::jsonb, $4, now() + interval '30 days')
-		RETURNING id::text, expires_at::text`, claims.Subject, token, string(input.GeoJSON), previewSVG).Scan(&id, &expiresAt)
+	err = server.repository.pool.QueryRow(request.Context(), `
+		INSERT INTO geojson_shares (owner_id, token, geojson, map_state, preview_svg, expires_at)
+		VALUES ($1, $2, $3::jsonb, $4::jsonb, $5, now() + interval '30 days')
+		RETURNING id::text, expires_at::text`, claims.Subject, token, string(input.GeoJSON), string(mapState), previewSVG).Scan(&id, &expiresAt)
 	if err != nil {
 		clientError(response, http.StatusInternalServerError, "Unable to create share")
 		return
@@ -340,6 +360,42 @@ func validSharedGeoJSON(raw json.RawMessage) bool {
 		default:
 			return false
 		}
+	}
+	return true
+}
+
+func validSharedMapState(state sharedMapState) bool {
+	if state.BaseMapID != "" && !validSharedDatasetID(state.BaseMapID) {
+		return false
+	}
+	if len(state.OverlayIDs) > 32 {
+		return false
+	}
+	seen := make(map[string]struct{}, len(state.OverlayIDs))
+	for _, id := range state.OverlayIDs {
+		if !validSharedDatasetID(id) {
+			return false
+		}
+		if _, exists := seen[id]; exists {
+			return false
+		}
+		seen[id] = struct{}{}
+	}
+	return true
+}
+
+func validSharedDatasetID(id string) bool {
+	if len(id) == 0 || len(id) > 128 {
+		return false
+	}
+	for _, character := range id {
+		if (character >= 'a' && character <= 'z') ||
+			(character >= 'A' && character <= 'Z') ||
+			(character >= '0' && character <= '9') ||
+			character == '.' || character == '_' || character == '-' {
+			continue
+		}
+		return false
 	}
 	return true
 }
@@ -659,11 +715,12 @@ func (server *Server) getGeoJSONShare(response http.ResponseWriter, request *htt
 	}
 	tokenHash := sha256.Sum256([]byte(token))
 	var geoJSON []byte
+	var mapState []byte
 	var expiresAt string
 	err := server.repository.pool.QueryRow(request.Context(), `
-		SELECT geojson, expires_at::text
+		SELECT geojson, map_state, expires_at::text
 		FROM geojson_shares
-		WHERE (token=$1 OR token_hash=$2) AND expires_at > now()`, token, hex.EncodeToString(tokenHash[:])).Scan(&geoJSON, &expiresAt)
+		WHERE (token=$1 OR token_hash=$2) AND expires_at > now()`, token, hex.EncodeToString(tokenHash[:])).Scan(&geoJSON, &mapState, &expiresAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			clientError(response, http.StatusNotFound, "Share not found or expired")
@@ -675,6 +732,7 @@ func (server *Server) getGeoJSONShare(response http.ResponseWriter, request *htt
 	response.Header().Set("Cache-Control", "no-store")
 	writeJSON(response, http.StatusOK, map[string]any{
 		"geojson":    json.RawMessage(geoJSON),
+		"map_state":  json.RawMessage(mapState),
 		"expires_at": expiresAt,
 	})
 }
