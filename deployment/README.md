@@ -12,9 +12,10 @@ Argo CD Application while the existing WebGIS Application continues to sync
 the `deployment/` core.
 
 The map workers are in `workers.yaml` but intentionally are **not** part of
-`kustomization.yaml`. Their Docker data is not automatically copied into a
-Kubernetes PVC. Import or rebuild that data first, then configure and apply the
-worker manifest separately.
+`kustomization.yaml`. Tile Server is independently managed by the
+`webgis-tile-server` Argo CD Application, whose source is `tile-server/`.
+Runtime tile data remains outside normal Argo CD sync; import or convert data
+into its PVC before serving it.
 
 ## 1. Build and publish images
 
@@ -57,11 +58,12 @@ not start with ephemeral JWT keys in production.
 ## 3. Deploy the core
 
 For GitOps deployments, keep the existing WebGIS Application pointed at this
-directory and apply `argocd/webgis-auth-db.yaml` once to create the independent
-database Application. The migration Job waits for `auth-postgres`, runs the SQL
-migrations, then the sync wave updates the controller. The CI workflow
-publishes the controller image (which contains the SQL migrations) and updates
-both controller and migration Job image tags when backend files change.
+directory and apply `kubectl apply -k deployment/argocd` once to create the
+independent database and Tile Server Applications. The migration Job waits for
+`auth-postgres`, runs the SQL migrations, then the sync wave updates the
+controller. The CI workflow publishes the controller image (which contains the
+SQL migrations) and updates both controller and migration Job image tags when
+backend files change.
 
 For a manual first-time deployment, apply the resources and wait for Postgres
 before rerunning the migration Job:
@@ -157,9 +159,11 @@ Create the PVCs and target Nominatim database, then wait for it:
 
 ```powershell
 kubectl -n webgis apply -f deployment/worker-storage.yaml
+kubectl -n webgis apply -f deployment/tile-server/storage.yaml
 kubectl -n webgis rollout status statefulset/nominatim-db --timeout=300s
 kubectl -n webgis exec nominatim-db-0 -- createdb -U nominatim nominatim
 kubectl -n webgis apply -f deployment/worker-importer.yaml
+kubectl -n webgis apply -f deployment/tile-server/operations/importer.yaml
 kubectl -n webgis wait --for=condition=Ready pod/import-tile-data pod/import-map-data pod/import-nominatim-project --timeout=180s
 ```
 
@@ -182,6 +186,9 @@ kubectl -n webgis exec nominatim-db-0 -- psql -U nominatim -d nominatim -c "SELE
 # Only needed when the old source database was also used for WebGIS auth.
 kubectl -n webgis exec nominatim-db-0 -- psql -U nominatim -d nominatim -c "DROP TABLE IF EXISTS auth_event_checkpoints, auth_events, refresh_token_history, user_quotas, sessions, users; DROP FUNCTION IF EXISTS set_auth_updated_at();"
 kubectl -n webgis delete -f deployment/worker-importer.yaml
+kubectl -n webgis delete -f deployment/tile-server/operations/importer.yaml
+kubectl -n webgis apply -f deployment/tile-server/operations/assign-dataset-roles.yaml
+kubectl -n webgis apply -k deployment/tile-server
 kubectl -n webgis apply -f deployment/worker-networkpolicy.yaml
 kubectl -n webgis apply -f deployment/workers.yaml
 kubectl -n webgis rollout status deployment/tile-server --timeout=300s

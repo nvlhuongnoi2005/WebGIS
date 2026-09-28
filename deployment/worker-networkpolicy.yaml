@@ -1,24 +1,6 @@
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: tile-server-private
-spec:
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/name: tile-server
-  policyTypes: [Ingress]
-  ingress:
-    - from:
-        - podSelector:
-            matchLabels:
-              app.kubernetes.io/name: controller
-      ports:
-        - protocol: TCP
-          port: 8080
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
   name: valhalla-private
 spec:
   podSelector:
@@ -66,7 +48,6 @@ spec:
         - podSelector:
             matchLabels:
               app.kubernetes.io/name: nominatim
-
         - podSelector:
             matchLabels:
               app.kubernetes.io/name: search-indexer

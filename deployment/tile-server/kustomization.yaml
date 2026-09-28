@@ -1,0 +1,11 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: webgis
+
+# Runtime resources owned exclusively by the webgis-tile-server Argo CD
+# Application. One-off data operations deliberately live in operations/ and
+# are not included here.
+resources:
+  - storage.yaml
+  - tile-server.yaml
+  - networkpolicy.yaml

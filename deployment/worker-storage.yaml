@@ -1,15 +1,5 @@
-# Apply this before workers.yaml. Docker Desktop's hostpath provisioner creates
-# backing volumes locally; production needs a StorageClass with backups.
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: tile-data
-spec:
-  accessModes: ["ReadWriteOnce"]
-  resources:
-    requests:
-      storage: 5Gi
----
+# Storage for Valhalla and Nominatim. Tile data is owned by
+# deployment/tile-server/storage.yaml.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:

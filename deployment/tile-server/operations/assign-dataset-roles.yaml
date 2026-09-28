@@ -1,5 +1,5 @@
-# This one-shot Job writes the TileJSON role into MBTiles metadata. The
-# frontend uses type=overlay dynamically after refreshing the tile catalog.
+# Run after importing MBTiles. It is intentionally an operation, not an Argo
+# CD sync resource, because it mutates data stored in the PVC.
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -28,9 +28,6 @@ spec:
               for path, role in datasets.items():
                   connection = sqlite3.connect(path)
                   try:
-                      # MBTiles metadata is not required to make `name`
-                      # unique. Remove legacy values so Tile Server receives
-                      # one authoritative TileJSON type per dataset.
                       connection.execute("DELETE FROM metadata WHERE name='type'")
                       connection.execute(
                           "INSERT INTO metadata(name, value) VALUES('type', ?)",

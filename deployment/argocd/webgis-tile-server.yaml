@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: webgis-tile-server
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/nvlhuongnoi2005/WebGIS.git
+    targetRevision: main
+    path: deployment/tile-server
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: webgis
+  # The core Application owns the Namespace. This Application only owns the
+  # tile platform resources inside it.
+  syncPolicy: {}

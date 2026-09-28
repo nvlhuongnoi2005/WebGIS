@@ -1,0 +1,16 @@
+# Tile data is runtime state. Do not let a Git cleanup or Application deletion
+# remove the PVC and its MBTiles files.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: tile-data
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+  labels:
+    app.kubernetes.io/name: tile-server
+    app.kubernetes.io/part-of: webgis
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 5Gi

@@ -1,0 +1,22 @@
+# Temporary pod used only to copy tile data into the tile-data PVC.
+# Do not add this file to the tile-server Kustomization.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: import-tile-data
+  labels:
+    app.kubernetes.io/name: tile-data-importer
+    app.kubernetes.io/part-of: webgis
+spec:
+  restartPolicy: Never
+  containers:
+    - name: importer
+      image: busybox:1.37
+      command: ["sh", "-c", "sleep infinity"]
+      volumeMounts:
+        - name: data
+          mountPath: /target
+  volumes:
+    - name: data
+      persistentVolumeClaim:
+        claimName: tile-data
