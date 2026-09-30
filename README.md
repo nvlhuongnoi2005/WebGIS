@@ -160,6 +160,47 @@ Controller chịu trách nhiệm xác thực, quota, chia sẻ GeoJSON, quản t
 
 ## Chạy local
 
+### Cách nhanh nhất: Docker Compose
+
+Cần Docker Desktop đang chạy. Lệnh dưới đây build frontend và Controller,
+khởi tạo PostgreSQL/PostGIS, chạy migration, rồi mở ứng dụng tại
+`http://localhost:8080`:
+
+```powershell
+docker compose up --build
+```
+
+Dùng `Ctrl+C` để dừng container; dữ liệu tài khoản vẫn nằm trong Docker
+volume. Để dừng và xóa container nhưng giữ dữ liệu, chạy:
+
+```powershell
+docker compose down
+```
+
+Để đặt lại toàn bộ database local, bao gồm tài khoản đã tạo, chạy:
+
+```powershell
+docker compose down --volumes
+```
+
+Compose dùng mật khẩu và refresh-token pepper chỉ dành cho development. Có
+thể thay chúng hoặc đổi cổng web mà không sửa file Compose:
+
+```powershell
+$env:POSTGRES_PASSWORD = "mat-khau-local-khac"
+$env:AUTH_REFRESH_TOKEN_PEPPER = "chuoi-ngau-nhien-dai-hon-32-ky-tu"
+$env:WEBGIS_PORT = "8088"
+docker compose up --build
+```
+
+Stack mặc định chạy đầy đủ frontend, Controller và database. Tile Server,
+Valhalla, Nominatim và Elasticsearch không được tự tạo vì chúng cần dữ liệu
+bản đồ cục bộ dung lượng lớn. Nếu các worker này đã chạy trên máy tại các
+cổng mặc định `8080`, `8002`, `8083`, `9200`, Controller trong Compose sẽ tự
+kết nối qua `host.docker.internal`; các chức năng bản đồ tương ứng sẽ hoạt
+động. Không cần cấu hình worker để phát triển đăng nhập, quản trị, chia sẻ và
+các công cụ GeoJSON.
+
 ### Yêu cầu
 
 - Node.js 24+ và npm.

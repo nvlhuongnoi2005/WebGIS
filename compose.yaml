@@ -1,0 +1,70 @@
+name: webgis
+
+x-controller-environment: &controller-environment
+  NODE_ENV: development
+  AUTH_PORT: "3001"
+  DATABASE_URL: "postgresql://webgis_auth:${POSTGRES_PASSWORD:-webgis_local_password}@db:5432/webgis?sslmode=disable"
+  APP_ORIGINS: "http://localhost:${WEBGIS_PORT:-8080}"
+  AUTH_DEV_EPHEMERAL_KEYS: "true"
+  AUTH_SECURE_COOKIES: "false"
+  AUTH_REFRESH_TOKEN_PEPPER: "${AUTH_REFRESH_TOKEN_PEPPER:-local-development-refresh-token-pepper-change-me}"
+  # Existing local map workers can keep their documented host ports. The
+  # frontend reaches them safely through the controller proxy.
+  VALHALLA_INTERNAL_URL: "http://host.docker.internal:8002"
+  TILE_SERVER_INTERNAL_URL: "http://host.docker.internal:8080"
+  NOMINATIM_INTERNAL_URL: "http://host.docker.internal:8083"
+  ELASTICSEARCH_URL: "http://host.docker.internal:9200"
+
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_DB: webgis
+      POSTGRES_USER: webgis_auth
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-webgis_local_password}"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U webgis_auth -d webgis"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    volumes:
+      - auth-postgres-data:/var/lib/postgresql/data
+
+  migrate:
+    build:
+      context: .
+      dockerfile: be/Dockerfile
+    command: ["migrate"]
+    environment: *controller-environment
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  controller:
+    build:
+      context: .
+      dockerfile: be/Dockerfile
+    environment: *controller-environment
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: fe/Dockerfile
+    ports:
+      - "${WEBGIS_PORT:-8080}:8080"
+    depends_on:
+      controller:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  auth-postgres-data:
