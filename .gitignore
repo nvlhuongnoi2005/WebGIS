@@ -35,3 +35,6 @@ deployment/secrets/.generated/
 # Local Go compiler/module cache used by this repository.
 .cache/
 be/*.exe
+
+# PowerShell performance reports may contain endpoint timings; retain no runs.
+test/performance/results/*.json

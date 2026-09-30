@@ -310,11 +310,14 @@ trung bình từ kết quả `req/s`, `ns/op`, `B/op`, `allocs/op`:
 npm run test:benchmark
 ```
 
-`BenchmarkHealthEndpoint` đo Controller trong bộ nhớ. `BenchmarkTileProxy` đo
-Controller proxy tới một Tile Server giả lập trên loopback, trả về tile 1 KiB.
-Các số này dùng để so sánh giữa các lần chạy trên cùng máy; chúng không đại
-diện cho tải production vì không bao gồm TCP từ trình duyệt, Docker,
-PostgreSQL, dữ liệu tile thật, Nominatim hoặc Valhalla.
+`BenchmarkSuggestionProxy` đo lời gọi HTTP từ Controller tới Elasticsearch
+autocomplete giả lập trên loopback. Kết quả `req/s`, `ns/op`, `B/op` và
+`allocs/op` dùng để so sánh giữa các lần chạy trên cùng máy; chúng không đại
+diện cho tải production vì không bao gồm TCP từ trình duyệt, PostgreSQL,
+Elasticsearch thật hoặc Nominatim.
+
+Để đo endpoint thực đang chạy bằng PowerShell, bao gồm mean, p50, p95, p99,
+request/giây và tỉ lệ lỗi, xem [test/performance/README.md](test/performance/README.md).
 
 Lệnh kiểm tra tổng hợp chạy unit test, ESLint, production build và kiểm tra
 cú pháp Docker Compose:

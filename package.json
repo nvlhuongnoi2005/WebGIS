@@ -12,7 +12,7 @@
     "test": "go -C be test ./...",
     "test:verbose": "go -C be test -v ./...",
     "test:coverage": "go -C be test -cover ./...",
-    "test:benchmark": "go -C be test -run \"^$\" -bench \"Benchmark(HealthEndpoint|TileProxy)$\" -benchmem -count 3",
+    "test:benchmark": "go -C be test -run \"^$\" -bench BenchmarkSuggestionProxy -benchmem -count 3",
     "build": "go -C be build ./... && npm run build:fe",
     "build:fe": "tsc -b && vite build --config fe/vite.config.ts",
     "format": "prettier --write \"fe/src/**/*.{ts,tsx,css,json}\" fe/vite.config.ts",
