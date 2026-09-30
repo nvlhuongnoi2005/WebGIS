@@ -3,9 +3,4 @@ kind: Kustomization
 namespace: webgis
 resources:
   - namespace.yaml
-  - configmap.yaml
-  - migration-job.yaml
-  - controller.yaml
-  - frontend.yaml
-  - ingress.yaml
-  - networkpolicy.yaml
+  - core

@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: https://github.com/nvlhuongnoi2005/WebGIS.git
     targetRevision: main
-    path: deployment/db
+    path: deployment/databases/auth
   destination:
     server: https://kubernetes.default.svc
     namespace: webgis

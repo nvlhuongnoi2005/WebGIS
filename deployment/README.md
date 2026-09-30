@@ -7,15 +7,28 @@ This folder deploys the application core into the `webgis` namespace:
 - `auth-migrate`: database migration Job.
 
 The dedicated authentication database is rendered separately from
-`db/kustomization.yaml`. `argocd/webgis-auth-db.yaml` defines its independent
+`databases/auth/kustomization.yaml`. `argocd/webgis-auth-db.yaml` defines its independent
 Argo CD Application while the existing WebGIS Application continues to sync
 the `deployment/` core.
 
-The map workers are in `workers.yaml` but intentionally are **not** part of
+The map workers are in `workers/workers.yaml` but intentionally are **not** part of
 `kustomization.yaml`. Tile Server is independently managed by the
-`webgis-tile-server` Argo CD Application, whose source is `tile-server/`.
+`webgis-tile-server` Argo CD Application, whose source is `workers/tile-server/`.
 Runtime tile data remains outside normal Argo CD sync; import or convert data
 into its PVC before serving it.
+
+## Layout
+
+- `core/`: frontend, Controller, migration Job, ingress and core NetworkPolicy;
+  rendered by the root `kustomization.yaml` together with `namespace.yaml`.
+- `databases/auth/`: isolated Auth PostgreSQL Kustomization.
+- `workers/`: map workers, worker storage and NetworkPolicy. Tile Server has
+  its own Kustomization at `workers/tile-server/`.
+- `operations/`: one-off data import manifests; do not add them to a normal
+  Kustomization.
+- `secrets/`: committed templates only. Generated keys and populated secrets
+  are ignored by Git.
+- `overlays/` and `argocd/`: local-cluster overrides and Argo CD Applications.
 
 ## 1. Build and publish images
 
@@ -45,10 +58,10 @@ Use URL-safe random values for the database password so no URL escaping is
 needed in `DATABASE_URL`.
 
 ```powershell
-go run ./be/cmd/keygen -out-dir deployment/.secrets
-Copy-Item deployment/secret.example.yaml deployment/secret.yaml
+go run ./be/cmd/keygen -out-dir deployment/secrets/.generated
+Copy-Item deployment/secrets/secret.example.yaml deployment/secrets/secret.yaml
 kubectl apply -f deployment/namespace.yaml
-kubectl apply -f deployment/secret.yaml
+kubectl apply -f deployment/secrets/secret.yaml
 ```
 
 The controller requires `AUTH_JWT_PRIVATE_KEY`,
@@ -70,11 +83,11 @@ before rerunning the migration Job:
 
 ```powershell
 kubectl apply -f deployment/namespace.yaml
-kubectl apply -k deployment/db
+kubectl apply -k deployment/databases/auth
 kubectl -n webgis rollout status statefulset/auth-postgres
 kubectl apply -k deployment
 kubectl -n webgis delete job auth-migrate --ignore-not-found
-kubectl -n webgis apply -f deployment/migration-job.yaml
+kubectl -n webgis apply -f deployment/core/migration-job.yaml
 kubectl -n webgis wait --for=condition=complete job/auth-migrate --timeout=180s
 kubectl -n webgis rollout status deployment/controller
 kubectl -n webgis rollout status deployment/frontend
@@ -158,12 +171,12 @@ kubectl -n webgis create secret generic nominatim-db-credentials `
 Create the PVCs and target Nominatim database, then wait for it:
 
 ```powershell
-kubectl -n webgis apply -f deployment/worker-storage.yaml
-kubectl -n webgis apply -f deployment/tile-server/storage.yaml
+kubectl -n webgis apply -f deployment/workers/worker-storage.yaml
+kubectl -n webgis apply -f deployment/workers/tile-server/storage.yaml
 kubectl -n webgis rollout status statefulset/nominatim-db --timeout=300s
 kubectl -n webgis exec nominatim-db-0 -- createdb -U nominatim nominatim
-kubectl -n webgis apply -f deployment/worker-importer.yaml
-kubectl -n webgis apply -f deployment/tile-server/operations/importer.yaml
+kubectl -n webgis apply -f deployment/operations/worker-importer.yaml
+kubectl -n webgis apply -f deployment/workers/tile-server/operations/importer.yaml
 kubectl -n webgis wait --for=condition=Ready pod/import-tile-data pod/import-map-data pod/import-nominatim-project --timeout=180s
 ```
 
@@ -185,12 +198,12 @@ importer pods and launch the three workers with private network policies:
 kubectl -n webgis exec nominatim-db-0 -- psql -U nominatim -d nominatim -c "SELECT count(*) FROM placex;"
 # Only needed when the old source database was also used for WebGIS auth.
 kubectl -n webgis exec nominatim-db-0 -- psql -U nominatim -d nominatim -c "DROP TABLE IF EXISTS auth_event_checkpoints, auth_events, refresh_token_history, user_quotas, sessions, users; DROP FUNCTION IF EXISTS set_auth_updated_at();"
-kubectl -n webgis delete -f deployment/worker-importer.yaml
-kubectl -n webgis delete -f deployment/tile-server/operations/importer.yaml
-kubectl -n webgis apply -f deployment/tile-server/operations/assign-dataset-roles.yaml
-kubectl -n webgis apply -k deployment/tile-server
-kubectl -n webgis apply -f deployment/worker-networkpolicy.yaml
-kubectl -n webgis apply -f deployment/workers.yaml
+kubectl -n webgis delete -f deployment/operations/worker-importer.yaml
+kubectl -n webgis delete -f deployment/workers/tile-server/operations/importer.yaml
+kubectl -n webgis apply -f deployment/workers/tile-server/operations/assign-dataset-roles.yaml
+kubectl -n webgis apply -k deployment/workers/tile-server
+kubectl -n webgis apply -f deployment/workers/worker-networkpolicy.yaml
+kubectl -n webgis apply -f deployment/workers/workers.yaml
 kubectl -n webgis rollout status deployment/tile-server --timeout=300s
 kubectl -n webgis rollout status deployment/valhalla --timeout=600s
 kubectl -n webgis rollout status deployment/nominatim --timeout=300s

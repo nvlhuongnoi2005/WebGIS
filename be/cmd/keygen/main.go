@@ -21,7 +21,7 @@ func writePEM(path, kind string, bytes []byte, permission os.FileMode) error {
 }
 
 func main() {
-	outputDir := flag.String("out-dir", "deployment/.secrets", "directory for generated PEM files")
+	outputDir := flag.String("out-dir", "deployment/secrets/.generated", "directory for generated PEM files")
 	flag.Parse()
 	if err := os.MkdirAll(*outputDir, 0700); err != nil {
 		panic(err)

@@ -1,5 +1,5 @@
 # Storage for Valhalla and Nominatim. Tile data is owned by
-# deployment/tile-server/storage.yaml.
+# deployment/workers/tile-server/storage.yaml.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:

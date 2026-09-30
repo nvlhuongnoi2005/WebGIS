@@ -151,7 +151,11 @@ Controller chịu trách nhiệm xác thực, quota, chia sẻ GeoJSON, quản t
 │   ├── migrations/               # Schema auth, quota, share, audit
 │   └── cmd/keygen/               # Sinh cặp khóa Ed25519
 ├── deployment/                   # Kubernetes/Kustomize/Argo CD
-│   ├── db/                       # Auth PostgreSQL riêng
+│   ├── core/                     # Frontend, Controller, migration, ingress
+│   ├── databases/auth/           # Auth PostgreSQL riêng
+│   ├── workers/                  # Tile Server, Valhalla, Nominatim, Elasticsearch
+│   ├── operations/               # Import dữ liệu chỉ chạy một lần
+│   ├── secrets/                  # Template secret, không chứa secret thật
 │   ├── overlays/local/           # Ingress cho Docker Desktop
 │   └── README.md                 # Hướng dẫn triển khai và nhập dữ liệu worker
 ├── package.json                  # Lệnh phát triển, test và build
@@ -395,7 +399,7 @@ Các endpoint ghi “Bearer” yêu cầu `Authorization: Bearer <access_token>`
 Sinh cặp khóa production:
 
 ```powershell
-go run ./be/cmd/keygen -out-dir deployment/.secrets
+go run ./be/cmd/keygen -out-dir deployment/secrets/.generated
 ```
 
 Sau đó đưa `AUTH_JWT_PRIVATE_KEY`, `AUTH_JWT_PUBLIC_KEY` và `AUTH_REFRESH_TOKEN_PEPPER` vào secret manager; không commit khóa vào Git.
@@ -409,17 +413,17 @@ docker build -f be/Dockerfile -t REGISTRY/webgis/controller:TAG .
 docker build -f fe/Dockerfile -t REGISTRY/webgis/frontend:TAG .
 ```
 
-Kustomize base triển khai namespace, frontend, Controller, migration Job, ingress và NetworkPolicy. Auth PostgreSQL được quản lý riêng trong `deployment/db/`. Các worker và PVC được tách khỏi base để tránh tự động prune hoặc khởi động trước khi dữ liệu bản đồ sẵn sàng.
+Kustomize base triển khai namespace và `deployment/core/` gồm frontend, Controller, migration Job, ingress, NetworkPolicy. Auth PostgreSQL được quản lý riêng trong `deployment/databases/auth/`. Các worker và PVC trong `deployment/workers/` được tách khỏi base để tránh tự động prune hoặc khởi động trước khi dữ liệu bản đồ sẵn sàng.
 
 Trình tự core tối thiểu:
 
 ```powershell
-Copy-Item deployment/secret.example.yaml deployment/secret.yaml
-# Điền secret thật vào deployment/secret.yaml
+Copy-Item deployment/secrets/secret.example.yaml deployment/secrets/secret.yaml
+# Điền secret thật vào deployment/secrets/secret.yaml
 
 kubectl apply -f deployment/namespace.yaml
-kubectl apply -f deployment/secret.yaml
-kubectl apply -k deployment/db
+kubectl apply -f deployment/secrets/secret.yaml
+kubectl apply -k deployment/databases/auth
 kubectl -n webgis rollout status statefulset/auth-postgres
 kubectl apply -k deployment
 kubectl -n webgis wait --for=condition=complete job/auth-migrate --timeout=180s
@@ -432,7 +436,7 @@ kubectl apply -k deployment/overlays/local
 kubectl -n webgis rollout restart deployment/controller
 ```
 
-Quy trình đầy đủ để tạo secret, nhập dữ liệu từ Docker vào PVC, chạy Nominatim/Valhalla/Tile Server và vận hành Argo CD được mô tả tại [deployment/README.md](deployment/README.md). Autocomplete tùy chọn dùng manifest `deployment/elasticsearch.yaml`; chỉ áp dụng manifest này sau khi Nominatim DB và secret `nominatim-db-credentials` đã sẵn sàng vì Job `search-indexer` đọc dữ liệu trực tiếp từ Nominatim.
+Quy trình đầy đủ để tạo secret, nhập dữ liệu từ Docker vào PVC, chạy Nominatim/Valhalla/Tile Server và vận hành Argo CD được mô tả tại [deployment/README.md](deployment/README.md). Autocomplete tùy chọn dùng manifest `deployment/workers/elasticsearch.yaml`; chỉ áp dụng manifest này sau khi Nominatim DB và secret `nominatim-db-credentials` đã sẵn sàng vì Job `search-indexer` đọc dữ liệu trực tiếp từ Nominatim.
 
 ## CI/CD
 

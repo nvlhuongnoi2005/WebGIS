@@ -1,5 +1,5 @@
 # Map workers excluding Tile Server. Tile Server is owned by the independent
-# webgis-tile-server Argo CD Application at deployment/tile-server/.
+# webgis-tile-server Argo CD Application at deployment/workers/tile-server/.
 apiVersion: apps/v1
 kind: Deployment
 metadata:

@@ -28,9 +28,9 @@ dist-ssr
 !.env.example
 
 # Kubernetes credentials must only exist locally or in a secret manager.
-deployment/secret.yaml
-deployment/nominatim-secret.yaml
-deployment/.secrets/
+deployment/secrets/secret.yaml
+deployment/secrets/nominatim-secret.yaml
+deployment/secrets/.generated/
 
 # Local Go compiler/module cache used by this repository.
 .cache/
