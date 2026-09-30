@@ -284,6 +284,47 @@ npm run build          # Build backend và frontend production
 npm run preview        # Xem thử frontend đã build
 ```
 
+## Kiểm thử và ghi nhận kết quả
+
+Chạy bộ test Controller với tên từng test để chụp màn hình hoặc đính kèm vào
+báo cáo:
+
+```powershell
+npm run test:verbose
+```
+
+Để lấy tỷ lệ bao phủ dòng lệnh của Go test:
+
+```powershell
+npm run test:coverage
+```
+
+Để đo hiệu năng local có thể ghi vào báo cáo, chạy benchmark ba lần và lấy
+trung bình từ kết quả `req/s`, `ns/op`, `B/op`, `allocs/op`:
+
+```powershell
+npm run test:benchmark
+```
+
+`BenchmarkHealthEndpoint` đo Controller trong bộ nhớ. `BenchmarkTileProxy` đo
+Controller proxy tới một Tile Server giả lập trên loopback, trả về tile 1 KiB.
+Các số này dùng để so sánh giữa các lần chạy trên cùng máy; chúng không đại
+diện cho tải production vì không bao gồm TCP từ trình duyệt, Docker,
+PostgreSQL, dữ liệu tile thật, Nominatim hoặc Valhalla.
+
+Lệnh kiểm tra tổng hợp chạy unit test, ESLint, production build và kiểm tra
+cú pháp Docker Compose:
+
+```powershell
+npm run verify
+```
+
+Các test Controller bao phủ đăng nhập/phân quyền ở mức contract, CORS, health
+check, validation GeoJSON snapshot, giới hạn đường dẫn proxy Tile/Nominatim,
+OpenAPI và nghiệp vụ quota/billing. Test không gọi Tile Server, Valhalla hoặc
+Nominatim thật; cần chạy smoke test riêng với dữ liệu worker khi đánh giá kết
+quả tìm kiếm, định tuyến và độ cao.
+
 Benchmark Valhalla và dữ liệu testcase nằm trong `fe/src/test/Valhalla/`.
 
 ## API chính

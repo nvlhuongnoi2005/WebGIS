@@ -10,12 +10,16 @@
     "auth:start": "go -C be run .",
     "auth:migrate": "go -C be run . migrate",
     "test": "go -C be test ./...",
+    "test:verbose": "go -C be test -v ./...",
+    "test:coverage": "go -C be test -cover ./...",
+    "test:benchmark": "go -C be test -run \"^$\" -bench \"Benchmark(HealthEndpoint|TileProxy)$\" -benchmem -count 3",
     "build": "go -C be build ./... && npm run build:fe",
     "build:fe": "tsc -b && vite build --config fe/vite.config.ts",
     "format": "prettier --write \"fe/src/**/*.{ts,tsx,css,json}\" fe/vite.config.ts",
     "format:check": "prettier --check \"fe/src/**/*.{ts,tsx,css,json}\" fe/vite.config.ts",
     "lint": "eslint .",
-    "preview": "vite preview --config fe/vite.config.ts"
+    "preview": "vite preview --config fe/vite.config.ts",
+    "verify": "npm run test:verbose && npm run lint && npm run build && docker compose config --quiet"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
