@@ -42,8 +42,12 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import { fetchGeocoding, getGeocodingLanguage } from "../../../tools/geocoding/GeocodingTool";
-import type { GeocodingFeature } from "../../../tools/geocoding/GeocodingTool";
+import {
+  fetchGeocoding,
+  fetchGeocodingSuggestions,
+  getGeocodingLanguage,
+} from "../../../tools/geocoding/GeocodingTool";
+import type { GeocodingSuggestion } from "../../../tools/geocoding/GeocodingTool";
 import {
   formatRouteDuration,
   type RouteInstruction,
@@ -530,23 +534,34 @@ interface LocationSearchFieldProps {
 function LocationSearchField({ label, placeholder, value, onChange }: LocationSearchFieldProps) {
   const { i18n } = useTranslation();
   const [query, setQuery] = useState("");
-  const [suggestions, setSuggestions] = useState<GeocodingFeature[]>([]);
+  const [suggestions, setSuggestions] = useState<GeocodingSuggestion[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const debounceTimerRef = useRef<number | null>(null);
-  const requestControllerRef = useRef<AbortController | null>(null);
-  const searchCacheRef = useRef<Map<string, GeocodingFeature[]>>(new Map());
+  const suggestionRequestControllerRef = useRef<AbortController | null>(null);
+  const selectionRequestControllerRef = useRef<AbortController | null>(null);
+  const searchCacheRef = useRef<Map<string, GeocodingSuggestion[]>>(new Map());
 
   const activeLanguage = getGeocodingLanguage(i18n.resolvedLanguage || i18n.language);
   const displayValue = value ? query || formatCoordinate(value, "") : query;
 
-  const cancelPendingSearch = () => {
-    requestControllerRef.current?.abort();
-    requestControllerRef.current = null;
+  const cancelSuggestionsRequest = () => {
+    suggestionRequestControllerRef.current?.abort();
+    suggestionRequestControllerRef.current = null;
   };
 
-  const searchLocations = async (searchQuery: string) => {
+  const cancelSelectionRequest = () => {
+    selectionRequestControllerRef.current?.abort();
+    selectionRequestControllerRef.current = null;
+  };
+
+  const cancelPendingSearch = () => {
+    cancelSuggestionsRequest();
+    cancelSelectionRequest();
+  };
+
+  const fetchSuggestions = async (searchQuery: string) => {
     const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
     const cacheKey = `${activeLanguage}:${normalizedQuery}`;
     const cachedResults = searchCacheRef.current.get(cacheKey);
@@ -555,12 +570,12 @@ function LocationSearchField({ label, placeholder, value, onChange }: LocationSe
       return cachedResults;
     }
 
-    requestControllerRef.current?.abort();
+    cancelSuggestionsRequest();
     const controller = new AbortController();
-    requestControllerRef.current = controller;
+    suggestionRequestControllerRef.current = controller;
 
     try {
-      const results = await fetchGeocoding(searchQuery, activeLanguage, controller.signal);
+      const results = await fetchGeocodingSuggestions(searchQuery, controller.signal);
       searchCacheRef.current.set(cacheKey, results);
       return results;
     } catch (error) {
@@ -568,11 +583,11 @@ function LocationSearchField({ label, placeholder, value, onChange }: LocationSe
         return [];
       }
 
-      console.error("Geocoding fetch error:", error);
+      console.error("Routing suggestion fetch error:", error);
       return [];
     } finally {
-      if (requestControllerRef.current === controller) {
-        requestControllerRef.current = null;
+      if (suggestionRequestControllerRef.current === controller) {
+        suggestionRequestControllerRef.current = null;
       }
     }
   };
@@ -595,18 +610,42 @@ function LocationSearchField({ label, placeholder, value, onChange }: LocationSe
 
     setIsLoading(true);
     debounceTimerRef.current = window.setTimeout(async () => {
-      const results = await searchLocations(nextQuery);
+      const results = await fetchSuggestions(nextQuery);
       setSuggestions(results);
       setIsOpen(results.length > 0);
       setIsLoading(false);
     }, 150);
   };
 
-  const handleSelect = (feature: GeocodingFeature) => {
-    setQuery(feature.place_name);
-    setSuggestions([]);
-    setIsOpen(false);
-    onChange(feature.center);
+  const handleSelect = async (suggestion: GeocodingSuggestion) => {
+    cancelSuggestionsRequest();
+    cancelSelectionRequest();
+    const controller = new AbortController();
+    selectionRequestControllerRef.current = controller;
+    setIsLoading(true);
+
+    try {
+      // Elasticsearch keeps typing responsive. Nominatim is contacted only after
+      // a user selects a suggestion, so routing receives its authoritative point.
+      const [feature] = await fetchGeocoding(suggestion.resolveQuery, activeLanguage, controller.signal);
+      if (!feature) {
+        return;
+      }
+
+      setQuery(feature.place_name);
+      setSuggestions([]);
+      setIsOpen(false);
+      onChange(feature.center);
+    } catch (error) {
+      if (!(error instanceof DOMException && error.name === "AbortError")) {
+        console.error("Routing suggestion resolution error:", error);
+      }
+    } finally {
+      if (selectionRequestControllerRef.current === controller) {
+        selectionRequestControllerRef.current = null;
+        setIsLoading(false);
+      }
+    }
   };
 
   const handleClear = () => {
@@ -632,7 +671,8 @@ function LocationSearchField({ label, placeholder, value, onChange }: LocationSe
       if (debounceTimerRef.current) {
         window.clearTimeout(debounceTimerRef.current);
       }
-      cancelPendingSearch();
+      suggestionRequestControllerRef.current?.abort();
+      selectionRequestControllerRef.current?.abort();
     };
   }, []);
 
@@ -651,7 +691,7 @@ function LocationSearchField({ label, placeholder, value, onChange }: LocationSe
             setIsOpen(false);
           } else if (event.key === "Enter" && suggestions.length > 0) {
             event.preventDefault();
-            handleSelect(suggestions[0]);
+            void handleSelect(suggestions[0]);
           }
         }}
         autoComplete="off"
@@ -694,7 +734,7 @@ function LocationSearchField({ label, placeholder, value, onChange }: LocationSe
         >
           <List disablePadding>
             {suggestions.map((feature) => (
-              <ListItemButton key={feature.id} onClick={() => handleSelect(feature)}>
+              <ListItemButton key={feature.id} onClick={() => void handleSelect(feature)}>
                 <ListItemIcon sx={{ minWidth: 32, color: "error.main" }}>
                   <MapPin size={16} />
                 </ListItemIcon>
