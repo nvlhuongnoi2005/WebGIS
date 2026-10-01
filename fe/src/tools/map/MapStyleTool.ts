@@ -509,12 +509,6 @@ function getOpenMapTilesOverlayLayers(
     textLayer(`${sourceId}-place`, sourceId, "place", 5, 0, "#1f3349"),
     textLayer(`${sourceId}-aerodrome-label`, sourceId, "aerodrome_label", 10, 0, "#334e68"),
     textLayer(`${sourceId}-mountain-peak`, sourceId, "mountain_peak", 10, 0, "#176b3a"),
-    layer({
-      id: `${sourceId}-poi`,
-      type: "circle",
-      "source-layer": "poi",
-      minzoom: 12,
-    }),
     textLayer(`${sourceId}-poi-label`, sourceId, "poi", 13, 0.8, "#274c4b"),
     textLayer(`${sourceId}-housenumber`, sourceId, "housenumber", 15, 0, "#52616b", "housenumber"),
   ] as StyleSpecification["layers"];
