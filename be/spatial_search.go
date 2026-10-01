@@ -33,7 +33,7 @@ type spatialSearchInput struct {
 type spatialReference struct {
 	Name       string          `json:"name"`
 	Category   string          `json:"category"`
-	Kind       string          `json:"kind"`
+	Kind       string          `json:"type"`
 	Importance float64         `json:"importance"`
 	Geometry   json.RawMessage `json:"geojson"`
 }

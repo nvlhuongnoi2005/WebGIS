@@ -1,6 +1,19 @@
 package main
 
-import "testing"
+import (
+	"encoding/json"
+	"testing"
+)
+
+func TestSpatialReferenceDecodesNominatimType(t *testing.T) {
+	var reference spatialReference
+	if err := json.Unmarshal([]byte(`{"name":"Hồ Tây","category":"water","type":"lake","geojson":{"type":"Polygon","coordinates":[]}}`), &reference); err != nil {
+		t.Fatal(err)
+	}
+	if reference.Kind != "lake" {
+		t.Fatalf("Kind = %q, want lake", reference.Kind)
+	}
+}
 
 func TestSpatialSearchInputValidate(t *testing.T) {
 	tests := []struct {
