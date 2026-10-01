@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Box, IconButton, Stack, Tooltip } from "@mui/material";
-import { Filter, LayoutDashboard } from "lucide-react";
+import { Filter, LayoutDashboard, LocateFixed } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./maplibreWorker";
@@ -19,6 +19,7 @@ import { useMapLanguage } from "../../hooks/useMapLanguage";
 import { useMeasureLayers } from "../../hooks/useMeasureLayers";
 import { useMeasureTool } from "../../hooks/useMeasureTool";
 import { useRouting } from "../../hooks/useRouting";
+import { useSpatialSearch } from "../../hooks/useSpatialSearch";
 import type { MapTool } from "../../types/map";
 import {
   DEFAULT_COORDINATE_REFERENCE_SYSTEM,
@@ -40,6 +41,7 @@ import LayerPanel from "./components/LayerPanel";
 import MapPositionPopup from "./components/MapPositionPopup";
 import MeasurePanel from "./components/MeasurePanel";
 import PoiFilterPanel from "./components/PoiFilterPanel";
+import SpatialSearchPanel from "./components/SpatialSearchPanel";
 import ToolPanel from "./components/ToolPanel";
 import TileServerBaseMapPanel from "./components/TileServerBaseMapPanel";
 import RoutingPanel from "./components/RoutingPanel";
@@ -57,6 +59,7 @@ function MapView({ onNavigate }: MapViewProps) {
     null
   );
   const [poiFilterOpen, setPoiFilterOpen] = useState(false);
+  const [spatialSearchOpen, setSpatialSearchOpen] = useState(false);
   const [visiblePoiCategories, setVisiblePoiCategories] = useState<PoiFilterCategory[]>([]);
   const [coordinateReferenceSystem, setCoordinateReferenceSystem] =
     useState<CoordinateReferenceSystem>(DEFAULT_COORDINATE_REFERENCE_SYSTEM);
@@ -93,6 +96,11 @@ function MapView({ onNavigate }: MapViewProps) {
   useMapLanguage({ map, mapLoaded, mapStyleVersion });
 
   const routing = useRouting({
+    map,
+    mapLoaded,
+    mapStyleVersion,
+  });
+  const spatialSearch = useSpatialSearch({
     map,
     mapLoaded,
     mapStyleVersion,
@@ -229,11 +237,39 @@ function MapView({ onNavigate }: MapViewProps) {
           alignItems: "center",
         }}
       >
+        <Tooltip title={t("spatialSearch.open")}>
+          <IconButton
+            type="button"
+            aria-label={t("spatialSearch.open")}
+            onClick={() => {
+              setSpatialSearchOpen((open) => !open);
+              setPoiFilterOpen(false);
+            }}
+            color={spatialSearch.result ? "primary" : "default"}
+            sx={{
+              width: 44,
+              height: 44,
+              border: "2px solid",
+              borderColor: "background.paper",
+              bgcolor: "background.paper",
+              boxShadow: "0 8px 20px rgb(20 45 82 / 16%)",
+              "&:hover": {
+                bgcolor: "action.hover",
+                boxShadow: "0 10px 24px rgb(20 45 82 / 20%)",
+              },
+            }}
+          >
+            <LocateFixed size={20} />
+          </IconButton>
+        </Tooltip>
         <Tooltip title={t("poiFilter.open")}>
           <IconButton
             type="button"
             aria-label={t("poiFilter.open")}
-            onClick={() => setPoiFilterOpen((open) => !open)}
+            onClick={() => {
+              setPoiFilterOpen((open) => !open);
+              setSpatialSearchOpen(false);
+            }}
             color={visiblePoiCategories.length ? "primary" : "default"}
             sx={{
               width: 44,
@@ -295,6 +331,18 @@ function MapView({ onNavigate }: MapViewProps) {
           onToggle={togglePoiCategory}
           onClear={() => setVisiblePoiCategories([])}
           onClose={() => setPoiFilterOpen(false)}
+        />
+      )}
+
+      {spatialSearchOpen && (
+        <SpatialSearchPanel
+          result={spatialSearch.result}
+          status={spatialSearch.status}
+          error={spatialSearch.error}
+          onSearch={spatialSearch.search}
+          onClear={spatialSearch.clear}
+          onFocusResult={spatialSearch.focusResult}
+          onClose={() => setSpatialSearchOpen(false)}
         />
       )}
 

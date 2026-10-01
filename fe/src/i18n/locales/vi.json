@@ -59,6 +59,33 @@
       "tourism": "Du lịch & tham quan"
     }
   },
+  "spatialSearch": {
+    "open": "Tìm địa điểm lân cận",
+    "close": "Đóng tìm kiếm lân cận",
+    "title": "Tìm kiếm lân cận",
+    "description": "Tìm một nhóm địa điểm theo khoảng cách từ địa danh đã chọn.",
+    "referencePlace": "Địa danh tham chiếu",
+    "referencePlacePlaceholder": "Ví dụ: Hồ Tây",
+    "category": "Loại địa điểm",
+    "distanceMeters": "Khoảng cách (mét)",
+    "search": "Tìm địa điểm",
+    "searching": "Đang tìm…",
+    "error": "Không thể tìm địa điểm lân cận. Hãy thử lại.",
+    "resultCount": "Tìm thấy {{count}} địa điểm",
+    "nearReference": "Gần {{name}}",
+    "noResults": "Không tìm thấy địa điểm phù hợp trong khoảng cách này.",
+    "clear": "Xóa kết quả",
+    "categories": {
+      "restaurant": "Nhà hàng",
+      "cafe": "Quán cà phê",
+      "hospital": "Bệnh viện & phòng khám",
+      "pharmacy": "Nhà thuốc",
+      "school": "Trường học",
+      "atm": "ATM",
+      "bank": "Ngân hàng",
+      "tourism": "Du lịch"
+    }
+  },
   "coordinates": {
     "title": "Vị trí bản đồ",
     "label": "Tọa độ",
