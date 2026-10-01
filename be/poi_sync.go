@@ -61,7 +61,7 @@ func runPOISync(ctx context.Context, config Config) error {
 	}
 
 	rows, err := source.Query(ctx, `
-		SELECT p.place_id, p.osm_type, p.osm_id, p.name ->> 'name',
+		SELECT p.place_id, p.osm_type, p.osm_id, p.name -> 'name',
 			CASE
 				WHEN p.class = 'amenity' AND p.type IN ('restaurant', 'fast_food') THEN 'restaurant'
 				WHEN p.class = 'amenity' AND p.type = 'cafe' THEN 'cafe'
@@ -73,7 +73,7 @@ func runPOISync(ctx context.Context, config Config) error {
 				WHEN p.class = 'tourism' THEN 'tourism'
 			END AS category,
 			p.type,
-			COALESCE(NULLIF(CONCAT_WS(', ', p.address ->> 'housenumber', p.address ->> 'street', p.address ->> 'ward', p.address ->> 'district', p.address ->> 'city'), ''), ''),
+			COALESCE(NULLIF(CONCAT_WS(', ', p.address -> 'housenumber', p.address -> 'street', p.address -> 'ward', p.address -> 'district', p.address -> 'city'), ''), ''),
 			ST_X(p.centroid), ST_Y(p.centroid)
 		FROM placex p
 		WHERE p.centroid IS NOT NULL
