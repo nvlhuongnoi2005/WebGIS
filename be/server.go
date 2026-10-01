@@ -87,6 +87,8 @@ type adminPasswordResetInput struct {
 	NewPassword string `json:"newPassword"`
 }
 
+const defaultMonthlyQuotaLimit = 1000
+
 func validDateOfBirth(value string) bool {
 	date, err := time.Parse("2006-01-02", value)
 	return err == nil && date.Before(time.Now().UTC().Truncate(24*time.Hour))
@@ -289,7 +291,7 @@ func (server *Server) register(response http.ResponseWriter, request *http.Reque
 		clientError(response, 500, "Internal server error")
 		return
 	}
-	_, err = tx.Exec(ctx, `INSERT INTO user_quotas (user_id,period_start,period_end,limit_units) VALUES ($1,date_trunc('month',now()),date_trunc('month',now()) + interval '1 month',1000)`, user.ID)
+	_, err = tx.Exec(ctx, `INSERT INTO user_quotas (user_id,period_start,period_end,limit_units) VALUES ($1,date_trunc('month',now()),date_trunc('month',now()) + interval '1 month',$2)`, user.ID, defaultMonthlyQuotaLimit)
 	if err != nil {
 		clientError(response, 500, "Internal server error")
 		return
@@ -684,18 +686,46 @@ func billingDays(request *http.Request) int {
 	}
 }
 
+// ensureCurrentQuotas lazily rolls an expired calendar-month quota into the
+// current month. Existing limits are retained while usage starts at zero. An
+// empty userID updates every account for administrator list views.
+func (server *Server) ensureCurrentQuotas(ctx context.Context, userID string) error {
+	_, err := server.repository.pool.Exec(ctx, `
+		INSERT INTO user_quotas (user_id, period_start, period_end, limit_units, used_units)
+		SELECT u.id, date_trunc('month', now()), date_trunc('month', now()) + interval '1 month',
+			COALESCE(q.limit_units, $2), 0
+		FROM users u
+		LEFT JOIN user_quotas q ON q.user_id = u.id
+		WHERE (NULLIF($1, '')::uuid IS NULL OR u.id = NULLIF($1, '')::uuid)
+			AND (q.user_id IS NULL OR q.period_start > now() OR q.period_end <= now())
+		ON CONFLICT (user_id) DO UPDATE
+		SET period_start = EXCLUDED.period_start,
+			period_end = EXCLUDED.period_end,
+			limit_units = EXCLUDED.limit_units,
+			used_units = 0,
+			updated_at = now()
+		WHERE user_quotas.period_start > now() OR user_quotas.period_end <= now()`, userID, defaultMonthlyQuotaLimit)
+	return err
+}
+
 func (server *Server) consumeQuota(ctx context.Context, userID, apiType string) error {
 	result, err := server.repository.pool.Exec(ctx, `
 		WITH consumed_quota AS (
-			UPDATE user_quotas
-			SET used_units = used_units + 1, updated_at = now()
-			WHERE user_id = $1 AND period_start <= now() AND period_end > now() AND used_units + 1 <= limit_units
+			INSERT INTO user_quotas (user_id, period_start, period_end, limit_units, used_units)
+			VALUES ($1, date_trunc('month', now()), date_trunc('month', now()) + interval '1 month', $3, 1)
+			ON CONFLICT (user_id) DO UPDATE
+			SET period_start = CASE WHEN NOT (user_quotas.period_start <= now() AND user_quotas.period_end > now()) THEN EXCLUDED.period_start ELSE user_quotas.period_start END,
+				period_end = CASE WHEN NOT (user_quotas.period_start <= now() AND user_quotas.period_end > now()) THEN EXCLUDED.period_end ELSE user_quotas.period_end END,
+				used_units = CASE WHEN NOT (user_quotas.period_start <= now() AND user_quotas.period_end > now()) THEN 1 ELSE user_quotas.used_units + 1 END,
+				updated_at = now()
+			WHERE user_quotas.limit_units > 0
+				AND (NOT (user_quotas.period_start <= now() AND user_quotas.period_end > now()) OR user_quotas.used_units < user_quotas.limit_units)
 			RETURNING user_id
 		)
 		INSERT INTO user_daily_usage (user_id, usage_date, api_type, request_count)
 		SELECT user_id, current_date, $2, 1 FROM consumed_quota
 		ON CONFLICT (user_id, usage_date, api_type) DO UPDATE
-		SET request_count = user_daily_usage.request_count + 1`, userID, apiType)
+		SET request_count = user_daily_usage.request_count + 1`, userID, apiType, defaultMonthlyQuotaLimit)
 	if err != nil {
 		return err
 	}
@@ -707,6 +737,9 @@ func (server *Server) consumeQuota(ctx context.Context, userID, apiType string) 
 
 func (server *Server) billingForUser(ctx context.Context, userID string, days int) (billingRecord, error) {
 	var billing billingRecord
+	if err := server.ensureCurrentQuotas(ctx, userID); err != nil {
+		return billing, err
+	}
 	err := server.repository.pool.QueryRow(ctx, `
 		SELECT u.id, COALESCE(u.full_name, u.email), u.email, u.plan,
 			q.period_start, q.period_end, COALESCE(q.limit_units, 0), COALESCE(q.used_units, 0)
@@ -863,6 +896,10 @@ func (server *Server) adminBilling(response http.ResponseWriter, request *http.R
 		clientError(response, http.StatusForbidden, "Forbidden")
 		return
 	}
+	if err := server.ensureCurrentQuotas(request.Context(), ""); err != nil {
+		clientError(response, 500, "Internal server error")
+		return
+	}
 	rows, err := server.repository.pool.Query(request.Context(), `
 		SELECT u.id, COALESCE(u.full_name, u.email), u.email, u.plan,
 			q.period_start, q.period_end, COALESCE(q.limit_units, 0), COALESCE(q.used_units, 0)
@@ -926,6 +963,10 @@ func (server *Server) requireAdmin(response http.ResponseWriter, request *http.R
 
 func (server *Server) adminUsers(response http.ResponseWriter, request *http.Request) {
 	if _, ok := server.requireAdmin(response, request); !ok {
+		return
+	}
+	if err := server.ensureCurrentQuotas(request.Context(), ""); err != nil {
+		clientError(response, 500, "Internal server error")
 		return
 	}
 	rows, err := server.repository.pool.Query(request.Context(), `SELECT u.id,COALESCE(u.full_name,u.email),u.email,u.role,u.status,u.plan,COALESCE(q.limit_units,0),COALESCE(q.used_units,0),EXISTS(SELECT 1 FROM sessions s WHERE s.user_id=u.id AND s.revoked_at IS NULL AND s.expires_at>now() AND s.last_used_at>now()-interval '5 minutes') FROM users u LEFT JOIN LATERAL (SELECT limit_units,used_units FROM user_quotas WHERE user_id=u.id AND period_start<=now() AND period_end>now() LIMIT 1) q ON true ORDER BY u.created_at DESC`)
@@ -1126,7 +1167,7 @@ func (server *Server) adminUpdateUser(response http.ResponseWriter, request *htt
 		return
 	}
 	if input.LimitUnits != nil {
-		_, err = tx.Exec(ctx, `INSERT INTO user_quotas(user_id,period_start,period_end,limit_units,used_units) VALUES($1,date_trunc('month',now()),date_trunc('month',now())+interval '1 month',$2,0) ON CONFLICT(user_id) DO UPDATE SET limit_units=EXCLUDED.limit_units,updated_at=now()`, userID, *input.LimitUnits)
+		_, err = tx.Exec(ctx, `INSERT INTO user_quotas(user_id,period_start,period_end,limit_units,used_units) VALUES($1,date_trunc('month',now()),date_trunc('month',now())+interval '1 month',$2,0) ON CONFLICT(user_id) DO UPDATE SET period_start=CASE WHEN NOT (user_quotas.period_start<=now() AND user_quotas.period_end>now()) THEN EXCLUDED.period_start ELSE user_quotas.period_start END,period_end=CASE WHEN NOT (user_quotas.period_start<=now() AND user_quotas.period_end>now()) THEN EXCLUDED.period_end ELSE user_quotas.period_end END,limit_units=EXCLUDED.limit_units,used_units=CASE WHEN NOT (user_quotas.period_start<=now() AND user_quotas.period_end>now()) THEN 0 ELSE user_quotas.used_units END,updated_at=now()`, userID, *input.LimitUnits)
 		if err != nil {
 			clientError(response, 500, "Internal server error")
 			return
