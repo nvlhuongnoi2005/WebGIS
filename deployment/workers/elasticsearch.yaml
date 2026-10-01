@@ -122,8 +122,8 @@ spec:
         - name: ghcr-pull
       containers:
         - name: indexer
-          image: ghcr.io/nvlhuongnoi2005/webgis/controller:sha-dddf700f26a39dbc13c024a146a1c635cad62bfa
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/nvlhuongnoi2005/webgis/controller:dev
+          imagePullPolicy: Always
           command: ["/controller", "index-suggestions"]
           envFrom:
             - configMapRef:
