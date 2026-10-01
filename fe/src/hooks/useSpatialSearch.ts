@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import type { MutableRefObject } from "react";
 import * as maplibregl from "maplibre-gl";
@@ -29,14 +29,14 @@ export function useSpatialSearch({ map, mapLoaded, mapStyleVersion }: UseSpatial
   const [error, setError] = useState<string | null>(null);
   const requestController = useRef<AbortController | null>(null);
 
-  const clear = useCallback(() => {
+  const clear = () => {
     requestController.current?.abort();
     setResult(null);
     setStatus("idle");
     setError(null);
-  }, []);
+  };
 
-  const search = useCallback(async (input: SpatialSearchInput) => {
+  const search = async (input: SpatialSearchInput) => {
     requestController.current?.abort();
     const controller = new AbortController();
     requestController.current = controller;
@@ -55,18 +55,17 @@ export function useSpatialSearch({ map, mapLoaded, mapStyleVersion }: UseSpatial
       setStatus("error");
       setError(requestError instanceof Error ? requestError.message : "Spatial search failed");
     }
-  }, []);
+  };
 
-  const focusResult = useCallback(
-    (coordinates: MapCoordinates) => {
-      map.current?.flyTo({
-        center: coordinates,
-        zoom: Math.max(map.current.getZoom(), 16),
-        duration: 700,
-      });
-    },
-    [map]
-  );
+  const focusResult = (coordinates: MapCoordinates) => {
+    const currentMap = map.current;
+    if (!currentMap) return;
+    currentMap.flyTo({
+      center: coordinates,
+      zoom: Math.max(currentMap.getZoom(), 16),
+      duration: 700,
+    });
+  };
 
   useEffect(() => {
     if (!map.current || !mapLoaded) return;
