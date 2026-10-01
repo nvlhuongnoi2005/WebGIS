@@ -14,7 +14,8 @@ spec:
         app.kubernetes.io/name: poi-sync
         app.kubernetes.io/part-of: webgis
     spec:
-      restartPolicy: OnFailure
+      # Keep terminal Pods available for inspecting a synchronization failure.
+      restartPolicy: Never
       imagePullSecrets:
         - name: ghcr-pull
       containers:
@@ -22,6 +23,7 @@ spec:
           image: ghcr.io/nvlhuongnoi2005/webgis/controller:dev
           imagePullPolicy: Always
           command: ["/controller", "sync-pois"]
+          terminationMessagePolicy: FallbackToLogsOnError
           envFrom:
             - configMapRef:
                 name: webgis-config
