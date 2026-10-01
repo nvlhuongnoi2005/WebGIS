@@ -50,7 +50,7 @@ export default function PoiFilterPanel({
         <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between" }}>
           <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
             <Filter size={18} />
-            <Typography variant="subtitle1" fontWeight={700}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
               {t("poiFilter.title")}
             </Typography>
           </Stack>

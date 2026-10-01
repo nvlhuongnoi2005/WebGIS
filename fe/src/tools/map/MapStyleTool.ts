@@ -1,4 +1,4 @@
-import type { FilterSpecification, Map, StyleSpecification } from "maplibre-gl";
+import type { FilterSpecification, Map as MapLibreMap, StyleSpecification } from "maplibre-gl";
 
 export const POI_FILTER_CATEGORIES = ["food", "health", "education", "finance", "tourism"] as const;
 
@@ -20,7 +20,7 @@ function poiClassFilter(categories: readonly PoiFilterCategory[]): FilterSpecifi
   return ["in", "class", ...(classes.length ? classes : ["__hidden_poi__"])] as FilterSpecification;
 }
 
-export function applyPoiCategoryFilter(map: Map, categories: readonly PoiFilterCategory[]) {
+export function applyPoiCategoryFilter(map: MapLibreMap, categories: readonly PoiFilterCategory[]) {
   if (!map.isStyleLoaded()) {
     return;
   }
