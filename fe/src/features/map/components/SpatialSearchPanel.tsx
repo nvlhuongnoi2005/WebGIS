@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   Alert,
+  Autocomplete,
   Button,
   CircularProgress,
   Divider,
@@ -19,6 +20,10 @@ import { LocateFixed, Search, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import type { SpatialSearchStatus } from "../../../hooks/useSpatialSearch";
+import {
+  fetchGeocodingSuggestions,
+  type GeocodingSuggestion,
+} from "../../../tools/geocoding/GeocodingTool";
 import {
   SPATIAL_SEARCH_CATEGORIES,
   type SpatialSearchCategory,
@@ -47,11 +52,47 @@ export default function SpatialSearchPanel({
   onClose,
 }: SpatialSearchPanelProps) {
   const { t } = useTranslation();
-  const [referencePlace, setReferencePlace] = useState("Hồ Tây");
   const [category, setCategory] = useState<SpatialSearchCategory>("restaurant");
+  const [referencePlace, setReferencePlace] = useState("");
+  const [selectedReference, setSelectedReference] = useState<GeocodingSuggestion | null>(null);
+  const [referenceSuggestions, setReferenceSuggestions] = useState<GeocodingSuggestion[]>([]);
+  const [isReferenceLoading, setIsReferenceLoading] = useState(false);
   const [distanceMeters, setDistanceMeters] = useState(500);
-  const canSearch =
-    referencePlace.trim().length >= 2 && distanceMeters >= 1 && distanceMeters <= 20_000;
+  const suggestionTimer = useRef<number | null>(null);
+  const suggestionRequest = useRef<AbortController | null>(null);
+  const canSearch = Boolean(selectedReference) && distanceMeters >= 1 && distanceMeters <= 20_000;
+
+  useEffect(
+    () => () => {
+      if (suggestionTimer.current) window.clearTimeout(suggestionTimer.current);
+      suggestionRequest.current?.abort();
+    },
+    []
+  );
+
+  const requestReferenceSuggestions = (query: string) => {
+    if (suggestionTimer.current) window.clearTimeout(suggestionTimer.current);
+    suggestionRequest.current?.abort();
+    if (query.trim().length < 2) {
+      setReferenceSuggestions([]);
+      setIsReferenceLoading(false);
+      return;
+    }
+
+    suggestionTimer.current = window.setTimeout(async () => {
+      const controller = new AbortController();
+      suggestionRequest.current = controller;
+      setIsReferenceLoading(true);
+      try {
+        const suggestions = await fetchGeocodingSuggestions(query, controller.signal);
+        if (!controller.signal.aborted) setReferenceSuggestions(suggestions);
+      } catch {
+        if (!controller.signal.aborted) setReferenceSuggestions([]);
+      } finally {
+        if (!controller.signal.aborted) setIsReferenceLoading(false);
+      }
+    }, 200);
+  };
 
   return (
     <Paper
@@ -83,12 +124,45 @@ export default function SpatialSearchPanel({
         <Typography variant="body2" color="text.secondary">
           {t("spatialSearch.description")}
         </Typography>
-        <TextField
-          size="small"
-          label={t("spatialSearch.referencePlace")}
-          value={referencePlace}
-          onChange={(event) => setReferencePlace(event.target.value)}
-          placeholder={t("spatialSearch.referencePlacePlaceholder")}
+        <Autocomplete
+          options={referenceSuggestions}
+          value={selectedReference}
+          inputValue={referencePlace}
+          loading={isReferenceLoading}
+          filterOptions={(options) => options}
+          getOptionLabel={(option) => option.place_name}
+          isOptionEqualToValue={(option, value) => option.id === value.id}
+          noOptionsText={t("spatialSearch.noReferenceOptions")}
+          loadingText={t("spatialSearch.loadingReferences")}
+          onChange={(_, nextReference) => {
+            setSelectedReference(nextReference);
+            setReferencePlace(nextReference?.place_name ?? "");
+            setReferenceSuggestions([]);
+          }}
+          onInputChange={(_, value, reason) => {
+            if (reason === "reset") return;
+            setReferencePlace(value);
+            setSelectedReference(null);
+            requestReferenceSuggestions(value);
+          }}
+          renderOption={(props, option) => (
+            <li {...props} key={option.id}>
+              <ListItemText primary={option.text} secondary={option.context || option.place_name} />
+            </li>
+          )}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              size="small"
+              label={t("spatialSearch.referencePlace")}
+              placeholder={t("spatialSearch.referencePlacePlaceholder")}
+              helperText={
+                selectedReference
+                  ? t("spatialSearch.referenceSelected")
+                  : t("spatialSearch.referenceHelp")
+              }
+            />
+          )}
         />
         <TextField
           select
@@ -121,7 +195,10 @@ export default function SpatialSearchPanel({
             )
           }
           disabled={!canSearch || status === "loading"}
-          onClick={() => onSearch({ category, referencePlace, distanceMeters })}
+          onClick={() =>
+            selectedReference &&
+            onSearch({ category, referencePlace: selectedReference.resolveQuery, distanceMeters })
+          }
         >
           {status === "loading" ? t("spatialSearch.searching") : t("spatialSearch.search")}
         </Button>
