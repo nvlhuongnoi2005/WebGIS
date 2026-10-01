@@ -1,6 +1,7 @@
 -- This schema is safe to apply to the existing PostGIS database. It does not
 -- alter spatial tables. pgcrypto is used only for UUID defaults.
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
+CREATE EXTENSION IF NOT EXISTS postgis;
 
 -- Keep timestamptz values as absolute instants, but present them in Vietnam time
 -- for connections to the authentication database.
@@ -149,6 +150,25 @@ BEGIN
 END;
 $$;
 CREATE INDEX IF NOT EXISTS user_daily_usage_date_idx ON user_daily_usage (usage_date);
+
+-- A product-owned, query-optimized subset of Nominatim POIs. Nominatim's
+-- internal schema remains read-only and can be rebuilt independently.
+CREATE TABLE IF NOT EXISTS search_pois (
+  source_place_id bigint PRIMARY KEY,
+  source_osm_type char(1) NOT NULL,
+  source_osm_id bigint NOT NULL,
+  name text NOT NULL CHECK (btrim(name) <> ''),
+  category text NOT NULL,
+  kind text NOT NULL,
+  address text,
+  tags jsonb NOT NULL DEFAULT '{}'::jsonb,
+  location geometry(Point, 4326) NOT NULL,
+  synced_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (source_osm_type, source_osm_id)
+);
+
+CREATE INDEX IF NOT EXISTS search_pois_location_gix ON search_pois USING gist (location);
+CREATE INDEX IF NOT EXISTS search_pois_category_kind_idx ON search_pois (category, kind);
 
 CREATE TABLE IF NOT EXISTS admin_audit_logs (
   id bigserial PRIMARY KEY,

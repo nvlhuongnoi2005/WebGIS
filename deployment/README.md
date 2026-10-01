@@ -226,3 +226,18 @@ kubectl -n webgis describe pod -l app.kubernetes.io/name=controller
 The auth database is deliberately separate from Nominatim's database. It avoids
 coupling account data to an imported geocoding dataset and lets the controller
 reach it through the private `auth-postgres` ClusterIP service.
+
+## Spatial-search POI sync
+
+After the `auth-migrate` Job has completed and the Nominatim database is ready,
+copy the supported POI categories into the application database:
+
+```powershell
+kubectl -n webgis delete job poi-sync --ignore-not-found
+kubectl -n webgis apply -f deployment/workers/poi-sync.yaml
+kubectl -n webgis wait --for=condition=complete job/poi-sync --timeout=600s
+```
+
+The Job reads Nominatim through the private `nominatim-db` service and writes
+the product-owned `search_pois` table in `auth-postgres`. Re-run it after each
+Nominatim/OSM data import.

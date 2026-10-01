@@ -27,6 +27,14 @@ func main() {
 		slog.Info("suggestion indexing completed")
 		return
 	}
+	if len(os.Args) == 2 && os.Args[1] == "sync-pois" {
+		if err := runPOISync(ctx, config); err != nil {
+			slog.Error("POI synchronization failed", "error", err.Error())
+			os.Exit(1)
+		}
+		slog.Info("POI synchronization completed")
+		return
+	}
 	repository, err := NewRepository(ctx, config)
 	if err != nil {
 		slog.Error("database connection failed", "error", err.Error())

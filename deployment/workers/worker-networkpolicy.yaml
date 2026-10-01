@@ -51,6 +51,9 @@ spec:
         - podSelector:
             matchLabels:
               app.kubernetes.io/name: search-indexer
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: poi-sync
       ports:
         - protocol: TCP
           port: 5432

@@ -49,7 +49,7 @@
     "open": "Filter places",
     "close": "Close place filter",
     "title": "Filter places",
-    "description": "Show only the categories you choose. Search results remain pinned separately on the map.",
+    "description": "Filter to show only the places you want to see on the map.",
     "hideAll": "Hide all places",
     "categories": {
       "food": "Restaurants & cafés",

@@ -1,0 +1,40 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: poi-sync
+  labels:
+    app.kubernetes.io/name: poi-sync
+    app.kubernetes.io/part-of: webgis
+spec:
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: poi-sync
+        app.kubernetes.io/part-of: webgis
+    spec:
+      restartPolicy: OnFailure
+      imagePullSecrets:
+        - name: ghcr-pull
+      containers:
+        - name: sync
+          image: ghcr.io/nvlhuongnoi2005/webgis/controller:dev
+          imagePullPolicy: Always
+          command: ["/controller", "sync-pois"]
+          envFrom:
+            - configMapRef:
+                name: webgis-config
+            - secretRef:
+                name: webgis-secrets
+          env:
+            - name: NOMINATIM_DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: nominatim-db-credentials
+                  key: POSTGRES_USER
+            - name: NOMINATIM_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: nominatim-db-credentials
+                  key: POSTGRES_PASSWORD
