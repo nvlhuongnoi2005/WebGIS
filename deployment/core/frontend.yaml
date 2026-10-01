@@ -6,7 +6,7 @@ metadata:
     app.kubernetes.io/name: frontend
     app.kubernetes.io/part-of: webgis
 spec:
-  replicas: 2
+  replicas: 1
   # Delete prior ReplicaSets after a successful rollout. Rollbacks use GitOps by
   # re-applying a previous immutable image tag instead of retaining stale pods.
   revisionHistoryLimit: 0
