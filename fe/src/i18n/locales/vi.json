@@ -45,6 +45,20 @@
     "satellite": "Vệ tinh",
     "outdoor": "Địa hình"
   },
+  "poiFilter": {
+    "open": "Lọc địa điểm",
+    "close": "Đóng bộ lọc địa điểm",
+    "title": "Lọc địa điểm",
+    "description": "Chỉ hiển thị các nhóm địa điểm bạn chọn. Kết quả tìm kiếm luôn được ghim riêng trên bản đồ.",
+    "hideAll": "Ẩn tất cả địa điểm",
+    "categories": {
+      "food": "Nhà hàng & cà phê",
+      "health": "Bệnh viện & y tế",
+      "education": "Trường học",
+      "finance": "ATM & ngân hàng",
+      "tourism": "Du lịch & tham quan"
+    }
+  },
   "coordinates": {
     "title": "Vị trí bản đồ",
     "label": "Tọa độ",

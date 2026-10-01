@@ -45,6 +45,20 @@
     "satellite": "Satellite",
     "outdoor": "Outdoor"
   },
+  "poiFilter": {
+    "open": "Filter places",
+    "close": "Close place filter",
+    "title": "Filter places",
+    "description": "Show only the categories you choose. Search results remain pinned separately on the map.",
+    "hideAll": "Hide all places",
+    "categories": {
+      "food": "Restaurants & cafés",
+      "health": "Hospitals & health",
+      "education": "Education",
+      "finance": "ATMs & banks",
+      "tourism": "Tourism & attractions"
+    }
+  },
   "coordinates": {
     "title": "Map position",
     "label": "Coordinates",

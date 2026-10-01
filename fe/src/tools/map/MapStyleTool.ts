@@ -1,4 +1,38 @@
-import type { StyleSpecification } from "maplibre-gl";
+import type { FilterSpecification, Map, StyleSpecification } from "maplibre-gl";
+
+export const POI_FILTER_CATEGORIES = ["food", "health", "education", "finance", "tourism"] as const;
+
+export type PoiFilterCategory = (typeof POI_FILTER_CATEGORIES)[number];
+
+const POI_CLASSES: Record<PoiFilterCategory, string[]> = {
+  food: ["restaurant", "fast_food", "cafe"],
+  health: ["hospital", "clinic", "doctors", "pharmacy"],
+  education: ["school", "college", "university", "kindergarten"],
+  finance: ["atm", "bank"],
+  tourism: ["hotel", "museum", "attraction", "viewpoint", "zoo"],
+};
+
+function poiClassFilter(categories: readonly PoiFilterCategory[]): FilterSpecification {
+  const classes = categories.flatMap((category) => POI_CLASSES[category]);
+
+  // A deliberately unmatched class keeps the map quiet until the user asks
+  // for a POI category. Search results use their own marker and stay visible.
+  return ["in", "class", ...(classes.length ? classes : ["__hidden_poi__"])] as FilterSpecification;
+}
+
+export function applyPoiCategoryFilter(map: Map, categories: readonly PoiFilterCategory[]) {
+  if (!map.isStyleLoaded()) {
+    return;
+  }
+
+  const filter = poiClassFilter(categories);
+
+  for (const layer of map.getStyle().layers ?? []) {
+    if (layer.id.endsWith("-poi") || layer.id.endsWith("-poi-label")) {
+      map.setFilter(layer.id, filter);
+    }
+  }
+}
 
 export interface TileServerBaseMap {
   id: string;
@@ -504,7 +538,14 @@ function getOpenMapTilesOverlayLayers(
         "line-opacity": 0.98,
       },
     }),
-    textLayer(`${sourceId}-transportation-name`, sourceId, "transportation_name", 10, 0.6, "#6b4226"),
+    textLayer(
+      `${sourceId}-transportation-name`,
+      sourceId,
+      "transportation_name",
+      10,
+      0.6,
+      "#6b4226"
+    ),
     textLayer(`${sourceId}-water-name`, sourceId, "water_name", 10, 0.5, "#1769aa"),
     textLayer(`${sourceId}-place`, sourceId, "place", 5, 0, "#1f3349"),
     textLayer(`${sourceId}-aerodrome-label`, sourceId, "aerodrome_label", 10, 0, "#334e68"),
@@ -513,20 +554,41 @@ function getOpenMapTilesOverlayLayers(
       id: `${sourceId}-poi`,
       type: "circle",
       "source-layer": "poi",
-      minzoom: 12,
+      minzoom: 14,
+      filter: poiClassFilter([]),
       paint: {
-        "circle-radius": ["interpolate", ["linear"], ["zoom"], 12, 2.5, 16, 5],
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 14, 2.75, 16, 5],
         "circle-color": [
           "match",
           ["get", "class"],
           "hospital",
           "#dc3e50",
+          "clinic",
+          "#dc3e50",
+          "doctors",
+          "#dc3e50",
+          "pharmacy",
+          "#dc3e50",
           "school",
+          "#3d7dd8",
+          "college",
+          "#3d7dd8",
+          "university",
+          "#3d7dd8",
+          "kindergarten",
           "#3d7dd8",
           "place_of_worship",
           "#8c5ec7",
           "restaurant",
           "#dc7b34",
+          "fast_food",
+          "#dc7b34",
+          "cafe",
+          "#dc7b34",
+          "atm",
+          "#7456c7",
+          "bank",
+          "#7456c7",
           "#168d8b",
         ],
         "circle-stroke-color": "#ffffff",
@@ -534,8 +596,11 @@ function getOpenMapTilesOverlayLayers(
         "circle-opacity": 0.95,
       },
     }),
-    textLayer(`${sourceId}-poi-label`, sourceId, "poi", 13, 0.8, "#274c4b"),
-    textLayer(`${sourceId}-housenumber`, sourceId, "housenumber", 15, 0, "#52616b", "housenumber"),
+    {
+      ...textLayer(`${sourceId}-poi-label`, sourceId, "poi", 15, 0.8, "#274c4b"),
+      filter: poiClassFilter([]),
+    },
+    textLayer(`${sourceId}-housenumber`, sourceId, "housenumber", 17, 0, "#52616b", "housenumber"),
   ] as StyleSpecification["layers"];
 }
 
