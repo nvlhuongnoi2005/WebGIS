@@ -1,38 +1,4 @@
-import type { FilterSpecification, Map as MapLibreMap, StyleSpecification } from "maplibre-gl";
-
-export const POI_FILTER_CATEGORIES = ["food", "health", "education", "finance", "tourism"] as const;
-
-export type PoiFilterCategory = (typeof POI_FILTER_CATEGORIES)[number];
-
-const POI_CLASSES: Record<PoiFilterCategory, string[]> = {
-  food: ["restaurant", "fast_food", "cafe"],
-  health: ["hospital", "clinic", "doctors", "pharmacy"],
-  education: ["school", "college", "university", "kindergarten"],
-  finance: ["atm", "bank"],
-  tourism: ["hotel", "museum", "attraction", "viewpoint", "zoo"],
-};
-
-function poiClassFilter(categories: readonly PoiFilterCategory[]): FilterSpecification {
-  const classes = categories.flatMap((category) => POI_CLASSES[category]);
-
-  // A deliberately unmatched class keeps the map quiet until the user asks
-  // for a POI category. Search results use their own marker and stay visible.
-  return ["in", "class", ...(classes.length ? classes : ["__hidden_poi__"])] as FilterSpecification;
-}
-
-export function applyPoiCategoryFilter(map: MapLibreMap, categories: readonly PoiFilterCategory[]) {
-  if (!map.isStyleLoaded()) {
-    return;
-  }
-
-  const filter = poiClassFilter(categories);
-
-  for (const layer of map.getStyle().layers ?? []) {
-    if (layer.id.endsWith("-poi") || layer.id.endsWith("-poi-label")) {
-      map.setFilter(layer.id, filter);
-    }
-  }
-}
+import type { StyleSpecification } from "maplibre-gl";
 
 export interface TileServerBaseMap {
   id: string;
@@ -586,7 +552,6 @@ function getOpenMapTilesOverlayLayers(
       type: "circle",
       "source-layer": "poi",
       minzoom: 14,
-      filter: poiClassFilter([]),
       paint: {
         "circle-radius": ["interpolate", ["linear"], ["zoom"], 14, 2.75, 16, 5],
         "circle-color": [
@@ -627,10 +592,7 @@ function getOpenMapTilesOverlayLayers(
         "circle-opacity": 0.95,
       },
     }),
-    {
-      ...textLayer(`${sourceId}-poi-label`, sourceId, "poi", 15, 0.8, "#274c4b"),
-      filter: poiClassFilter([]),
-    },
+    textLayer(`${sourceId}-poi-label`, sourceId, "poi", 15, 0.8, "#274c4b"),
     textLayer(`${sourceId}-housenumber`, sourceId, "housenumber", 17, 0, "#52616b", "housenumber"),
   ] as StyleSpecification["layers"];
 }

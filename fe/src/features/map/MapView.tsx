@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Box, IconButton, Stack, Tooltip } from "@mui/material";
-import { Filter, LayoutDashboard, LocateFixed } from "lucide-react";
+import { LayoutDashboard, LocateFixed } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./maplibreWorker";
@@ -26,11 +26,7 @@ import {
   transformFromWgs84,
   type CoordinateReferenceSystem,
 } from "../../tools/coordinate/CoordinateTool";
-import {
-  applyPoiCategoryFilter,
-  splitTileServerDatasets,
-  type PoiFilterCategory,
-} from "../../tools/map/MapStyleTool";
+import { splitTileServerDatasets } from "../../tools/map/MapStyleTool";
 import {
   getDrawGeoJSONCrs,
   transformDrawFeatureCollection,
@@ -40,7 +36,6 @@ import DrawPanel from "./components/DrawPanel";
 import LayerPanel from "./components/LayerPanel";
 import MapPositionPopup from "./components/MapPositionPopup";
 import MeasurePanel from "./components/MeasurePanel";
-import PoiFilterPanel from "./components/PoiFilterPanel";
 import SpatialSearchPanel from "./components/SpatialSearchPanel";
 import ToolPanel from "./components/ToolPanel";
 import TileServerBaseMapPanel from "./components/TileServerBaseMapPanel";
@@ -58,9 +53,7 @@ function MapView({ onNavigate }: MapViewProps) {
   const [tileServerPanelMode, setTileServerPanelMode] = useState<"base-map" | "layers" | null>(
     null
   );
-  const [poiFilterOpen, setPoiFilterOpen] = useState(false);
   const [spatialSearchOpen, setSpatialSearchOpen] = useState(false);
-  const [visiblePoiCategories, setVisiblePoiCategories] = useState<PoiFilterCategory[]>([]);
   const [coordinateReferenceSystem, setCoordinateReferenceSystem] =
     useState<CoordinateReferenceSystem>(DEFAULT_COORDINATE_REFERENCE_SYSTEM);
   const { mapContainer, map, mapLoaded, hoveredCoordinate, placeMarkerAtCurrentLocation } =
@@ -84,14 +77,6 @@ function MapView({ onNavigate }: MapViewProps) {
     () => splitTileServerDatasets(tileServerBaseMaps),
     [tileServerBaseMaps]
   );
-
-  useEffect(() => {
-    if (!map.current || !mapLoaded) {
-      return;
-    }
-
-    applyPoiCategoryFilter(map.current, visiblePoiCategories);
-  }, [map, mapLoaded, mapStyleVersion, visiblePoiCategories]);
 
   useMapLanguage({ map, mapLoaded, mapStyleVersion });
 
@@ -128,14 +113,6 @@ function MapView({ onNavigate }: MapViewProps) {
 
     setTileServerPanelMode(null);
     setActiveTool(null);
-  };
-
-  const togglePoiCategory = (category: PoiFilterCategory) => {
-    setVisiblePoiCategories((current) =>
-      current.includes(category)
-        ? current.filter((item) => item !== category)
-        : [...current, category]
-    );
   };
 
   useMeasureLayers({
@@ -249,7 +226,6 @@ function MapView({ onNavigate }: MapViewProps) {
             aria-label={t("spatialSearch.open")}
             onClick={() => {
               setSpatialSearchOpen((open) => !open);
-              setPoiFilterOpen(false);
             }}
             color={spatialSearch.result ? "primary" : "default"}
             sx={{
@@ -266,31 +242,6 @@ function MapView({ onNavigate }: MapViewProps) {
             }}
           >
             <LocateFixed size={20} />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title={t("poiFilter.open")}>
-          <IconButton
-            type="button"
-            aria-label={t("poiFilter.open")}
-            onClick={() => {
-              setPoiFilterOpen((open) => !open);
-              setSpatialSearchOpen(false);
-            }}
-            color={visiblePoiCategories.length ? "primary" : "default"}
-            sx={{
-              width: 44,
-              height: 44,
-              border: "2px solid",
-              borderColor: "background.paper",
-              bgcolor: "background.paper",
-              boxShadow: "0 8px 20px rgb(20 45 82 / 16%)",
-              "&:hover": {
-                bgcolor: "action.hover",
-                boxShadow: "0 10px 24px rgb(20 45 82 / 20%)",
-              },
-            }}
-          >
-            <Filter size={20} />
           </IconButton>
         </Tooltip>
         <ThemeModeSwitcher />
@@ -328,15 +279,6 @@ function MapView({ onNavigate }: MapViewProps) {
           onOpenBaseMap={() => openTileServerPanel("base-map")}
           onOpenLayers={() => openTileServerPanel("layers")}
           selectedOverlayCount={tileServerOverlays.length}
-        />
-      )}
-
-      {poiFilterOpen && (
-        <PoiFilterPanel
-          selectedCategories={visiblePoiCategories}
-          onToggle={togglePoiCategory}
-          onClear={() => setVisiblePoiCategories([])}
-          onClose={() => setPoiFilterOpen(false)}
         />
       )}
 

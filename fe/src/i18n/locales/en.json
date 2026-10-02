@@ -45,20 +45,6 @@
     "satellite": "Satellite",
     "outdoor": "Outdoor"
   },
-  "poiFilter": {
-    "open": "Filter places",
-    "close": "Close place filter",
-    "title": "Filter places",
-    "description": "Filter to show only the places you want to see on the map.",
-    "hideAll": "Hide all places",
-    "categories": {
-      "food": "Restaurants & cafés",
-      "health": "Hospitals & health",
-      "education": "Education",
-      "finance": "ATMs & banks",
-      "tourism": "Tourism & attractions"
-    }
-  },
   "spatialSearch": {
     "open": "Search nearby places",
     "close": "Close nearby search",
