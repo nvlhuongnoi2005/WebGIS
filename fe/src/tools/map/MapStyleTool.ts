@@ -48,7 +48,7 @@ export interface TileServerBaseMap {
 
 export const DEFAULT_TILE_SERVER_BASE_MAP: TileServerBaseMap = {
   id: "vietnam",
-  label: "OpenStreetMap",
+  label: "OPENSTREETMAP_VIETNAM",
   tilePath: "/datas/vietnam/{z}/{x}/{y}.pbf",
   stylePath: "/styles/openstreetmap/style.json",
   maxzoom: 14,
@@ -158,10 +158,13 @@ function normalizeCatalogItem(item: unknown, index: number): TileServerBaseMap {
       ? "vector"
       : "raster";
   const sourceLayer = record.sourceLayer ?? record.source_layer;
-  const role =
-    String(record.type ?? "")
-      .trim()
-      .toLowerCase() === "overlay"
+  // OPENSTREETMAP_VIETNAM is published as an overlay TileJSON, but its
+  // accompanying server-side style is a complete basemap style.
+  const role = TILE_SERVER_DATASET_STYLE_PATHS[id]
+    ? "basemap"
+    : String(record.type ?? "")
+          .trim()
+          .toLowerCase() === "overlay"
       ? "overlay"
       : "basemap";
 
