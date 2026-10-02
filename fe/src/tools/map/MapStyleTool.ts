@@ -195,10 +195,12 @@ export function splitTileServerDatasets(datasets: TileServerBaseMap[]) {
 
 async function getTileServerRootDatasetIds(html: string) {
   const matches = [
-    // The Tile Server home page lists styles and datasets together. TileJSON
-    // links are emitted only for datasets, so do not treat every identifier
-    // (for example the `openstreetmap` style) as a tile dataset.
-    ...html.matchAll(/\/datas\/([a-zA-Z0-9._-]+)\.json/g),
+    // The Tile Server home page is rendered from a template: it lists styles
+    // and datasets as identifiers, but only datasets have a following type.
+    // This keeps `openstreetmap` (a style) out while retaining every dataset.
+    ...html.matchAll(
+      /identifier:\s*\$\{escapeHTML\("([^"]+)"\)\}<\/p>\s*<p>type:/g
+    ),
     ...html.matchAll(/\/datas\/([a-zA-Z0-9._-]+)\/\{z\}/g),
   ];
 
