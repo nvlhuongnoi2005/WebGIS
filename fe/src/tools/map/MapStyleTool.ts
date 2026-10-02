@@ -195,7 +195,10 @@ export function splitTileServerDatasets(datasets: TileServerBaseMap[]) {
 
 async function getTileServerRootDatasetIds(html: string) {
   const matches = [
-    ...html.matchAll(/identifier:\s*\$\{escapeHTML\("([^"]+)"\)\}/g),
+    // The Tile Server home page lists styles and datasets together. TileJSON
+    // links are emitted only for datasets, so do not treat every identifier
+    // (for example the `openstreetmap` style) as a tile dataset.
+    ...html.matchAll(/\/datas\/([a-zA-Z0-9._-]+)\.json/g),
     ...html.matchAll(/\/datas\/([a-zA-Z0-9._-]+)\/\{z\}/g),
   ];
 
@@ -267,6 +270,13 @@ export async function fetchTileServerBaseMaps(signal?: AbortSignal): Promise<Til
 }
 
 export function resolveTileServerAssetUrl(tilePath: string) {
+  // MapLibre calls transformRequest for both the style document and every
+  // asset it references. Assets already routed through the Controller must
+  // remain unchanged; otherwise `/api/tiles` gets prepended on every pass.
+  if (tilePath === TILE_SERVER_URL || tilePath.startsWith(`${TILE_SERVER_URL}/`)) {
+    return tilePath;
+  }
+
   if (tilePath.startsWith("http")) {
     try {
       const url = new URL(tilePath);
