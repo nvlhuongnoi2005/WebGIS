@@ -38,6 +38,7 @@ export interface TileServerBaseMap {
   id: string;
   label: string;
   tilePath: string;
+  stylePath?: string;
   maxzoom: number;
   tileSize: number;
   kind: "raster" | "vector";
@@ -46,12 +47,13 @@ export interface TileServerBaseMap {
 }
 
 export const DEFAULT_TILE_SERVER_BASE_MAP: TileServerBaseMap = {
-  id: "asia_full",
-  label: "Asia Full",
-  tilePath: "/datas/asia_full/{z}/{x}/{y}.png",
-  maxzoom: 7,
-  tileSize: 256,
-  kind: "raster",
+  id: "vietnam",
+  label: "OpenStreetMap",
+  tilePath: "/datas/vietnam/{z}/{x}/{y}.pbf",
+  stylePath: "/styles/openstreetmap/style.json",
+  maxzoom: 14,
+  tileSize: 512,
+  kind: "vector",
   role: "basemap",
 };
 
@@ -61,6 +63,10 @@ const TILE_SERVER_CATALOG_URL = "/api/tile-catalog";
 const TILE_SERVER_BACKEND_URL = (
   import.meta.env.VITE_TILE_SERVER_URL || "http://localhost:8080"
 ).replace(/\/$/, "");
+
+const TILE_SERVER_DATASET_STYLE_PATHS: Readonly<Record<string, string>> = {
+  vietnam: "/styles/openstreetmap/style.json",
+};
 
 export function getEmptyMapStyle(): StyleSpecification {
   return {
@@ -163,6 +169,7 @@ function normalizeCatalogItem(item: unknown, index: number): TileServerBaseMap {
     id,
     label,
     tilePath,
+    stylePath: TILE_SERVER_DATASET_STYLE_PATHS[id],
     maxzoom: positiveNumber(record.maxzoom ?? record.maxZoom, 7),
     tileSize: positiveNumber(record.tileSize, 256),
     kind,
@@ -256,7 +263,7 @@ export async function fetchTileServerBaseMaps(signal?: AbortSignal): Promise<Til
   throw new Error("Không tìm thấy dataset trên tile server.");
 }
 
-function resolveTileServerTileUrl(tilePath: string) {
+export function resolveTileServerAssetUrl(tilePath: string) {
   if (tilePath.startsWith("http")) {
     try {
       const url = new URL(tilePath);
@@ -266,7 +273,12 @@ function resolveTileServerTileUrl(tilePath: string) {
       // http://tile-server:8080/datas/vietnam_osm/{z}/{x}/{y}.pbf. That DNS
       // name is intentionally not visible to browsers. Tile assets from any
       // Tile Server origin must therefore use the public Controller proxy.
-      if (url.pathname.startsWith("/datas/") || url.pathname.startsWith("/fonts/")) {
+      if (
+        url.pathname.startsWith("/datas/") ||
+        url.pathname.startsWith("/fonts/") ||
+        url.pathname.startsWith("/sprites/") ||
+        url.pathname.startsWith("/styles/")
+      ) {
         // Do not use URL.pathname here: it encodes MapLibre's {z}/{x}/{y}
         // template placeholders as %7Bz%7D/%7Bx%7D/%7By%7D.
         const tilePathAndQuery = tilePath.slice(url.origin.length);
@@ -290,7 +302,7 @@ function resolveTileServerTileUrl(tilePath: string) {
 }
 
 export function getTileServerPreviewUrl(baseMap: TileServerBaseMap) {
-  return resolveTileServerTileUrl(baseMap.tilePath)
+  return resolveTileServerAssetUrl(baseMap.tilePath)
     .replace("{z}", "3")
     .replace("{x}", "6")
     .replace("{y}", "3");
@@ -303,9 +315,13 @@ function getTileServerOverlaySourceId(overlay: TileServerBaseMap) {
 export function getTileServerMapStyle(
   baseMap: TileServerBaseMap,
   overlays: TileServerBaseMap[] = []
-): StyleSpecification {
+): StyleSpecification | string {
+  if (baseMap.stylePath && overlays.length === 0) {
+    return resolveTileServerAssetUrl(baseMap.stylePath);
+  }
+
   const sourceId = `tile-server-${baseMap.id}`;
-  const tileUrl = resolveTileServerTileUrl(baseMap.tilePath);
+  const tileUrl = resolveTileServerAssetUrl(baseMap.tilePath);
   const sources: StyleSpecification["sources"] = {
     [sourceId]: {
       type: "raster",
@@ -324,7 +340,7 @@ export function getTileServerMapStyle(
 
   overlays.forEach((overlay) => {
     const overlaySourceId = getTileServerOverlaySourceId(overlay);
-    const overlayTileUrl = resolveTileServerTileUrl(overlay.tilePath);
+    const overlayTileUrl = resolveTileServerAssetUrl(overlay.tilePath);
 
     const isVector = overlay.kind === "vector" || /\.(pbf|mvt)(?:$|\?)/i.test(overlay.tilePath);
 

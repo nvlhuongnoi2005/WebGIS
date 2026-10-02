@@ -16,6 +16,7 @@ import {
   DEFAULT_TILE_SERVER_BASE_MAP,
   fetchTileServerBaseMaps,
   getMapStyle,
+  resolveTileServerAssetUrl,
 } from "../../tools/map/MapStyleTool";
 import { AppNavigationContext } from "../../appNavigation";
 import type { DrawFeatureCollection } from "../../tools/draw/DrawTool";
@@ -72,6 +73,7 @@ export default function SharedGeoJSONPage({
       style: sharedMap.style,
       center: [0, 0],
       zoom: 2,
+      transformRequest: (url) => ({ url: resolveTileServerAssetUrl(url) }),
     });
     map.addControl(new maplibregl.NavigationControl(), "top-right");
     map.once("load", () => {

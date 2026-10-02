@@ -3,7 +3,7 @@ import { createRoot, type Root } from "react-dom/client";
 
 import * as maplibregl from "maplibre-gl";
 
-import { getMapStyle } from "../tools/map/MapStyleTool";
+import { getMapStyle, resolveTileServerAssetUrl } from "../tools/map/MapStyleTool";
 import MapPositionPopup from "../features/map/components/MapPositionPopup";
 import {
   transformFromWgs84,
@@ -171,6 +171,9 @@ export function useMapInstance(
       style: getMapStyle(),
       center: INITIAL_MAP_CENTER,
       zoom: 4,
+      // Server-hosted styles contain Kubernetes-only asset URLs. Keep every
+      // style asset behind the Controller proxy before MapLibre requests it.
+      transformRequest: (url) => ({ url: resolveTileServerAssetUrl(url) }),
     });
 
     map.current = mapInstance;
