@@ -120,6 +120,12 @@ function MapView({ onNavigate }: MapViewProps) {
       measure.resetMeasure();
     }
 
+    if (activeTool === "route") {
+      // A global place search replaces the active route workflow, so clear
+      // both endpoints and its rendered line before showing the result.
+      routing.reset();
+    }
+
     setTileServerPanelMode(null);
     setActiveTool(null);
   };
