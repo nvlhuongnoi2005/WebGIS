@@ -1,10 +1,17 @@
 # GIS data management
 
-The Phase 1 flow is:
+The GIS flow is deliberately divided into three parts:
 
-```text
-upload -> inspect -> build -> preview/style -> publish -> grant ACL -> view map
-```
+1. **Raw data**: upload, list, download, and delete source files. The raw store
+   accepts any extension (including `.bpf`, `.shp`, and `.zip`) and does not run
+   GDAL during upload.
+2. **Conversion**: an administrator explicitly prepares a raw version for
+   conversion. The GDAL worker uses `ogrinfo` to validate the real payload and,
+   after it is ready, uses `ogr2ogr` to build MBTiles. Files without a GDAL
+   driver remain stored raw if inspection fails.
+3. **Publish and access**: a ready MBTiles version is referenced by a managed
+   style and publication. Only users granted `map:read` can refresh the map
+   catalog, load its style, or fetch its tiles.
 
 `controller migrate` applies the GIS schema after `001_auth.sql`. The raw
 upload store is selected by `GIS_RAW_STORAGE_DRIVER`: use `filesystem` only for

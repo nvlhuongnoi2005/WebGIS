@@ -168,7 +168,7 @@ func inspectDatasetJob(ctx context.Context, repository *Repository, storage RawS
 	}
 	layers := []map[string]any{{"name": strings.TrimSuffix(sanitizeUploadName(filename), filepath.Ext(filename)), "format": format}}
 	encodedLayers, _ := json.Marshal(layers)
-	_, err = repository.pool.Exec(ctx, `UPDATE dataset_versions SET status='ready',layers=$2::jsonb,error_message='' WHERE id=$1`, job.DatasetVersionID, encodedLayers)
+	_, err = repository.pool.Exec(ctx, `UPDATE dataset_versions SET inspection_status='ready',layers=$2::jsonb,error_message='' WHERE id=$1`, job.DatasetVersionID, encodedLayers)
 	if err != nil {
 		return err
 	}
@@ -241,7 +241,7 @@ func failGISJob(ctx context.Context, repository *Repository, job gisJob, cause e
 	message := cause.Error()
 	_, _ = repository.pool.Exec(ctx, `UPDATE processing_jobs SET status='failed',finished_at=now(),lease_expires_at=NULL,error_message=$2,log=log || E'\nERROR: ' || $2 WHERE id=$1`, job.ID, message)
 	if job.DatasetVersionID != "" {
-		_, _ = repository.pool.Exec(ctx, `UPDATE dataset_versions SET status='failed',error_message=$2 WHERE id=$1`, job.DatasetVersionID, message)
+		_, _ = repository.pool.Exec(ctx, `UPDATE dataset_versions SET inspection_status='failed',error_message=$2 WHERE id=$1`, job.DatasetVersionID, message)
 	}
 	if job.TilesetVersionID != "" {
 		_, _ = repository.pool.Exec(ctx, `UPDATE tileset_versions SET status='failed',error_message=$2 WHERE id=$1`, job.TilesetVersionID, message)

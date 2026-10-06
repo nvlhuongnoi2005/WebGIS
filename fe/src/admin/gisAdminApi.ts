@@ -14,6 +14,7 @@ export type DatasetVersion = {
   size: number;
   format: string;
   status: string;
+  inspectionStatus: "not_requested" | "processing" | "ready" | "failed";
   layers: Array<{ name: string }>;
   error: string;
 };
@@ -89,6 +90,12 @@ export const gisAdminApi = {
       body: form,
     });
   },
+  inspect: (datasetId: string, versionId: string) =>
+    json<{ jobId: string }>(`/api/admin/datasets/${datasetId}/versions/${versionId}/inspect`, {
+      method: "POST",
+    }),
+  deleteRawVersion: (datasetId: string, versionId: string) =>
+    empty(`/api/admin/datasets/${datasetId}/versions/${versionId}`, { method: "DELETE" }),
   tilesets: () => json<{ tilesets: Tileset[] }>("/api/admin/tilesets").then((x) => x.tilesets),
   createTileset: (value: { datasetId: string; slug: string; name: string }) =>
     json<Tileset>("/api/admin/tilesets", body(value)),

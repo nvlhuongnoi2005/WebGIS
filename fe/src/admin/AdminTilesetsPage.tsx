@@ -99,7 +99,7 @@ export function AdminTilesetsPage() {
             sx={{ minWidth: 180 }}
           >
             {versions
-              .filter((v) => v.status === "ready")
+              .filter((v) => v.inspectionStatus === "ready" || v.status === "ready")
               .map((v) => (
                 <MenuItem key={v.id} value={v.id}>
                   v{v.version} · {v.filename}

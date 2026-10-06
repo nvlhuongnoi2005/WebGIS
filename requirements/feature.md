@@ -53,13 +53,22 @@ Trước khi chỉnh sửa, trình bày ngắn gọn các phát hiện về sour
 
 ## 2. Phạm vi Phase 1
 
-Hỗ trợ upload và build vector tiles từ:
+Chức năng GIS tách thành ba phần độc lập:
+
+1. Raw data: upload, liệt kê, tải xuống và xóa raw file. Raw store nhận các
+   tệp như `.bpf`, Shapefile (`.shp`) hoặc `.zip` mà không chạy GDAL lúc upload.
+2. Conversion: admin chủ động kiểm tra raw data qua GDAL rồi tạo vector
+   MBTiles khi driver hỗ trợ.
+3. Publish: publication chỉ hiển thị lại trên FE cho user được cấp `map:read`;
+   catalog, style và tile đều phải kiểm tra ACL.
+
+Conversion sang vector tiles hỗ trợ:
 
 - GeoJSON.
 - GeoPackage.
 - Shapefile ZIP.
 
-Một dataset version có thể chứa nhiều layer. Cho phép admin chọn layer đầu vào khi tạo tileset. Phase 1 chưa cần hỗ trợ KML, CSV, GeoTIFF/raster, editor style nâng cao hoặc approval workflow nhiều bước.
+Một dataset version có thể chứa nhiều layer. Cho phép admin chọn layer đầu vào khi tạo tileset. Raw file không có driver GDAL vẫn được giữ lại nhưng không thể tạo MBTiles. Phase 1 chưa cần hỗ trợ KML, CSV, GeoTIFF/raster, editor style nâng cao hoặc approval workflow nhiều bước.
 
 Raw file lưu trong Ceph RGW/S3-compatible. MBTiles và dữ liệu staging/published lưu trên CephFS. Với local dev, cung cấp cấu hình filesystem adapter hoặc cách chạy local tương thích với worker; không yêu cầu dựng Ceph để chạy smoke test cơ bản.
 

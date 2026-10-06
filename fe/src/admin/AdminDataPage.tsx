@@ -68,6 +68,25 @@ export function AdminDataPage() {
       setError(t("admin.gis.uploadError"));
     }
   };
+  const inspect = async (version: DatasetVersion) => {
+    if (!selected) return;
+    try {
+      await gisAdminApi.inspect(selected.id, version.id);
+      choose(selected);
+    } catch {
+      setError(t("admin.gis.inspectError"));
+    }
+  };
+  const deleteRaw = async (version: DatasetVersion) => {
+    if (!selected) return;
+    try {
+      await gisAdminApi.deleteRawVersion(selected.id, version.id);
+      choose(selected);
+      reload();
+    } catch {
+      setError(t("admin.gis.deleteRawError"));
+    }
+  };
   return (
     <>
       <PageTitle
@@ -118,12 +137,7 @@ export function AdminDataPage() {
             <Stack spacing={1.5} sx={{ mt: 1.5 }}>
               <Button component="label" variant="outlined">
                 {file?.name ?? t("admin.gis.chooseRawFile")}
-                <input
-                  hidden
-                  type="file"
-                  accept=".geojson,.json,.gpkg,.zip"
-                  onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                />
+                <input hidden type="file" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
               </Button>
               <Button disabled={!file} onClick={() => void upload()} variant="contained">
                 {t("admin.gis.uploadVersion")}
@@ -134,9 +148,27 @@ export function AdminDataPage() {
                     v{version.version} · {version.filename}
                   </Typography>
                   <Typography variant="caption">
-                    {version.status}
+                    {t("admin.gis.rawStored")} · {version.format} ·{" "}
+                    {t("admin.gis.conversionStatus")}: {version.inspectionStatus}
                     {version.error ? `: ${version.error}` : ""}
                   </Typography>
+                  <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                    <Button
+                      size="small"
+                      disabled={
+                        version.inspectionStatus === "processing" ||
+                        version.inspectionStatus === "ready"
+                      }
+                      onClick={() => void inspect(version)}
+                    >
+                      {version.inspectionStatus === "failed"
+                        ? t("admin.gis.retryConversion")
+                        : t("admin.gis.prepareConversion")}
+                    </Button>
+                    <Button size="small" color="error" onClick={() => void deleteRaw(version)}>
+                      {t("admin.gis.deleteRaw")}
+                    </Button>
+                  </Stack>
                 </Paper>
               ))}
             </Stack>

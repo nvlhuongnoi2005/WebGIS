@@ -2,6 +2,15 @@ package main
 
 import "testing"
 
+func TestDetectUploadFormatStoresUnknownExtensionAsRaw(t *testing.T) {
+	if got := detectUploadFormat("survey.bpf"); got != "raw/bpf" {
+		t.Fatalf("detectUploadFormat() = %q, want raw/bpf", got)
+	}
+	if got := detectUploadFormat("roads.shp"); got != "raw/shp" {
+		t.Fatalf("detectUploadFormat() = %q, want raw/shp", got)
+	}
+}
+
 func TestGISStyleRejectsDirectTileURLs(t *testing.T) {
 	_, ok := gisStyleSourceIDs([]byte(`{"version":8,"sources":{"private":{"type":"vector","tilesetVersionId":"550e8400-e29b-41d4-a716-446655440000","tiles":["https://example.invalid/{z}"]}}}`))
 	if ok {

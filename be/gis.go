@@ -167,7 +167,11 @@ func detectUploadFormat(filename string) string {
 	case strings.HasSuffix(lower, ".zip"):
 		return "shapefile_zip"
 	default:
-		return ""
+		extension := strings.TrimPrefix(filepath.Ext(lower), ".")
+		if extension == "" {
+			return "raw"
+		}
+		return "raw/" + extension
 	}
 }
 func (server *Server) uploadDatasetVersion(response http.ResponseWriter, request *http.Request, datasetID string) {
@@ -187,10 +191,6 @@ func (server *Server) uploadDatasetVersion(response http.ResponseWriter, request
 	}
 	defer file.Close()
 	format := detectUploadFormat(header.Filename)
-	if format == "" {
-		gisBadInput(response, "Supported formats are GeoJSON, GeoPackage, and Shapefile ZIP")
-		return
-	}
 	if _, err = server.repository.pool.Exec(request.Context(), `SELECT 1 FROM datasets WHERE id=$1`, datasetID); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			clientError(response, 404, "Dataset not found")
@@ -229,11 +229,6 @@ func (server *Server) uploadDatasetVersion(response http.ResponseWriter, request
 		clientError(response, 500, "Could not create dataset version")
 		return
 	}
-	if _, err = tx.Exec(request.Context(), `INSERT INTO processing_jobs(job_type,dataset_version_id,status,created_by) VALUES('inspect_dataset',$1,'queued',$2)`, id, claims.Subject); err != nil {
-		_ = server.rawStorage.Delete(request.Context(), key)
-		clientError(response, 500, "Could not queue inspection")
-		return
-	}
 	if err = tx.Commit(request.Context()); err != nil {
 		_ = server.rawStorage.Delete(request.Context(), key)
 		clientError(response, 500, "Internal server error")
@@ -241,6 +236,72 @@ func (server *Server) uploadDatasetVersion(response http.ResponseWriter, request
 	}
 	server.gisAudit(request, claims.Subject, "dataset.version.uploaded", "dataset_version", id, map[string]any{"datasetId": datasetID, "version": version, "size": count.n})
 	writeJSON(response, http.StatusCreated, map[string]any{"id": id, "version": version, "status": "uploaded"})
+}
+
+// inspectDatasetVersion starts the conversion preparation step explicitly.
+// Uploading raw data must not invoke GDAL: a raw archive may be retained even
+// when it has no GDAL driver.
+func (server *Server) inspectDatasetVersion(response http.ResponseWriter, request *http.Request, datasetID, versionID string) {
+	claims, ok := server.requireGISAdmin(response, request, permissionTilesetBuild)
+	if !ok {
+		return
+	}
+	tx, err := server.repository.pool.Begin(request.Context())
+	if err != nil {
+		clientError(response, 500, "Internal server error")
+		return
+	}
+	defer tx.Rollback(request.Context())
+	var exists bool
+	err = tx.QueryRow(request.Context(), `UPDATE dataset_versions d
+SET inspection_status='processing',error_message=''
+WHERE d.id=$1 AND d.dataset_id=$2 AND d.status='uploaded'
+  AND d.inspection_status IN ('not_requested','failed')
+  AND NOT EXISTS (SELECT 1 FROM processing_jobs j WHERE j.dataset_version_id=d.id AND j.job_type='inspect_dataset' AND j.status IN ('queued','running'))
+RETURNING true`, versionID, datasetID).Scan(&exists)
+	if errors.Is(err, pgx.ErrNoRows) {
+		clientError(response, http.StatusConflict, "Raw data is not available for conversion")
+		return
+	}
+	if err != nil {
+		clientError(response, 500, "Could not prepare raw data")
+		return
+	}
+	var jobID string
+	err = tx.QueryRow(request.Context(), `INSERT INTO processing_jobs(job_type,dataset_version_id,status,created_by) VALUES('inspect_dataset',$1,'queued',$2) RETURNING id`, versionID, claims.Subject).Scan(&jobID)
+	if err != nil || tx.Commit(request.Context()) != nil {
+		clientError(response, 500, "Could not queue inspection")
+		return
+	}
+	server.gisAudit(request, claims.Subject, "dataset.version.inspect.queued", "dataset_version", versionID, map[string]any{"datasetId": datasetID, "jobId": jobID})
+	writeJSON(response, http.StatusAccepted, map[string]any{"jobId": jobID, "status": "processing"})
+}
+
+func (server *Server) deleteDatasetVersion(response http.ResponseWriter, request *http.Request, datasetID, versionID string) {
+	claims, ok := server.requireGISAdmin(response, request, permissionDatasetDelete)
+	if !ok {
+		return
+	}
+	var key string
+	err := server.repository.pool.QueryRow(request.Context(), `DELETE FROM dataset_versions d
+WHERE d.id=$1 AND d.dataset_id=$2
+  AND NOT EXISTS (SELECT 1 FROM tileset_versions tv WHERE tv.dataset_version_id=d.id)
+  AND NOT EXISTS (SELECT 1 FROM processing_jobs j WHERE j.dataset_version_id=d.id AND j.status IN ('queued','running'))
+RETURNING d.storage_key`, versionID, datasetID).Scan(&key)
+	if errors.Is(err, pgx.ErrNoRows) {
+		clientError(response, http.StatusConflict, "Raw data cannot be deleted while conversion output or a job depends on it")
+		return
+	}
+	if err != nil {
+		clientError(response, 500, "Could not delete raw data")
+		return
+	}
+	if err = server.rawStorage.Delete(request.Context(), key); err != nil && !errors.Is(err, os.ErrNotExist) {
+		clientError(response, 500, "Raw metadata was deleted but storage cleanup failed")
+		return
+	}
+	server.gisAudit(request, claims.Subject, "dataset.version.deleted", "dataset_version", versionID, map[string]any{"datasetId": datasetID})
+	response.WriteHeader(http.StatusNoContent)
 }
 
 type countingReader struct {
@@ -276,7 +337,7 @@ func (server *Server) listDatasetVersions(response http.ResponseWriter, request 
 	if _, ok := server.requireGISAdmin(response, request, permissionDatasetRead); !ok {
 		return
 	}
-	rows, err := server.repository.pool.Query(request.Context(), `SELECT id,version,original_filename,file_size,checksum,format,status,COALESCE(crs,''),layers,error_message,created_at::text FROM dataset_versions WHERE dataset_id=$1 ORDER BY version DESC`, datasetID)
+	rows, err := server.repository.pool.Query(request.Context(), `SELECT id,version,original_filename,file_size,checksum,format,status,inspection_status,COALESCE(crs,''),layers,error_message,created_at::text FROM dataset_versions WHERE dataset_id=$1 ORDER BY version DESC`, datasetID)
 	if err != nil {
 		clientError(response, 500, "Internal server error")
 		return
@@ -284,15 +345,15 @@ func (server *Server) listDatasetVersions(response http.ResponseWriter, request 
 	defer rows.Close()
 	items := []map[string]any{}
 	for rows.Next() {
-		var id, filename, checksum, format, status, crs, errorMessage, created string
+		var id, filename, checksum, format, status, inspectionStatus, crs, errorMessage, created string
 		var version int
 		var size int64
 		var layers json.RawMessage
-		if err = rows.Scan(&id, &version, &filename, &size, &checksum, &format, &status, &crs, &layers, &errorMessage, &created); err != nil {
+		if err = rows.Scan(&id, &version, &filename, &size, &checksum, &format, &status, &inspectionStatus, &crs, &layers, &errorMessage, &created); err != nil {
 			clientError(response, 500, "Internal server error")
 			return
 		}
-		items = append(items, map[string]any{"id": id, "version": version, "filename": filename, "size": size, "checksum": checksum, "format": format, "status": status, "crs": crs, "layers": layers, "error": errorMessage, "createdAt": created})
+		items = append(items, map[string]any{"id": id, "version": version, "filename": filename, "size": size, "checksum": checksum, "format": format, "status": status, "inspectionStatus": inspectionStatus, "crs": crs, "layers": layers, "error": errorMessage, "createdAt": created})
 	}
 	writeJSON(response, 200, map[string]any{"versions": items})
 }
@@ -401,7 +462,7 @@ func (server *Server) buildTileset(response http.ResponseWriter, request *http.R
 	err = tx.QueryRow(request.Context(), `SELECT COALESCE(max(version),0)+1 FROM tileset_versions WHERE tileset_id=$1 FOR UPDATE`, tilesetID).Scan(&version)
 	var versionID string
 	if err == nil {
-		err = tx.QueryRow(request.Context(), `INSERT INTO tileset_versions(tileset_id,dataset_version_id,version,selected_layer,source_layer,build_config,status,created_by) SELECT t.id,$2,$3,$4,$5,$6::jsonb,'processing',$7 FROM tilesets t JOIN dataset_versions d ON d.dataset_id=t.dataset_id WHERE t.id=$1 AND d.id=$2 AND d.status='ready' RETURNING id`, tilesetID, input.DatasetVersionID, version, input.Layer, input.SourceLayer, config, claims.Subject).Scan(&versionID)
+		err = tx.QueryRow(request.Context(), `INSERT INTO tileset_versions(tileset_id,dataset_version_id,version,selected_layer,source_layer,build_config,status,created_by) SELECT t.id,$2,$3,$4,$5,$6::jsonb,'processing',$7 FROM tilesets t JOIN dataset_versions d ON d.dataset_id=t.dataset_id WHERE t.id=$1 AND d.id=$2 AND (d.inspection_status='ready' OR d.status='ready') RETURNING id`, tilesetID, input.DatasetVersionID, version, input.Layer, input.SourceLayer, config, claims.Subject).Scan(&versionID)
 	}
 	if errors.Is(err, pgx.ErrNoRows) {
 		clientError(response, 409, "Dataset version is not ready or does not belong to tileset")
@@ -1038,6 +1099,14 @@ func (server *Server) routeGISAdmin(response http.ResponseWriter, request *http.
 			}
 			if len(parts) == 5 && parts[4] == "versions" && request.Method == http.MethodGet {
 				server.listDatasetVersions(response, request, parts[3])
+				return true
+			}
+			if len(parts) == 7 && parts[4] == "versions" && parts[6] == "inspect" && request.Method == http.MethodPost && validGISUUID(parts[5]) {
+				server.inspectDatasetVersion(response, request, parts[3], parts[5])
+				return true
+			}
+			if len(parts) == 6 && parts[4] == "versions" && request.Method == http.MethodDelete && validGISUUID(parts[5]) {
+				server.deleteDatasetVersion(response, request, parts[3], parts[5])
 				return true
 			}
 			if len(parts) == 7 && parts[4] == "versions" && parts[6] == "download" && request.Method == http.MethodGet {
