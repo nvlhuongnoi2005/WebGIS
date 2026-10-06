@@ -18,8 +18,10 @@ import {
 } from "@mui/material";
 import { PageTitle } from "./AdminShared";
 import { gisAdminApi, type Dataset, type DatasetVersion } from "./gisAdminApi";
+import { useTranslation } from "react-i18next";
 
 export function AdminDataPage() {
+  const { t } = useTranslation();
   const [items, setItems] = useState<Dataset[]>([]);
   const [selected, setSelected] = useState<Dataset | null>(null);
   const [versions, setVersions] = useState<DatasetVersion[]>([]);
@@ -33,7 +35,7 @@ export function AdminDataPage() {
     gisAdminApi
       .datasets()
       .then(setItems)
-      .catch(() => setError("Unable to load GIS datasets."));
+      .catch(() => setError(t("admin.gis.loadDatasetsError")));
   useEffect(() => {
     reload();
   }, []);
@@ -42,7 +44,7 @@ export function AdminDataPage() {
     gisAdminApi
       .versions(item.id)
       .then(setVersions)
-      .catch(() => setError("Unable to load versions."));
+      .catch(() => setError(t("admin.gis.loadVersionsError")));
   };
   const create = async () => {
     try {
@@ -53,7 +55,7 @@ export function AdminDataPage() {
       setDescription("");
       reload();
     } catch {
-      setError("Unable to create dataset.");
+      setError(t("admin.gis.createDatasetError"));
     }
   };
   const upload = async () => {
@@ -63,17 +65,17 @@ export function AdminDataPage() {
       setFile(null);
       choose(selected);
     } catch {
-      setError("Upload failed. Only GeoJSON, GeoPackage, and Shapefile ZIP are supported.");
+      setError(t("admin.gis.uploadError"));
     }
   };
   return (
     <>
       <PageTitle
-        title="GIS data"
-        description="Upload raw vector data and follow each immutable dataset version."
+        title={t("admin.gis.dataTitle")}
+        description={t("admin.gis.dataDescription")}
         action={
           <Button variant="contained" onClick={() => setOpen(true)}>
-            New dataset
+            {t("admin.gis.newDataset")}
           </Button>
         }
       />
@@ -87,9 +89,9 @@ export function AdminDataPage() {
           <Table size="small">
             <TableHead>
               <TableRow>
-                <TableCell>Name</TableCell>
-                <TableCell>Slug</TableCell>
-                <TableCell>Latest version</TableCell>
+                <TableCell>{t("admin.name")}</TableCell>
+                <TableCell>{t("admin.gis.slug")}</TableCell>
+                <TableCell>{t("admin.gis.latestVersion")}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -109,11 +111,13 @@ export function AdminDataPage() {
           </Table>
         </Paper>
         <Paper sx={{ p: 2, flex: 1 }}>
-        <Typography sx={{ fontWeight: 700 }}>{selected?.name ?? "Select a dataset"}</Typography>
+          <Typography sx={{ fontWeight: 700 }}>
+            {selected?.name ?? t("admin.gis.selectDataset")}
+          </Typography>
           {selected && (
             <Stack spacing={1.5} sx={{ mt: 1.5 }}>
               <Button component="label" variant="outlined">
-                {file?.name ?? "Choose raw file"}
+                {file?.name ?? t("admin.gis.chooseRawFile")}
                 <input
                   hidden
                   type="file"
@@ -122,7 +126,7 @@ export function AdminDataPage() {
                 />
               </Button>
               <Button disabled={!file} onClick={() => void upload()} variant="contained">
-                Upload version
+                {t("admin.gis.uploadVersion")}
               </Button>
               {versions.map((version) => (
                 <Paper variant="outlined" key={version.id} sx={{ p: 1 }}>
@@ -140,29 +144,33 @@ export function AdminDataPage() {
         </Paper>
       </Stack>
       <Dialog open={open} onClose={() => setOpen(false)}>
-        <DialogTitle>New dataset</DialogTitle>
+        <DialogTitle>{t("admin.gis.newDataset")}</DialogTitle>
         <DialogContent>
           <Stack sx={{ pt: 1 }} spacing={1}>
-            <TextField label="Name" value={name} onChange={(e) => setName(e.target.value)} />
             <TextField
-              label="Slug"
-              helperText="lowercase letters, numbers, hyphens"
+              label={t("admin.name")}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+            <TextField
+              label={t("admin.gis.slug")}
+              helperText={t("admin.gis.slugHelp")}
               value={slug}
               onChange={(e) => setSlug(e.target.value)}
             />
             <TextField
               multiline
               minRows={2}
-              label="Description"
+              label={t("admin.gis.description")}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpen(false)}>Cancel</Button>
+          <Button onClick={() => setOpen(false)}>{t("admin.cancel")}</Button>
           <Button disabled={!name || !slug} onClick={() => void create()} variant="contained">
-            Create
+            {t("admin.gis.create")}
           </Button>
         </DialogActions>
       </Dialog>

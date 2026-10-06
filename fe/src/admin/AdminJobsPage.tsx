@@ -16,7 +16,9 @@ import {
 } from "@mui/material";
 import { PageTitle } from "./AdminShared";
 import { gisAdminApi, type GISJob } from "./gisAdminApi";
+import { useTranslation } from "react-i18next";
 export function AdminJobsPage() {
+  const { t } = useTranslation();
   const [jobs, setJobs] = useState<GISJob[]>([]);
   const [error, setError] = useState("");
   const [log, setLog] = useState<string | null>(null);
@@ -24,7 +26,7 @@ export function AdminJobsPage() {
     gisAdminApi
       .jobs()
       .then(setJobs)
-      .catch(() => setError("Unable to load processing jobs."));
+      .catch(() => setError(t("admin.gis.loadJobsError")));
   useEffect(() => {
     reload();
   }, []);
@@ -32,13 +34,13 @@ export function AdminJobsPage() {
     gisAdminApi
       .jobLog(id)
       .then((x) => setLog(x.log || x.error))
-      .catch(() => setError("Unable to load job log."));
+      .catch(() => setError(t("admin.gis.loadLogError")));
   return (
     <>
       <PageTitle
-        title="GIS jobs"
-        description="GDAL processing jobs are claimed by workers with a short database lease."
-        action={<Button onClick={reload}>Refresh</Button>}
+        title={t("admin.gis.jobsTitle")}
+        description={t("admin.gis.jobsDescription")}
+        action={<Button onClick={reload}>{t("admin.gis.refresh")}</Button>}
       />
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
@@ -49,10 +51,10 @@ export function AdminJobsPage() {
         <Table size="small">
           <TableHead>
             <TableRow>
-              <TableCell>Type</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Attempt</TableCell>
-              <TableCell>Error</TableCell>
+              <TableCell>{t("admin.gis.type")}</TableCell>
+              <TableCell>{t("admin.status")}</TableCell>
+              <TableCell>{t("admin.gis.attempt")}</TableCell>
+              <TableCell>{t("admin.gis.error")}</TableCell>
               <TableCell />
             </TableRow>
           </TableHead>
@@ -68,14 +70,14 @@ export function AdminJobsPage() {
                 <TableCell>
                   <Stack direction="row">
                     <Button size="small" onClick={() => void openLog(job.id)}>
-                      Log
+                      {t("admin.gis.log")}
                     </Button>
                     {["failed", "canceled"].includes(job.status) && (
                       <Button
                         size="small"
                         onClick={() => void gisAdminApi.retry(job.id).then(reload)}
                       >
-                        Retry
+                        {t("admin.gis.retry")}
                       </Button>
                     )}
                   </Stack>
@@ -86,7 +88,7 @@ export function AdminJobsPage() {
         </Table>
       </Paper>
       <Dialog open={log !== null} onClose={() => setLog(null)} fullWidth maxWidth="md">
-        <DialogTitle>Job log</DialogTitle>
+        <DialogTitle>{t("admin.gis.jobLog")}</DialogTitle>
         <DialogContent>
           <Typography component="pre" sx={{ whiteSpace: "pre-wrap" }}>
             {log}

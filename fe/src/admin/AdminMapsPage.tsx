@@ -18,6 +18,7 @@ import {
 } from "@mui/material";
 import { PageTitle } from "./AdminShared";
 import { gisAdminApi, type ACLEntry, type Publication } from "./gisAdminApi";
+import { useTranslation } from "react-i18next";
 
 const defaultStyle = `{
   "version": 8,
@@ -28,6 +29,7 @@ const defaultStyle = `{
 }`;
 
 export function AdminMapsPage() {
+  const { t } = useTranslation();
   const [maps, setMaps] = useState<Publication[]>([]);
   const [error, setError] = useState("");
   const [name, setName] = useState("");
@@ -45,7 +47,7 @@ export function AdminMapsPage() {
     gisAdminApi
       .maps()
       .then(setMaps)
-      .catch(() => setError("Unable to load map publications."));
+      .catch(() => setError(t("admin.gis.loadMapsError")));
   useEffect(() => {
     reload();
   }, []);
@@ -61,7 +63,7 @@ export function AdminMapsPage() {
       setSlug("");
       reload();
     } catch {
-      setError("Unable to create map publication.");
+      setError(t("admin.gis.createMapError"));
     }
   };
   const createStyle = async () => {
@@ -79,9 +81,7 @@ export function AdminMapsPage() {
       setStyleName("");
       setStyleSlug("");
     } catch {
-      setError(
-        "Unable to create style. Use valid MapLibre JSON and managed tileset version UUIDs."
-      );
+      setError(t("admin.gis.createStyleError"));
     }
   };
   const openAcl = async (map: Publication) => {
@@ -89,7 +89,7 @@ export function AdminMapsPage() {
       setAclMap(map);
       setAcl(await gisAdminApi.acl(map.id));
     } catch {
-      setError("Unable to load ACL.");
+      setError(t("admin.gis.loadAclError"));
     }
   };
   const saveAcl = async () => {
@@ -98,15 +98,12 @@ export function AdminMapsPage() {
       await gisAdminApi.replaceAcl(aclMap.id, acl);
       setAclMap(null);
     } catch {
-      setError("Unable to save ACL.");
+      setError(t("admin.gis.saveAclError"));
     }
   };
   return (
     <>
-      <PageTitle
-        title="Maps and access"
-        description="Publish a versioned style, then grant map:read to users, roles, or groups."
-      />
+      <PageTitle title={t("admin.gis.mapsTitle")} description={t("admin.gis.mapsDescription")} />
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
           {error}
@@ -114,22 +111,22 @@ export function AdminMapsPage() {
       )}
       <Stack spacing={2}>
         <Paper sx={{ p: 2 }}>
-        <Typography sx={{ fontWeight: 700 }}>Create style version</Typography>
+          <Typography sx={{ fontWeight: 700 }}>{t("admin.gis.createStyleVersion")}</Typography>
           <Stack spacing={1} sx={{ mt: 1 }}>
             <Stack direction={{ xs: "column", md: "row" }} spacing={1}>
               <TextField
-                label="Style name"
+                label={t("admin.gis.styleName")}
                 value={styleName}
                 onChange={(e) => setStyleName(e.target.value)}
               />
               <TextField
-                label="Style slug"
+                label={t("admin.gis.styleSlug")}
                 value={styleSlug}
                 onChange={(e) => setStyleSlug(e.target.value)}
               />
               <TextField
                 fullWidth
-                label="Tileset version UUIDs (comma separated)"
+                label={t("admin.gis.tilesetVersionIds")}
                 value={tilesetIDs}
                 onChange={(e) => setTilesetIDs(e.target.value)}
               />
@@ -138,28 +135,34 @@ export function AdminMapsPage() {
                 onClick={() => void createStyle()}
                 variant="outlined"
               >
-                Create style
+                {t("admin.gis.createStyle")}
               </Button>
             </Stack>
             <TextField
               multiline
               minRows={7}
-              label="MapLibre style JSON"
+              label={t("admin.gis.styleJson")}
               value={styleJSON}
               onChange={(e) => setStyleJSON(e.target.value)}
             />
-            <Typography variant="caption">
-              Use `tilesetVersionId` for every source. Direct tile URLs are rejected.
-            </Typography>
+            <Typography variant="caption">{t("admin.gis.styleHelp")}</Typography>
           </Stack>
         </Paper>
         <Paper sx={{ p: 2 }}>
           <Stack direction={{ xs: "column", md: "row" }} spacing={1}>
-            <TextField label="Map name" value={name} onChange={(e) => setName(e.target.value)} />
-            <TextField label="Map slug" value={slug} onChange={(e) => setSlug(e.target.value)} />
+            <TextField
+              label={t("admin.gis.mapName")}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+            <TextField
+              label={t("admin.gis.mapSlug")}
+              value={slug}
+              onChange={(e) => setSlug(e.target.value)}
+            />
             <TextField
               fullWidth
-              label="Style version UUID"
+              label={t("admin.gis.styleVersionId")}
               value={styleVersionId}
               onChange={(e) => setStyleVersionId(e.target.value)}
             />
@@ -168,7 +171,7 @@ export function AdminMapsPage() {
               variant="contained"
               onClick={() => void createMap()}
             >
-              Create map
+              {t("admin.gis.createMap")}
             </Button>
           </Stack>
         </Paper>
@@ -176,9 +179,9 @@ export function AdminMapsPage() {
           <Table size="small">
             <TableHead>
               <TableRow>
-                <TableCell>Name</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Style version</TableCell>
+                <TableCell>{t("admin.name")}</TableCell>
+                <TableCell>{t("admin.status")}</TableCell>
+                <TableCell>{t("admin.gis.styleVersion")}</TableCell>
                 <TableCell />
               </TableRow>
             </TableHead>
@@ -196,10 +199,12 @@ export function AdminMapsPage() {
                           void gisAdminApi.publish(map.id, map.status !== "published").then(reload)
                         }
                       >
-                        {map.status === "published" ? "Unpublish" : "Publish"}
+                        {map.status === "published"
+                          ? t("admin.gis.unpublish")
+                          : t("admin.gis.publish")}
                       </Button>
                       <Button size="small" onClick={() => void openAcl(map)}>
-                        ACL
+                        {t("admin.gis.acl")}
                       </Button>
                     </Stack>
                   </TableCell>
@@ -210,7 +215,9 @@ export function AdminMapsPage() {
         </Paper>
       </Stack>
       <Dialog open={!!aclMap} onClose={() => setAclMap(null)} fullWidth>
-        <DialogTitle>Access: {aclMap?.name}</DialogTitle>
+        <DialogTitle>
+          {t("admin.gis.access")}: {aclMap?.name}
+        </DialogTitle>
         <DialogContent>
           <Stack spacing={1} sx={{ pt: 1 }}>
             {acl.map((entry, index) => (
@@ -222,7 +229,7 @@ export function AdminMapsPage() {
                 <TextField value={entry.subjectType} size="small" disabled />
                 <TextField value={entry.subjectId} size="small" fullWidth disabled />
                 <Button onClick={() => setAcl((current) => current.filter((_, i) => i !== index))}>
-                  Remove
+                  {t("admin.gis.remove")}
                 </Button>
               </Stack>
             ))}
@@ -241,7 +248,7 @@ export function AdminMapsPage() {
               </TextField>
               <TextField
                 size="small"
-                label="UUID or role"
+                label={t("admin.gis.uuidOrRole")}
                 value={subjectId}
                 onChange={(e) => setSubjectId(e.target.value)}
                 fullWidth
@@ -253,15 +260,15 @@ export function AdminMapsPage() {
                   setSubjectId("");
                 }}
               >
-                Grant
+                {t("admin.gis.grant")}
               </Button>
             </Stack>
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setAclMap(null)}>Cancel</Button>
+          <Button onClick={() => setAclMap(null)}>{t("admin.cancel")}</Button>
           <Button variant="contained" onClick={() => void saveAcl()}>
-            Save ACL
+            {t("admin.gis.saveAcl")}
           </Button>
         </DialogActions>
       </Dialog>

@@ -14,8 +14,10 @@ import {
 } from "@mui/material";
 import { PageTitle } from "./AdminShared";
 import { gisAdminApi, type Dataset, type DatasetVersion, type Tileset } from "./gisAdminApi";
+import { useTranslation } from "react-i18next";
 
 export function AdminTilesetsPage() {
+  const { t } = useTranslation();
   const [datasets, setDatasets] = useState<Dataset[]>([]);
   const [tilesets, setTilesets] = useState<Tileset[]>([]);
   const [dataset, setDataset] = useState("");
@@ -31,7 +33,7 @@ export function AdminTilesetsPage() {
         setDatasets(d);
         setTilesets(t);
       })
-      .catch(() => setError("Unable to load tilesets."));
+      .catch(() => setError(t("admin.gis.loadTilesetsError")));
   useEffect(() => {
     reload();
   }, []);
@@ -42,7 +44,7 @@ export function AdminTilesetsPage() {
     gisAdminApi
       .versions(id)
       .then(setVersions)
-      .catch(() => setError("Unable to load dataset versions."));
+      .catch(() => setError(t("admin.gis.loadVersionsError")));
   };
   const createAndBuild = async () => {
     try {
@@ -56,14 +58,14 @@ export function AdminTilesetsPage() {
       setName("");
       reload();
     } catch {
-      setError("Unable to queue the GDAL build.");
+      setError(t("admin.gis.buildError"));
     }
   };
   return (
     <>
       <PageTitle
-        title="Tilesets"
-        description="Build versioned vector MBTiles from a ready dataset version."
+        title={t("admin.gis.tilesetsTitle")}
+        description={t("admin.gis.tilesetsDescription")}
       />
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
@@ -74,7 +76,7 @@ export function AdminTilesetsPage() {
         <Stack direction={{ xs: "column", md: "row" }} spacing={1}>
           <TextField
             select
-            label="Dataset"
+            label={t("admin.gis.dataset")}
             value={dataset}
             onChange={(e) => chooseDataset(e.target.value)}
             sx={{ minWidth: 180 }}
@@ -87,7 +89,7 @@ export function AdminTilesetsPage() {
           </TextField>
           <TextField
             select
-            label="Ready version"
+            label={t("admin.gis.readyVersion")}
             value={version}
             onChange={(e) => {
               setVersion(e.target.value);
@@ -104,15 +106,27 @@ export function AdminTilesetsPage() {
                 </MenuItem>
               ))}
           </TextField>
-          <TextField label="Layer" value={layer} onChange={(e) => setLayer(e.target.value)} />
-          <TextField label="Tileset name" value={name} onChange={(e) => setName(e.target.value)} />
-          <TextField label="Slug" value={slug} onChange={(e) => setSlug(e.target.value)} />
+          <TextField
+            label={t("admin.gis.layer")}
+            value={layer}
+            onChange={(e) => setLayer(e.target.value)}
+          />
+          <TextField
+            label={t("admin.gis.tilesetName")}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+          <TextField
+            label={t("admin.gis.slug")}
+            value={slug}
+            onChange={(e) => setSlug(e.target.value)}
+          />
           <Button
             disabled={!dataset || !version || !layer || !name || !slug}
             variant="contained"
             onClick={() => void createAndBuild()}
           >
-            Build
+            {t("admin.gis.build")}
           </Button>
         </Stack>
       </Paper>
@@ -120,10 +134,10 @@ export function AdminTilesetsPage() {
         <Table size="small">
           <TableHead>
             <TableRow>
-              <TableCell>Name</TableCell>
-              <TableCell>Dataset</TableCell>
-              <TableCell>Slug</TableCell>
-              <TableCell>Latest</TableCell>
+              <TableCell>{t("admin.name")}</TableCell>
+              <TableCell>{t("admin.gis.dataset")}</TableCell>
+              <TableCell>{t("admin.gis.slug")}</TableCell>
+              <TableCell>{t("admin.gis.latestVersion")}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
