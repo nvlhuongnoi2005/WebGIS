@@ -27,8 +27,8 @@ import {
 import {
   SPATIAL_SEARCH_CATEGORIES,
   type SpatialSearchCategory,
-  SpatialSearchInput,
-  SpatialSearchResult,
+  type SpatialSearchInput,
+  type SpatialSearchResult,
 } from "../../../tools/geocoding/SpatialSearchTool";
 import type { MapCoordinates } from "../../../types/map";
 
