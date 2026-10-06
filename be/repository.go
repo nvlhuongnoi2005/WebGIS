@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -123,14 +125,34 @@ func (repository *Repository) Publish(ctx context.Context, q DB, event Revocatio
 }
 
 func (repository *Repository) Migrate(ctx context.Context) error {
-	paths := []string{"be/migrations/001_auth.sql", "migrations/001_auth.sql", "/migrations/001_auth.sql"}
-	for _, path := range paths {
-		if sql, err := os.ReadFile(filepath.Clean(path)); err == nil {
-			_, err = repository.pool.Exec(ctx, string(sql))
-			return err
+	paths := []string{"be/migrations", "migrations", "/migrations"}
+	for _, directory := range paths {
+		entries, err := os.ReadDir(filepath.Clean(directory))
+		if err != nil {
+			continue
 		}
+		files := make([]string, 0, len(entries))
+		for _, entry := range entries {
+			if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".sql") {
+				files = append(files, entry.Name())
+			}
+		}
+		sort.Strings(files)
+		if len(files) == 0 {
+			continue
+		}
+		for _, name := range files {
+			sql, err := os.ReadFile(filepath.Join(directory, name))
+			if err != nil {
+				return err
+			}
+			if _, err = repository.pool.Exec(ctx, string(sql)); err != nil {
+				return fmt.Errorf("apply %s: %w", name, err)
+			}
+		}
+		return nil
 	}
-	return fmt.Errorf("cannot find migrations/001_auth.sql")
+	return fmt.Errorf("cannot find migration directory")
 }
 
 func nullable(value string) any {

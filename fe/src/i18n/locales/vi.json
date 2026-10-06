@@ -380,7 +380,7 @@
     "dailyTrackingNote": "Dữ liệu theo ngày được ghi từ thời điểm triển khai tính năng báo cáo này."
   },
   "admin": {
-    "title": "Bảng điều khiển quản trị",
+    "title": "Bảng quản trị",
     "openDashboard": "Mở bảng điều khiển quản trị",
     "navigation": "Điều hướng quản trị",
     "console": "VGIS console",
@@ -454,7 +454,11 @@
     "accountLabel": "Tài khoản",
     "noChanges": "Không có thay đổi giá trị.",
     "noDetails": "Không có chi tiết bổ sung.",
-    "loadError": "Không thể tải dữ liệu quản trị."
+    "loadError": "Không thể tải dữ liệu quản trị.",
+    "gisData": "Dữ liệu GIS",
+    "gisTilesets": "Tileset",
+    "gisMaps": "Bản đồ và quyền truy cập",
+    "gisJobs": "Tác vụ GIS"
   },
   "swagger": {
     "reference": "TÀI LIỆU API WEBGIS",

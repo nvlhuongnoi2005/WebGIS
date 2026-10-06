@@ -22,3 +22,9 @@ data:
   TILE_SERVER_INTERNAL_URL: http://tile-server:8080
   NOMINATIM_INTERNAL_URL: http://nominatim:8083
   ELASTICSEARCH_URL: http://elasticsearch:9200
+  GIS_RAW_STORAGE_DRIVER: filesystem
+  # Filesystem is a local-development fallback. Production overlays must use
+  # the private Ceph RGW/S3 adapter and credentials from webgis-secrets.
+  GIS_RAW_STORAGE_PATH: /tmp/gis-raw
+  GIS_UPLOAD_MAX_BYTES: "1073741824"
+  GIS_JOB_LEASE_SECONDS: "900"

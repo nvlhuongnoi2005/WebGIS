@@ -3,14 +3,26 @@ package main
 // Permissions are evaluated centrally so endpoints do not need to know the
 // implementation details of roles or legacy token scopes.
 const (
-	permissionMapRead      = "map:read"
-	permissionRoute        = "route:calculate"
-	permissionAccountRead  = "account:read"
-	permissionAccountWrite = "account:write"
-	permissionBillingRead  = "billing:read"
-	permissionShareRead    = "share:read"
-	permissionShareWrite   = "share:write"
-	permissionAdminManage  = "admin:manage"
+	permissionMapRead         = "map:read"
+	permissionRoute           = "route:calculate"
+	permissionAccountRead     = "account:read"
+	permissionAccountWrite    = "account:write"
+	permissionBillingRead     = "billing:read"
+	permissionShareRead       = "share:read"
+	permissionShareWrite      = "share:write"
+	permissionDatasetRead     = "dataset:read"
+	permissionDatasetUpload   = "dataset:upload"
+	permissionDatasetEdit     = "dataset:edit"
+	permissionDatasetDelete   = "dataset:delete"
+	permissionTilesetRead     = "tileset:read"
+	permissionTilesetBuild    = "tileset:build"
+	permissionStyleRead       = "style:read"
+	permissionStyleWrite      = "style:write"
+	permissionMapPublish      = "map:publish"
+	permissionMapManageAccess = "map:manage-access"
+	permissionGISJobRead      = "gis-job:read"
+	permissionGISJobRetry     = "gis-job:retry"
+	permissionAdminManage     = "admin:manage"
 )
 
 var rolePermissions = map[string]map[string]struct{}{

@@ -139,3 +139,13 @@ jobs:
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
+      - name: Build and push GDAL worker
+        if: needs.changes.outputs.controller == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: be/GDAL.Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/gdal-worker:sha-${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/gdal-worker:dev

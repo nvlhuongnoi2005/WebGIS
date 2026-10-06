@@ -454,7 +454,11 @@
     "accountLabel": "Account",
     "noChanges": "No value changes.",
     "noDetails": "No additional details.",
-    "loadError": "Dashboard data could not be loaded."
+    "loadError": "Dashboard data could not be loaded.",
+    "gisData": "GIS data",
+    "gisTilesets": "Tilesets",
+    "gisMaps": "Maps & access",
+    "gisJobs": "GIS jobs"
   },
   "swagger": {
     "reference": "WEBGIS API REFERENCE",

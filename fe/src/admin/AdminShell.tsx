@@ -3,9 +3,13 @@ import {
   ArrowLeft,
   ClipboardList,
   CreditCard,
+  Database,
   LayoutDashboard,
+  Layers3,
+  Map,
   ShieldCheck,
   Users,
+  Workflow,
 } from "lucide-react";
 import {
   Box,
@@ -38,6 +42,10 @@ export function AdminShell({ section, children }: { section: AdminSection; child
     { id: "billing" as const, label: t("admin.billingTitle"), icon: CreditCard },
     { id: "users" as const, label: t("admin.userManagement"), icon: Users },
     { id: "audit" as const, label: t("admin.auditLog"), icon: ClipboardList },
+    { id: "data" as const, label: t("admin.gisData"), icon: Database },
+    { id: "tilesets" as const, label: t("admin.gisTilesets"), icon: Layers3 },
+    { id: "maps" as const, label: t("admin.gisMaps"), icon: Map },
+    { id: "jobs" as const, label: t("admin.gisJobs"), icon: Workflow },
   ];
   return (
     <Box

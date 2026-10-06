@@ -26,6 +26,11 @@ type Config struct {
 	LoginWindowSeconds                                        int
 	GatewayConsumer, ValhallaURL, TileServerURL, NominatimURL string
 	ElasticsearchURL                                          string
+	GISRawStorageDriver, GISRawStoragePath                    string
+	GISS3Endpoint, GISS3Region, GISS3Bucket                   string
+	GISS3AccessKey, GISS3SecretKey                            string
+	GISWorkspacePath, GISPublishedPath                        string
+	GISUploadMaxBytes, GISJobLeaseSeconds                     int
 }
 
 type PublicKeyConfig struct {
@@ -131,6 +136,14 @@ func loadConfig() (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
+	uploadMax, err := envInt("GIS_UPLOAD_MAX_BYTES", 1024*1024*1024, 1024)
+	if err != nil {
+		return Config{}, err
+	}
+	jobLease, err := envInt("GIS_JOB_LEASE_SECONDS", 900, 30)
+	if err != nil {
+		return Config{}, err
+	}
 	pepper := env("AUTH_REFRESH_TOKEN_PEPPER", "")
 	if pepper == "" {
 		if nodeEnv == "production" {
@@ -163,6 +176,13 @@ func loadConfig() (Config, error) {
 		AllowEphemeral:     envBool("AUTH_DEV_EPHEMERAL_KEYS", false), AccessTTL: accessTTL, RefreshDays: refreshDays, SessionIdleTimeoutSeconds: idleTimeout, RefreshPepper: pepper,
 		SecureCookies: envBool("AUTH_SECURE_COOKIES", nodeEnv == "production"), ArgonMemory: uint32(memory), ArgonTime: uint32(timeCost), ArgonParallelism: uint32(parallelism), ArgonHashLength: uint32(hashLength),
 		LoginMaxConcurrent: maxConcurrent, LoginMaxAttempts: maxAttempts, LoginWindowSeconds: window / 1000, GatewayConsumer: env("AUTH_GATEWAY_CONSUMER", "local-gateway-1"), ValhallaURL: strings.TrimRight(env("VALHALLA_INTERNAL_URL", "http://localhost:8002"), "/"), TileServerURL: strings.TrimRight(env("TILE_SERVER_INTERNAL_URL", "http://localhost:8080"), "/"), NominatimURL: strings.TrimRight(env("NOMINATIM_INTERNAL_URL", "http://localhost:8083"), "/"), ElasticsearchURL: strings.TrimRight(env("ELASTICSEARCH_URL", ""), "/"),
+		GISRawStorageDriver: strings.ToLower(env("GIS_RAW_STORAGE_DRIVER", "filesystem")), GISRawStoragePath: env("GIS_RAW_STORAGE_PATH", "./.gis/raw"), GISS3Endpoint: strings.TrimRight(env("GIS_S3_ENDPOINT", ""), "/"), GISS3Region: env("GIS_S3_REGION", "us-east-1"), GISS3Bucket: env("GIS_S3_BUCKET", ""), GISS3AccessKey: env("GIS_S3_ACCESS_KEY", ""), GISS3SecretKey: env("GIS_S3_SECRET_KEY", ""), GISWorkspacePath: env("GIS_WORKSPACE_PATH", "./.gis/workspace"), GISPublishedPath: env("GIS_PUBLISHED_PATH", "./.gis/published"), GISUploadMaxBytes: uploadMax, GISJobLeaseSeconds: jobLease,
+	}
+	if config.GISRawStorageDriver != "filesystem" && config.GISRawStorageDriver != "s3" {
+		return Config{}, fmt.Errorf("GIS_RAW_STORAGE_DRIVER must be filesystem or s3")
+	}
+	if config.GISRawStorageDriver == "s3" && (config.GISS3Endpoint == "" || config.GISS3Bucket == "" || config.GISS3AccessKey == "" || config.GISS3SecretKey == "") {
+		return Config{}, fmt.Errorf("GIS S3 endpoint, bucket, access key, and secret key are required when GIS_RAW_STORAGE_DRIVER=s3")
 	}
 	if (config.PrivateKeyPEM == "" || config.PublicKeyPEM == "") && !config.AllowEphemeral {
 		return Config{}, fmt.Errorf("AUTH_JWT_PRIVATE_KEY and AUTH_JWT_PUBLIC_KEY are required")
