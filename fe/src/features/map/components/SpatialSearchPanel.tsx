@@ -10,7 +10,6 @@ import {
   List,
   ListItemButton,
   ListItemText,
-  MenuItem,
   Paper,
   Stack,
   TextField,
@@ -24,11 +23,9 @@ import {
   fetchGeocodingSuggestions,
   type GeocodingSuggestion,
 } from "../../../tools/geocoding/GeocodingTool";
-import {
-  SPATIAL_SEARCH_CATEGORIES,
-  type SpatialSearchCategory,
-  type SpatialSearchInput,
-  type SpatialSearchResult,
+import type {
+  SpatialSearchInput,
+  SpatialSearchResult,
 } from "../../../tools/geocoding/SpatialSearchTool";
 import type { MapCoordinates } from "../../../types/map";
 
@@ -52,7 +49,6 @@ export default function SpatialSearchPanel({
   onClose,
 }: SpatialSearchPanelProps) {
   const { t } = useTranslation();
-  const [category, setCategory] = useState<SpatialSearchCategory>("restaurant");
   const [referencePlace, setReferencePlace] = useState("");
   const [selectedReference, setSelectedReference] = useState<GeocodingSuggestion | null>(null);
   const [referenceSuggestions, setReferenceSuggestions] = useState<GeocodingSuggestion[]>([]);
@@ -165,19 +161,6 @@ export default function SpatialSearchPanel({
           )}
         />
         <TextField
-          select
-          size="small"
-          label={t("spatialSearch.category")}
-          value={category}
-          onChange={(event) => setCategory(event.target.value as SpatialSearchCategory)}
-        >
-          {SPATIAL_SEARCH_CATEGORIES.map((item) => (
-            <MenuItem key={item} value={item}>
-              {t(`spatialSearch.categories.${item}`)}
-            </MenuItem>
-          ))}
-        </TextField>
-        <TextField
           size="small"
           type="number"
           label={t("spatialSearch.distanceMeters")}
@@ -197,7 +180,7 @@ export default function SpatialSearchPanel({
           disabled={!canSearch || status === "loading"}
           onClick={() =>
             selectedReference &&
-            onSearch({ category, referencePlace: selectedReference.resolveQuery, distanceMeters })
+            onSearch({ referencePlace: selectedReference.resolveQuery, distanceMeters })
           }
         >
           {status === "loading" ? t("spatialSearch.searching") : t("spatialSearch.search")}

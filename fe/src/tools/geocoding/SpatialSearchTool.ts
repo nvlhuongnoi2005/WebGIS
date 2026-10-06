@@ -2,21 +2,7 @@ import type { FeatureCollection, Point } from "geojson";
 
 import { authFetch } from "../../features/auth/authClient";
 
-export const SPATIAL_SEARCH_CATEGORIES = [
-  "restaurant",
-  "cafe",
-  "hospital",
-  "pharmacy",
-  "school",
-  "atm",
-  "bank",
-  "tourism",
-] as const;
-
-export type SpatialSearchCategory = (typeof SPATIAL_SEARCH_CATEGORIES)[number];
-
 export interface SpatialSearchInput {
-  category: SpatialSearchCategory;
   referencePlace: string;
   distanceMeters: number;
   limit?: number;
@@ -24,7 +10,7 @@ export interface SpatialSearchInput {
 
 export interface SpatialSearchProperties {
   name: string;
-  category: SpatialSearchCategory;
+  category: string;
   kind: string;
   address: string;
   distanceMeters: number;
@@ -48,7 +34,6 @@ export async function fetchSpatialSearch(
     signal,
     body: JSON.stringify({
       intent: "poi_within_distance_of_place",
-      category: input.category,
       referencePlace: input.referencePlace.trim(),
       distanceMeters: input.distanceMeters,
       limit: input.limit ?? 50,

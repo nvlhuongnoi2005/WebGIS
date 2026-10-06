@@ -24,20 +24,13 @@ func TestSpatialSearchInputValidate(t *testing.T) {
 		{
 			name: "valid request applies default limit",
 			input: spatialSearchInput{
-				Intent: spatialSearchIntent, Category: " Restaurant ", ReferencePlace: "Hồ Tây", DistanceMeters: 500,
+				Intent: spatialSearchIntent, ReferencePlace: "Hồ Tây", DistanceMeters: 500,
 			},
-		},
-		{
-			name: "unsupported category",
-			input: spatialSearchInput{
-				Intent: spatialSearchIntent, Category: "bar", ReferencePlace: "Hồ Tây", DistanceMeters: 500,
-			},
-			wantErr: true,
 		},
 		{
 			name: "distance outside accepted range",
 			input: spatialSearchInput{
-				Intent: spatialSearchIntent, Category: "cafe", ReferencePlace: "Hồ Tây", DistanceMeters: 20_001,
+				Intent: spatialSearchIntent, ReferencePlace: "Hồ Tây", DistanceMeters: 20_001,
 			},
 			wantErr: true,
 		},
