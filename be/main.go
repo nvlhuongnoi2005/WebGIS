@@ -35,13 +35,6 @@ func main() {
 		slog.Info("POI synchronization completed")
 		return
 	}
-	if len(os.Args) == 2 && os.Args[1] == "gdal-worker" {
-		if err := runGDALWorker(ctx, config); err != nil {
-			slog.Error("GDAL worker stopped", "error", err.Error())
-			os.Exit(1)
-		}
-		return
-	}
 	repository, err := NewRepository(ctx, config)
 	if err != nil {
 		slog.Error("database connection failed", "error", err.Error())

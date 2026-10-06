@@ -93,11 +93,7 @@ function AppRoutes() {
     pathname === "/admin" ||
     pathname === "/admin/billing" ||
     pathname === "/admin/users" ||
-    pathname === "/admin/audit" ||
-    pathname === "/admin/data" ||
-    pathname === "/admin/tilesets" ||
-    pathname === "/admin/maps" ||
-    pathname === "/admin/jobs"
+    pathname === "/admin/audit"
   ) {
     content =
       user?.role === "admin" ? (

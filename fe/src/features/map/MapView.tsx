@@ -20,7 +20,6 @@ import { useMeasureLayers } from "../../hooks/useMeasureLayers";
 import { useMeasureTool } from "../../hooks/useMeasureTool";
 import { useRouting } from "../../hooks/useRouting";
 import { useSpatialSearch } from "../../hooks/useSpatialSearch";
-import { usePublishedMaps } from "../../hooks/usePublishedMaps";
 import type { MapTool } from "../../types/map";
 import {
   DEFAULT_COORDINATE_REFERENCE_SYSTEM,
@@ -80,7 +79,6 @@ function MapView({ onNavigate }: MapViewProps) {
   );
 
   useMapLanguage({ map, mapLoaded, mapStyleVersion });
-  usePublishedMaps({ map, mapLoaded, mapStyleVersion });
 
   const routing = useRouting({
     map,

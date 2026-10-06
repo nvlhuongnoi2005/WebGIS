@@ -105,7 +105,6 @@ type Server struct {
 	loginSlots      chan struct{}
 	dummyHash       string
 	workerClient    *http.Client
-	rawStorage      RawStorage
 }
 
 func NewServer(config Config, repository *Repository, passwords PasswordService, tokens *TokenService, revocations *RevocationStore) (*Server, error) {
@@ -115,11 +114,7 @@ func NewServer(config Config, repository *Repository, passwords PasswordService,
 	}
 	sessionEvents := NewSessionEventHub()
 	revocations.SetOnApplied(sessionEvents.NotifyEvent)
-	rawStorage, err := newRawStorage(config)
-	if err != nil {
-		return nil, err
-	}
-	return &Server{config: config, repository: repository, passwords: passwords, tokens: tokens, revocations: revocations, sessionEventHub: sessionEvents, loginLimiter: NewRateLimiter(time.Duration(config.LoginWindowSeconds)*time.Second, config.LoginMaxAttempts), loginSlots: make(chan struct{}, config.LoginMaxConcurrent), dummyHash: dummyHash, workerClient: &http.Client{Timeout: 30 * time.Second}, rawStorage: rawStorage}, nil
+	return &Server{config: config, repository: repository, passwords: passwords, tokens: tokens, revocations: revocations, sessionEventHub: sessionEvents, loginLimiter: NewRateLimiter(time.Duration(config.LoginWindowSeconds)*time.Second, config.LoginMaxAttempts), loginSlots: make(chan struct{}, config.LoginMaxConcurrent), dummyHash: dummyHash, workerClient: &http.Client{Timeout: 30 * time.Second}}, nil
 }
 
 func writeJSON(response http.ResponseWriter, status int, body any) {
@@ -1608,8 +1603,6 @@ func (server *Server) ServeHTTP(response http.ResponseWriter, request *http.Requ
 		return
 	}
 	switch {
-	case server.routeGISAdmin(response, request):
-	case server.routeGIS(response, request):
 	case request.Method == http.MethodGet && request.URL.Path == "/api/openapi.json":
 		writeJSON(response, http.StatusOK, openAPISpec())
 	case request.Method == http.MethodGet && request.URL.Path == "/health":

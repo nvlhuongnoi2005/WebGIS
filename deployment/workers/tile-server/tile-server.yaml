@@ -33,16 +33,10 @@ spec:
             - name: data
               mountPath: /tile-server/data
               readOnly: true
-            - name: gis-published
-              mountPath: /tile-server/data/gis
-              readOnly: true
       volumes:
         - name: data
           persistentVolumeClaim:
             claimName: tile-data
-        - name: gis-published
-          persistentVolumeClaim:
-            claimName: gis-published-data
 ---
 apiVersion: v1
 kind: Service
