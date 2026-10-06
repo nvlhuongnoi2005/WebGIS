@@ -49,13 +49,14 @@
     "open": "Tìm địa điểm lân cận",
     "close": "Đóng tìm kiếm lân cận",
     "title": "Tìm kiếm lân cận",
-    "description": "Tìm các địa điểm theo khoảng cách từ địa danh đã chọn.",
+    "description": "Tìm một nhóm địa điểm theo khoảng cách từ địa danh đã chọn.",
     "referencePlace": "Địa danh tham chiếu",
     "referencePlacePlaceholder": "Ví dụ: Hồ Tây",
     "referenceHelp": "Nhập ít nhất hai ký tự, rồi chọn một địa danh trong gợi ý.",
     "referenceSelected": "Đã chọn địa danh tham chiếu.",
     "loadingReferences": "Đang tìm địa danh…",
     "noReferenceOptions": "Không tìm thấy địa danh phù hợp.",
+    "category": "Loại địa điểm",
     "distanceMeters": "Khoảng cách (mét)",
     "search": "Tìm địa điểm",
     "searching": "Đang tìm…",
@@ -63,7 +64,17 @@
     "resultCount": "Tìm thấy {{count}} địa điểm",
     "nearReference": "Gần {{name}}",
     "noResults": "Không tìm thấy địa điểm phù hợp trong khoảng cách này.",
-    "clear": "Xóa kết quả"
+    "clear": "Xóa kết quả",
+    "categories": {
+      "restaurant": "Nhà hàng",
+      "cafe": "Quán cà phê",
+      "hospital": "Bệnh viện & phòng khám",
+      "pharmacy": "Nhà thuốc",
+      "school": "Trường học",
+      "atm": "ATM",
+      "bank": "Ngân hàng",
+      "tourism": "Du lịch"
+    }
   },
   "coordinates": {
     "title": "Vị trí bản đồ",

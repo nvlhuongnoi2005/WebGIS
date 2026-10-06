@@ -11,8 +11,20 @@ import (
 
 const spatialSearchIntent = "poi_within_distance_of_place"
 
+var spatialSearchCategories = map[string]struct{}{
+	"restaurant": {},
+	"cafe":       {},
+	"hospital":   {},
+	"pharmacy":   {},
+	"school":     {},
+	"atm":        {},
+	"bank":       {},
+	"tourism":    {},
+}
+
 type spatialSearchInput struct {
 	Intent         string `json:"intent"`
+	Category       string `json:"category"`
 	ReferencePlace string `json:"referencePlace"`
 	DistanceMeters int    `json:"distanceMeters"`
 	Limit          int    `json:"limit"`
@@ -28,9 +40,13 @@ type spatialReference struct {
 
 func (input *spatialSearchInput) validate() error {
 	input.Intent = strings.TrimSpace(input.Intent)
+	input.Category = strings.ToLower(strings.TrimSpace(input.Category))
 	input.ReferencePlace = strings.TrimSpace(input.ReferencePlace)
 	if input.Intent != spatialSearchIntent {
 		return fmt.Errorf("unsupported intent")
+	}
+	if _, ok := spatialSearchCategories[input.Category]; !ok {
+		return fmt.Errorf("unsupported POI category")
 	}
 	if length := len([]rune(input.ReferencePlace)); length < 2 || length > 120 {
 		return fmt.Errorf("referencePlace must contain 2 to 120 characters")
@@ -135,9 +151,10 @@ func (server *Server) spatialSearch(response http.ResponseWriter, request *http.
 			ST_Distance(location::geography, reference.geometry::geography)
 		FROM search_pois
 		CROSS JOIN reference
-		WHERE ST_DWithin(location::geography, reference.geometry::geography, $2)
+		WHERE category = $2
+			AND ST_DWithin(location::geography, reference.geometry::geography, $3)
 		ORDER BY ST_Distance(location::geography, reference.geometry::geography), source_place_id
-		LIMIT $3`, string(reference.Geometry), input.DistanceMeters, input.Limit)
+		LIMIT $4`, string(reference.Geometry), input.Category, input.DistanceMeters, input.Limit)
 	if err != nil {
 		clientError(response, http.StatusInternalServerError, "Spatial search unavailable")
 		return

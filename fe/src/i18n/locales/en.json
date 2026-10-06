@@ -49,13 +49,14 @@
     "open": "Search nearby places",
     "close": "Close nearby search",
     "title": "Nearby search",
-    "description": "Find places within a distance from a named area.",
+    "description": "Find a category of places within a distance from a named area.",
     "referencePlace": "Reference place",
     "referencePlacePlaceholder": "For example: West Lake",
     "referenceHelp": "Type at least two characters, then choose a suggested place.",
     "referenceSelected": "A reference place has been selected.",
     "loadingReferences": "Searching places…",
     "noReferenceOptions": "No matching places found.",
+    "category": "Place category",
     "distanceMeters": "Distance (metres)",
     "search": "Find places",
     "searching": "Searching…",
@@ -63,7 +64,17 @@
     "resultCount": "{{count}} places found",
     "nearReference": "Near {{name}}",
     "noResults": "No matching places were found in this distance.",
-    "clear": "Clear"
+    "clear": "Clear",
+    "categories": {
+      "restaurant": "Restaurants",
+      "cafe": "Cafés",
+      "hospital": "Hospitals & clinics",
+      "pharmacy": "Pharmacies",
+      "school": "Schools",
+      "atm": "ATMs",
+      "bank": "Banks",
+      "tourism": "Tourism"
+    }
   },
   "coordinates": {
     "title": "Map position",
