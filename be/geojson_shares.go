@@ -35,7 +35,7 @@ type geoJSONShareRecipientsInput struct {
 }
 
 func (server *Server) searchGeoJSONShareRecipients(response http.ResponseWriter, request *http.Request) {
-	claims, ok := server.authenticate(response, request)
+	claims, ok := server.authenticate(response, request, permissionShareWrite)
 	if !ok {
 		return
 	}
@@ -76,7 +76,7 @@ func (server *Server) searchGeoJSONShareRecipients(response http.ResponseWriter,
 }
 
 func (server *Server) sendGeoJSONShare(response http.ResponseWriter, request *http.Request, id string) {
-	claims, ok := server.authenticate(response, request)
+	claims, ok := server.authenticate(response, request, permissionShareWrite)
 	if !ok {
 		return
 	}
@@ -175,7 +175,7 @@ func (server *Server) sendGeoJSONShare(response http.ResponseWriter, request *ht
 }
 
 func (server *Server) listReceivedGeoJSONShares(response http.ResponseWriter, request *http.Request) {
-	claims, ok := server.authenticate(response, request)
+	claims, ok := server.authenticate(response, request, permissionShareRead)
 	if !ok {
 		return
 	}
@@ -215,7 +215,7 @@ func (server *Server) listReceivedGeoJSONShares(response http.ResponseWriter, re
 }
 
 func (server *Server) getReceivedGeoJSONShare(response http.ResponseWriter, request *http.Request, id string) {
-	claims, ok := server.authenticate(response, request)
+	claims, ok := server.authenticate(response, request, permissionShareRead)
 	if !ok {
 		return
 	}
@@ -256,7 +256,7 @@ func validShareID(id string) bool {
 }
 
 func (server *Server) createGeoJSONShare(response http.ResponseWriter, request *http.Request) {
-	claims, ok := server.authenticate(response, request)
+	claims, ok := server.authenticate(response, request, permissionShareWrite)
 	if !ok {
 		return
 	}
@@ -401,7 +401,7 @@ func validSharedDatasetID(id string) bool {
 }
 
 func (server *Server) listGeoJSONShares(response http.ResponseWriter, request *http.Request) {
-	claims, ok := server.authenticate(response, request)
+	claims, ok := server.authenticate(response, request, permissionShareRead)
 	if !ok {
 		return
 	}
@@ -639,7 +639,7 @@ func writePreviewPath(svg *strings.Builder, positions []previewPosition, project
 }
 
 func (server *Server) getOrCreateGeoJSONShareLink(response http.ResponseWriter, request *http.Request, id string) {
-	claims, ok := server.authenticate(response, request)
+	claims, ok := server.authenticate(response, request, permissionShareWrite)
 	if !ok {
 		return
 	}
@@ -683,7 +683,7 @@ func (server *Server) getOrCreateGeoJSONShareLink(response http.ResponseWriter, 
 }
 
 func (server *Server) revokeGeoJSONShare(response http.ResponseWriter, request *http.Request, id string) {
-	claims, ok := server.authenticate(response, request)
+	claims, ok := server.authenticate(response, request, permissionShareWrite)
 	if !ok {
 		return
 	}

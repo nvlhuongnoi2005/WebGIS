@@ -199,8 +199,8 @@ func (server *Server) authenticate(response http.ResponseWriter, request *http.R
 		writeJSON(response, http.StatusForbidden, map[string]string{"error": "Password change required", "code": "passwordChangeRequired"})
 		return Claims{}, false
 	}
-	for _, scope := range scopes {
-		if !hasScope(claims, scope) {
+	for _, permission := range scopes {
+		if !hasPermission(claims, permission) {
 			clientError(response, http.StatusForbidden, "Forbidden")
 			return Claims{}, false
 		}
@@ -632,7 +632,11 @@ func (server *Server) changePassword(response http.ResponseWriter, request *http
 }
 
 func (server *Server) profile(response http.ResponseWriter, request *http.Request, update bool) {
-	claims, ok := server.authenticate(response, request)
+	permission := permissionAccountRead
+	if update {
+		permission = permissionAccountWrite
+	}
+	claims, ok := server.authenticate(response, request, permission)
 	if !ok {
 		return
 	}
@@ -804,7 +808,7 @@ func (server *Server) billingForUser(ctx context.Context, userID string, days in
 // billing only returns the signed-in user's subscription, quota, and requests
 // counted in the selected reporting window, grouped by API type.
 func (server *Server) billing(response http.ResponseWriter, request *http.Request) {
-	claims, ok := server.authenticate(response, request)
+	claims, ok := server.authenticate(response, request, permissionBillingRead)
 	if !ok {
 		return
 	}
@@ -821,12 +825,7 @@ func (server *Server) billing(response http.ResponseWriter, request *http.Reques
 }
 
 func (server *Server) adminDashboard(response http.ResponseWriter, request *http.Request) {
-	claims, ok := server.authenticate(response, request)
-	if !ok {
-		return
-	}
-	if !isAdmin(claims) {
-		clientError(response, http.StatusForbidden, "Forbidden")
+	if _, ok := server.requireAdmin(response, request); !ok {
 		return
 	}
 	var totalAccounts, onlineUsers, unknownAge, under18, age18To24, age25To34, age35To44, age45Plus int
@@ -888,12 +887,7 @@ func (server *Server) adminDashboard(response http.ResponseWriter, request *http
 }
 
 func (server *Server) adminBilling(response http.ResponseWriter, request *http.Request) {
-	claims, ok := server.authenticate(response, request)
-	if !ok {
-		return
-	}
-	if !isAdmin(claims) {
-		clientError(response, http.StatusForbidden, "Forbidden")
+	if _, ok := server.requireAdmin(response, request); !ok {
 		return
 	}
 	if err := server.ensureCurrentQuotas(request.Context(), ""); err != nil {
@@ -953,7 +947,7 @@ func (server *Server) adminBillingUser(response http.ResponseWriter, request *ht
 }
 
 func (server *Server) requireAdmin(response http.ResponseWriter, request *http.Request) (Claims, bool) {
-	claims, ok := server.authenticate(response, request)
+	claims, ok := server.authenticate(response, request, permissionAdminManage)
 	if !ok || isAdmin(claims) {
 		return claims, ok
 	}
@@ -1539,7 +1533,7 @@ func (server *Server) nominatimProxy(response http.ResponseWriter, request *http
 }
 
 func (server *Server) disableUser(response http.ResponseWriter, request *http.Request, userID string) {
-	_, ok := server.authenticate(response, request, "admin:manage-users")
+	_, ok := server.requireAdmin(response, request)
 	if !ok {
 		return
 	}
