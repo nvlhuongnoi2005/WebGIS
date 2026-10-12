@@ -3,6 +3,7 @@ import {
   ArrowLeft,
   ClipboardList,
   CreditCard,
+  ExternalLink,
   LayoutDashboard,
   ShieldCheck,
   Users,
@@ -131,6 +132,15 @@ export function AdminShell({ section, children }: { section: AdminSection; child
             })}
           </List>
           <Divider />
+          <Button
+            component="a"
+            href="http://geodata.localhost/"
+            fullWidth
+            startIcon={<ExternalLink size={17} />}
+            sx={{ mt: 1.25, justifyContent: "flex-start" }}
+          >
+            {t("admin.openTileServer")}
+          </Button>
           <Button
             component="a"
             href="/map"

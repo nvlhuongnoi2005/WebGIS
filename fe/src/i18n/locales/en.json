@@ -382,6 +382,7 @@
   "admin": {
     "title": "Administration dashboard",
     "openDashboard": "Open administration dashboard",
+    "openTileServer": "Open Tile Server",
     "navigation": "Administration navigation",
     "console": "VGIS console",
     "overview": "Overview",

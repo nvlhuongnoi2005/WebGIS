@@ -382,6 +382,7 @@
   "admin": {
     "title": "Bảng quản trị",
     "openDashboard": "Mở bảng điều khiển quản trị",
+    "openTileServer": "Mở Tile Server",
     "navigation": "Điều hướng quản trị",
     "console": "VGIS console",
     "overview": "Tổng quan",
