@@ -83,7 +83,7 @@ export default function SharedGeoJSONPage({
         type: "fill",
         source: "shared-geojson",
         filter: ["match", ["geometry-type"], ["Polygon", "MultiPolygon"], true, false],
-        paint: { "fill-color": "#0369a1", "fill-opacity": 0.18 },
+        paint: { "fill-color": "#e0002b", "fill-opacity": 0.18 },
       });
       map.addLayer({
         id: "shared-lines",
@@ -96,7 +96,7 @@ export default function SharedGeoJSONPage({
           true,
           false,
         ],
-        paint: { "line-color": "#0369a1", "line-width": 3 },
+        paint: { "line-color": "#e0002b", "line-width": 3 },
       });
       map.addLayer({
         id: "shared-points",
@@ -105,7 +105,7 @@ export default function SharedGeoJSONPage({
         filter: ["match", ["geometry-type"], ["Point", "MultiPoint"], true, false],
         paint: {
           "circle-radius": 7,
-          "circle-color": "#0369a1",
+          "circle-color": "#e0002b",
           "circle-stroke-color": "#ffffff",
           "circle-stroke-width": 2,
         },

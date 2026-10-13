@@ -95,9 +95,9 @@ function ensureDrawLayers(map: maplibregl.Map) {
   addSourceIfMissing(map, VERTICES_SOURCE_ID);
   addSourceIfMissing(map, DRAFT_VERTICES_SOURCE_ID);
 
-  addFillLayer(map, "drawings-fill-layer", DRAWINGS_SOURCE_ID, "#0369a1", 0.18);
-  addLineLayer(map, "drawings-line-layer", DRAWINGS_SOURCE_ID, "#075985", 3, 0.9);
-  addPointLayer(map, "drawings-point-layer", DRAWINGS_SOURCE_ID, "#0369a1");
+  addFillLayer(map, "drawings-fill-layer", DRAWINGS_SOURCE_ID, "#e0002b", 0.18);
+  addLineLayer(map, "drawings-line-layer", DRAWINGS_SOURCE_ID, "#a90020", 3, 0.9);
+  addPointLayer(map, "drawings-point-layer", DRAWINGS_SOURCE_ID, "#e0002b");
 
   addFillLayer(map, "drawings-selection-fill-layer", SELECTION_SOURCE_ID, "#ff5b75", 0.28);
   addLineLayer(map, "drawings-selection-line-layer", SELECTION_SOURCE_ID, "#ff5b75", 5, 1);

@@ -20,35 +20,35 @@ export function createAppTheme({ mode, highContrast }: AppThemeOptions) {
           action: { hover: "#2b2b2b", selected: "#343434" },
         }
       : {
-          primary: { main: "#075985", light: "#e0f2fe", dark: "#0c4a6e", contrastText: "#ffffff" },
-          secondary: { main: "#047857", light: "#d1fae5", dark: "#065f46" },
-          error: { main: "#b91c1c" },
-          success: { main: "#047857" },
+          primary: { main: "#a90020", light: "#f2e8ea", dark: "#630012", contrastText: "#ffffff" },
+          secondary: { main: "#7b1024", light: "#f3eaec", dark: "#4d0614" },
+          error: { main: "#a60000" },
+          success: { main: "#006b24" },
           background: { default: "#ffffff", paper: "#ffffff" },
           text: { primary: "#000000", secondary: "#1f1f1f" },
           divider: "#1f1f1f",
-          action: { hover: "#f0f9ff", selected: "#e0f2fe" },
+          action: { hover: "#f3f3f4", selected: "#f2e8ea" },
         }
     : isDark
       ? {
-          primary: { main: "#7dd3fc", light: "#164e63", dark: "#bae6fd", contrastText: "#082f49" },
-          secondary: { main: "#6ee7b7", light: "#064e3b", dark: "#a7f3d0" },
+          primary: { main: "#ff9aaa", light: "#5b1825", dark: "#ffd5dc", contrastText: "#5b0011" },
+          secondary: { main: "#f4a7b5", light: "#4a1720", dark: "#ffd6dd" },
           error: { main: "#ffb4ab" },
           success: { main: "#8fd99d" },
-          background: { default: "#071923", paper: "#0d2531" },
-          text: { primary: "#e0f2fe", secondary: "#b6d5df" },
-          divider: "#245166",
-          action: { hover: "#123845", selected: "#164e63" },
+          background: { default: "#160d10", paper: "#211014" },
+          text: { primary: "#fde9ed", secondary: "#e4bdc5" },
+          divider: "#59313a",
+          action: { hover: "#351720", selected: "#5b1825" },
         }
       : {
-          primary: { main: "#0369a1", light: "#e0f2fe", dark: "#075985", contrastText: "#ffffff" },
-          secondary: { main: "#059669", light: "#d1fae5", dark: "#047857" },
-          error: { main: "#b91c1c" },
-          success: { main: "#059669" },
-          background: { default: "#eef7f8", paper: "#ffffff" },
-          text: { primary: "#12313f", secondary: "#526f7a" },
-          divider: "#cfe0e4",
-          action: { hover: "#edf8fa", selected: "#e0f2fe" },
+          primary: { main: "#e0002b", light: "#f2e8ea", dark: "#a90020", contrastText: "#ffffff" },
+          secondary: { main: "#087f73", light: "#e2f3f0", dark: "#04564e" },
+          error: { main: "#ba1a1a" },
+          success: { main: "#087f73" },
+          background: { default: "#eef2f1", paper: "#ffffff" },
+          text: { primary: "#142a32", secondary: "#587078" },
+          divider: "#d7e2e0",
+          action: { hover: "#edf5f3", selected: "#e1f0ed" },
         };
 
   return createTheme({
@@ -80,9 +80,9 @@ export function createAppTheme({ mode, highContrast }: AppThemeOptions) {
         styleOverrides: {
           root: { minHeight: 40, borderRadius: 10, letterSpacing: 0 },
           contained: {
-            boxShadow: isDark ? "0 2px 6px rgb(0 0 0 / 32%)" : "0 2px 5px rgb(3 105 161 / 24%)",
+            boxShadow: isDark ? "0 2px 6px rgb(0 0 0 / 32%)" : "0 2px 5px rgb(224 0 43 / 24%)",
             "&:hover": {
-              boxShadow: isDark ? "0 4px 10px rgb(0 0 0 / 42%)" : "0 4px 10px rgb(3 105 161 / 30%)",
+              boxShadow: isDark ? "0 4px 10px rgb(0 0 0 / 42%)" : "0 4px 10px rgb(224 0 43 / 30%)",
             },
           },
         },

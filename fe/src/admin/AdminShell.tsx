@@ -67,7 +67,7 @@ export function AdminShell({ section, children }: { section: AdminSection; child
             height: { md: "fit-content" },
             position: { md: "sticky" },
             top: { md: 24 },
-            border: "1px solid rgba(3, 105, 161, 0.16)",
+            border: "1px solid rgba(224, 0, 43, 0.15)",
           }}
         >
           <Stack
@@ -117,7 +117,7 @@ export function AdminShell({ section, children }: { section: AdminSection; child
                     my: 0.25,
                     borderRadius: 2,
                     "&.Mui-selected": {
-                      bgcolor: "rgba(3, 105, 161, 0.11)",
+                      bgcolor: "rgba(224, 0, 43, 0.11)",
                       color: "primary.main",
                       "& .MuiListItemText-primary": { fontWeight: 750 },
                     },

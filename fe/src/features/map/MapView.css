@@ -68,7 +68,7 @@ html[data-high-contrast="true"][data-color-mode="dark"] .map-wrapper {
   gap: 10px;
   min-height: 48px;
   padding: 8px 13px 8px 9px;
-  color: #12313f;
+  color: #142a32;
   border: 1px solid var(--map-surface-border) !important;
   border-radius: 15px !important;
   background: var(--map-surface) !important;
@@ -83,8 +83,8 @@ html[data-high-contrast="true"][data-color-mode="dark"] .map-wrapper {
   place-items: center;
   color: #ffffff;
   border-radius: 10px;
-  background: linear-gradient(135deg, #075985, #0d9488);
-  box-shadow: 0 5px 12px rgb(3 105 161 / 24%);
+  background: linear-gradient(135deg, #a90020, #e0002b);
+  box-shadow: 0 5px 12px rgb(224 0 43 / 24%);
 }
 
 .geoforce-map-brand__name {
@@ -103,7 +103,7 @@ html[data-high-contrast="true"][data-color-mode="dark"] .map-wrapper {
 }
 
 html[data-color-mode="dark"] .geoforce-map-brand {
-  color: #e0f2fe;
+  color: #fde9ed;
 }
 
 /* Shared visual language for controls that sit above the map. */

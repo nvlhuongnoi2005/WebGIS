@@ -112,7 +112,7 @@ export default function SwaggerPage() {
           scrollBehavior: "smooth",
           "&::-webkit-scrollbar": { width: 10 },
           "&::-webkit-scrollbar-thumb": {
-            bgcolor: "rgba(3,105,161,.42)",
+            bgcolor: "rgba(224,0,43,.42)",
             border: "3px solid #f6f7fb",
             borderRadius: 20,
           },
@@ -175,7 +175,7 @@ export default function SwaggerPage() {
                 overflow: "hidden",
                 borderRadius: 4,
                 color: "#fff",
-                background: "linear-gradient(121deg, #082f49 0%, #075985 54%, #0d9488 160%)",
+                background: "linear-gradient(121deg, #111d2a 0%, #273d55 54%, #d50032 160%)",
                 boxShadow: "0 20px 45px rgba(20,42,50,.18)",
               }}
             >
@@ -286,12 +286,12 @@ export default function SwaggerPage() {
                     sx={{
                       p: 2,
                       borderRadius: 3,
-                      bgcolor: "#ecfeff",
-                      border: "1px solid rgba(13,148,136,.22)",
+                      bgcolor: "#fff3f5",
+                      border: "1px solid rgba(224,0,43,.18)",
                     }}
                   >
                     <Stack direction="row" spacing={1} sx={{ alignItems: "flex-start" }}>
-                      <KeyRound size={18} color="#0f766e" />
+                      <KeyRound size={18} color="#d50032" />
                       <Box>
                         <Typography variant="body2" sx={{ fontWeight: 850 }}>
                           {t("swagger.bearerTitle")}

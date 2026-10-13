@@ -75,7 +75,7 @@ export function useMapInstance(
     );
 
     const positionMarker = new maplibregl.Marker({
-      color: "#0369a1",
+      color: "#e0002b",
       anchor: "bottom",
       offset: [0, 6],
       subpixelPositioning: true,
