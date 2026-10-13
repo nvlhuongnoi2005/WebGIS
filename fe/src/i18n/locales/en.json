@@ -1,4 +1,9 @@
 {
+  "brand": {
+    "name": "GeoForce",
+    "tagline": "A WebGIS platform for automated administration, exploration, and sharing of map data.",
+    "workspace": "Map data workspace"
+  },
   "search": {
     "placeholder": "Search for a location...",
     "button": "Search",
@@ -286,8 +291,8 @@
     "unreadCount": "{{count}} unread notifications",
     "markAllRead": "Mark all read",
     "empty": "You have no notifications yet.",
-    "welcomeTitle": "Welcome to VGIS",
-    "welcomeDescription": "Your account is ready. Start exploring the map and its tools.",
+    "welcomeTitle": "Welcome to GeoForce",
+    "welcomeDescription": "Your account is ready. Start administering, exploring, and sharing map data.",
     "quotaTitle": "Your API quota has been reached",
     "quotaDescription": "New search or routing requests may be unavailable until your quota renews.",
     "viewUsage": "View usage",
@@ -297,15 +302,15 @@
     "openShare": "Open map"
   },
   "auth": {
-    "brand": "VGIS",
-    "subtitle": "GIS mapping tool",
+    "brand": "GeoForce",
+    "subtitle": "A WebGIS platform for automated administration, exploration, and sharing of map data.",
     "tabsLabel": "Authentication options",
     "login": "Sign in",
     "register": "Register",
     "loginTitle": "Welcome back",
-    "loginDescription": "Sign in to open your map workspace.",
+    "loginDescription": "Sign in to administer, explore, and share map data.",
     "registerTitle": "Create an account",
-    "registerDescription": "Register to open your map workspace.",
+    "registerDescription": "Register to begin using the GeoForce map data workspace.",
     "name": "Full name",
     "dateOfBirth": "Date of birth",
     "phone": "Phone number",
@@ -384,7 +389,7 @@
     "openDashboard": "Open administration dashboard",
     "openTileServer": "Open Tile Server",
     "navigation": "Administration navigation",
-    "console": "VGIS console",
+    "console": "GeoForce console",
     "overview": "Overview",
     "overviewDescription": "Monitor accounts, active users, and profile distribution.",
     "ageDescription": "Profiles without a date of birth are shown separately.",
@@ -458,7 +463,7 @@
     "loadError": "Dashboard data could not be loaded."
   },
   "swagger": {
-    "reference": "WEBGIS API REFERENCE",
+    "reference": "GEOFORCE WEBGIS API REFERENCE",
     "openApiJson": "OpenAPI JSON",
     "loadingDescription": "Loading API documentation from the controller…",
     "endpoints": "Endpoints",

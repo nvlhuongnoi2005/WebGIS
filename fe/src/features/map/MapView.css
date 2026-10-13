@@ -58,6 +58,54 @@ html[data-high-contrast="true"][data-color-mode="dark"] .map-wrapper {
   min-height: 0;
 }
 
+.geoforce-map-brand {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: var(--z-top-controls);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 8px 13px 8px 9px;
+  color: #12313f;
+  border: 1px solid var(--map-surface-border) !important;
+  border-radius: 15px !important;
+  background: var(--map-surface) !important;
+  box-shadow: var(--map-shadow) !important;
+  backdrop-filter: blur(18px) saturate(125%);
+}
+
+.geoforce-map-brand__mark {
+  display: grid;
+  width: 31px;
+  height: 31px;
+  place-items: center;
+  color: #ffffff;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #075985, #0d9488);
+  box-shadow: 0 5px 12px rgb(3 105 161 / 24%);
+}
+
+.geoforce-map-brand__name {
+  color: inherit;
+  font-size: 0.88rem !important;
+  font-weight: 800 !important;
+  line-height: 1.05 !important;
+  letter-spacing: 0.01em !important;
+}
+
+.geoforce-map-brand__tagline {
+  color: var(--map-popup-secondary);
+  font-size: 0.66rem !important;
+  font-weight: 650 !important;
+  line-height: 1.2 !important;
+}
+
+html[data-color-mode="dark"] .geoforce-map-brand {
+  color: #e0f2fe;
+}
+
 /* Shared visual language for controls that sit above the map. */
 .map-floating-panel,
 .map-search-surface,
@@ -177,6 +225,12 @@ html[data-high-contrast="true"][data-color-mode="dark"] .map-wrapper {
 }
 
 @media (max-width: 599px) {
+  .geoforce-map-brand {
+    top: 12px;
+    left: 12px;
+    min-height: 44px;
+  }
+
   .map-coordinate-hover-panel {
     right: 8px;
     bottom: 8px;

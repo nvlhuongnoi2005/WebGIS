@@ -58,7 +58,7 @@ function ensureMeasureLayers(map: maplibregl.Map) {
       type: "fill",
       source: "measure-area",
       paint: {
-        "fill-color": "#e0002b",
+        "fill-color": "#0369a1",
         "fill-opacity": 0.18,
       },
     });
@@ -74,7 +74,7 @@ function ensureMeasureLayers(map: maplibregl.Map) {
         "line-cap": "round",
       },
       paint: {
-        "line-color": "#e0002b",
+        "line-color": "#0369a1",
         "line-width": 3,
         "line-opacity": 0.9,
       },
@@ -89,7 +89,7 @@ function ensureMeasureLayers(map: maplibregl.Map) {
       paint: {
         "circle-radius": 6,
         "circle-color": "#ffffff",
-        "circle-stroke-color": "#e0002b",
+        "circle-stroke-color": "#0369a1",
         "circle-stroke-width": 3,
       },
     });

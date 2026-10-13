@@ -68,7 +68,7 @@ export function AdminAuditPage() {
             </Paper>
           )}
           {logs.map((log) => (
-            <Paper key={log.id} sx={{ p: 2, borderRadius: 2.5, borderLeft: "4px solid #e0002b" }}>
+            <Paper key={log.id} sx={{ p: 2, borderRadius: 2.5, borderLeft: "4px solid #0369a1" }}>
               <Stack
                 direction={{ xs: "column", sm: "row" }}
                 spacing={1}

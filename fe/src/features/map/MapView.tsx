@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
-import { Box, IconButton, Stack, Tooltip } from "@mui/material";
-import { LayoutDashboard, LocateFixed } from "lucide-react";
+import { Box, IconButton, Paper, Stack, Tooltip, Typography } from "@mui/material";
+import { Globe2, LayoutDashboard, LocateFixed } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./maplibreWorker";
@@ -202,6 +202,15 @@ function MapView({ onNavigate }: MapViewProps) {
           onCrsChange={setCoordinateReferenceSystem}
         />
       </Box>
+      <Paper className="geoforce-map-brand" elevation={0}>
+        <Box className="geoforce-map-brand__mark" aria-hidden>
+          <Globe2 size={21} />
+        </Box>
+        <Box>
+          <Typography className="geoforce-map-brand__name">{t("brand.name")}</Typography>
+          <Typography className="geoforce-map-brand__tagline">{t("brand.workspace")}</Typography>
+        </Box>
+      </Paper>
       <SearchBar
         activeTool={activeTool}
         map={map}
@@ -214,7 +223,7 @@ function MapView({ onNavigate }: MapViewProps) {
         spacing={1.5}
         sx={{
           position: "absolute",
-          top: { xs: 64, sm: 20 },
+          top: { xs: 116, sm: 20 },
           right: { xs: 12, sm: 20 },
           zIndex: "var(--z-top-controls)",
           alignItems: "center",

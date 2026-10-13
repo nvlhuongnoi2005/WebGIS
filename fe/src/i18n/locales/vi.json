@@ -1,4 +1,9 @@
 {
+  "brand": {
+    "name": "GeoForce",
+    "tagline": "Nền tảng WebGIS tự động hóa quản trị, khai thác và chia sẻ dữ liệu bản đồ.",
+    "workspace": "Không gian dữ liệu bản đồ"
+  },
   "search": {
     "placeholder": "Nhập địa điểm cần tìm...",
     "button": "Tìm kiếm",
@@ -259,8 +264,8 @@
     "unreadCount": "{{count}} thông báo chưa đọc",
     "markAllRead": "Đánh dấu đã đọc",
     "empty": "Bạn chưa có thông báo nào.",
-    "welcomeTitle": "Chào mừng bạn đến với VGIS",
-    "welcomeDescription": "Tài khoản đã sẵn sàng. Hãy bắt đầu khám phá bản đồ và các công cụ.",
+    "welcomeTitle": "Chào mừng bạn đến với GeoForce",
+    "welcomeDescription": "Tài khoản đã sẵn sàng. Bắt đầu quản trị, khai thác và chia sẻ dữ liệu bản đồ.",
     "quotaTitle": "Bạn đã dùng hết quota API",
     "quotaDescription": "Các yêu cầu tìm kiếm hoặc định tuyến mới có thể không khả dụng cho đến khi quota được gia hạn.",
     "viewUsage": "Xem mức sử dụng",
@@ -287,15 +292,15 @@
     "phoneRequired": "Hãy nhập số điện thoại.",
     "phoneInvalid": "Hãy nhập số điện thoại hợp lệ.",
     "organizationRequired": "Hãy nhập đơn vị công tác.",
-    "brand": "VGIS",
-    "subtitle": "Hệ thống bản đồ",
+    "brand": "GeoForce",
+    "subtitle": "Nền tảng WebGIS tự động hóa quản trị, khai thác và chia sẻ dữ liệu bản đồ.",
     "tabsLabel": "Tùy chọn xác thực",
     "login": "Đăng nhập",
     "register": "Đăng ký",
     "loginTitle": "Chào mừng trở lại",
-    "loginDescription": "Đăng nhập để mở không gian làm việc bản đồ.",
+    "loginDescription": "Đăng nhập để quản trị, khai thác và chia sẻ dữ liệu bản đồ.",
     "registerTitle": "Tạo tài khoản",
-    "registerDescription": "Đăng ký để mở không gian làm việc bản đồ.",
+    "registerDescription": "Đăng ký để bắt đầu sử dụng không gian dữ liệu bản đồ GeoForce.",
     "name": "Họ và tên",
     "email": "Email",
     "password": "Mật khẩu",
@@ -384,7 +389,7 @@
     "openDashboard": "Mở bảng điều khiển quản trị",
     "openTileServer": "Mở Tile Server",
     "navigation": "Điều hướng quản trị",
-    "console": "VGIS console",
+    "console": "GeoForce console",
     "overview": "Tổng quan",
     "overviewDescription": "Theo dõi tài khoản, người đang trực tuyến và phân bố hồ sơ.",
     "ageDescription": "Các hồ sơ chưa khai báo ngày sinh được tách riêng.",
@@ -458,7 +463,7 @@
     "loadError": "Không thể tải dữ liệu quản trị."
   },
   "swagger": {
-    "reference": "TÀI LIỆU API WEBGIS",
+    "reference": "TÀI LIỆU API GEOFORCE WEBGIS",
     "openApiJson": "OpenAPI JSON",
     "loadingDescription": "Đang tải tài liệu API từ controller…",
     "endpoints": "Endpoints",

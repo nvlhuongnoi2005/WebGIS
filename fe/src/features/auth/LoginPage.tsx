@@ -11,7 +11,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { Map, MapPin, Navigation, UserRound } from "lucide-react";
+import { Globe2, MapPin, Navigation, UserRound } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "../../components/LanguageSwitcher/LanguageSwitcher";
 import { useAuth } from "./useAuth";
@@ -136,7 +136,7 @@ export default function LoginPage({ onAuthenticated }: LoginPageProps) {
               sx={{ alignItems: "center", position: "relative" }}
             >
               <Box className="auth-showcase__logo">
-                <Map size={26} aria-hidden />
+                <Globe2 size={26} aria-hidden />
               </Box>
               <Box>
                 <Typography variant="h5" sx={{ fontWeight: 800, letterSpacing: "-0.02em" }}>
@@ -191,7 +191,7 @@ export default function LoginPage({ onAuthenticated }: LoginPageProps) {
           <Box className={`auth-form auth-form--${mode}`}>
             <Stack direction="row" spacing={1.25} className="auth-form__mobile-brand">
               <Box className="auth-form__mobile-logo">
-                <Map size={21} aria-hidden />
+                <Globe2 size={21} aria-hidden />
               </Box>
               <Box>
                 <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>

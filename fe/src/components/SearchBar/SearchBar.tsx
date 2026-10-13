@@ -115,7 +115,7 @@ function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) 
       type: "fill",
       source: SEARCH_GEOMETRY_SOURCE,
       paint: {
-        "fill-color": "#e0002b",
+        "fill-color": "#0369a1",
         "fill-opacity": 0.18,
       },
     });
@@ -124,7 +124,7 @@ function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) 
       type: "line",
       source: SEARCH_GEOMETRY_SOURCE,
       paint: {
-        "line-color": "#a90020",
+        "line-color": "#075985",
         "line-width": 3,
         "line-opacity": 0.9,
       },
@@ -193,7 +193,7 @@ function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) 
         .setDOMContent(popupContent);
 
       const marker = new maplibregl.Marker({
-        color: "#e0002b",
+        color: "#0369a1",
         anchor: "bottom",
         offset: [0, 6],
         subpixelPositioning: true,
@@ -414,7 +414,7 @@ function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) 
       ref={containerRef}
       sx={{
         position: "absolute",
-        top: { xs: 12, sm: 20 },
+        top: { xs: 68, sm: 80 },
         left: { xs: 12, sm: 20 },
         zIndex: "var(--z-top-controls)",
         width: { xs: "calc(100% - 24px)", sm: 450 },
