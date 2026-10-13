@@ -414,7 +414,7 @@ function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) 
       ref={containerRef}
       sx={{
         position: "absolute",
-        top: { xs: 68, sm: 80 },
+        top: { xs: 12, sm: 20 },
         left: { xs: 12, sm: 20 },
         zIndex: "var(--z-top-controls)",
         width: { xs: "calc(100% - 24px)", sm: 450 },
