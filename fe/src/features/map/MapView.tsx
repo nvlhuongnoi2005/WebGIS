@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Box, IconButton, Stack, Tooltip } from "@mui/material";
 import { LayoutDashboard, LocateFixed } from "lucide-react";
+import type { Feature, Geometry } from "geojson";
 import { useTranslation } from "react-i18next";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./maplibreWorker";
@@ -21,6 +22,7 @@ import { useMeasureTool } from "../../hooks/useMeasureTool";
 import { useRouting } from "../../hooks/useRouting";
 import { useSpatialSearch } from "../../hooks/useSpatialSearch";
 import type { MapTool } from "../../types/map";
+import type { GeocodingFeature } from "../../tools/geocoding/GeocodingTool";
 import {
   DEFAULT_COORDINATE_REFERENCE_SYSTEM,
   transformFromWgs84,
@@ -33,6 +35,7 @@ import {
   type DrawFeatureCollection,
 } from "../../tools/draw/DrawTool";
 import DrawPanel from "./components/DrawPanel";
+import GeoJSONShareDialog from "./components/GeoJSONShareDialog";
 import LayerPanel from "./components/LayerPanel";
 import MapPositionPopup from "./components/MapPositionPopup";
 import MeasurePanel from "./components/MeasurePanel";
@@ -46,10 +49,29 @@ interface MapViewProps {
   onNavigate?: (to: "/admin") => void;
 }
 
+type MapShareKind = "route" | "place";
+
+interface MapShareSubject {
+  kind: MapShareKind;
+  geoJSON: DrawFeatureCollection;
+}
+
+function createShareFeatureCollection(features: Array<Feature<Geometry>>): DrawFeatureCollection {
+  return {
+    type: "FeatureCollection",
+    crs: {
+      type: "name",
+      properties: { name: DEFAULT_COORDINATE_REFERENCE_SYSTEM },
+    },
+    features: features.map((feature, index) => ({ ...feature, id: `shared-${index}` })),
+  };
+}
+
 function MapView({ onNavigate }: MapViewProps) {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [activeTool, setActiveTool] = useState<MapTool>(null);
+  const [shareSubject, setShareSubject] = useState<MapShareSubject | null>(null);
   const [tileServerPanelMode, setTileServerPanelMode] = useState<"base-map" | "layers" | null>(
     null
   );
@@ -95,6 +117,52 @@ function MapView({ onNavigate }: MapViewProps) {
     routing.setDestination(coordinates);
     setTileServerPanelMode(null);
     setActiveTool("route");
+  };
+
+  const handleShareLocation = (feature: GeocodingFeature) => {
+    setShareSubject({
+      kind: "place",
+      geoJSON: createShareFeatureCollection([
+        {
+          type: "Feature",
+          properties: {
+            kind: "place",
+            name: feature.text || feature.place_name,
+            address: feature.context || feature.place_name,
+          },
+          geometry: feature.geometry,
+        },
+      ]),
+    });
+  };
+
+  const handleShareRoute = () => {
+    if (!routing.route || !routing.origin || !routing.destination) return;
+
+    setShareSubject({
+      kind: "route",
+      geoJSON: createShareFeatureCollection([
+        {
+          ...routing.route.geometry,
+          properties: {
+            ...routing.route.geometry.properties,
+            kind: "route",
+            distance_km: routing.route.summary.distanceKm,
+            time_seconds: routing.route.summary.timeSeconds,
+          },
+        },
+        {
+          type: "Feature",
+          properties: { kind: "origin", label: "A" },
+          geometry: { type: "Point", coordinates: routing.origin },
+        },
+        {
+          type: "Feature",
+          properties: { kind: "destination", label: "B" },
+          geometry: { type: "Point", coordinates: routing.destination },
+        },
+      ]),
+    });
   };
 
   const measure = useMeasureTool({ map, mapLoaded, activeTool, setActiveTool });
@@ -206,6 +274,7 @@ function MapView({ onNavigate }: MapViewProps) {
         activeTool={activeTool}
         map={map}
         onDirections={handleSearchDirections}
+        onShareLocation={handleShareLocation}
         onSearch={handleSearch}
       />
       <ToolPanel activeTool={activeTool} onSelectTool={handleSelectTool} />
@@ -342,6 +411,7 @@ function MapView({ onNavigate }: MapViewProps) {
           onDestinationChange={routing.setDestination}
           onVehicleChange={routing.setVehicle}
           onCalculate={routing.calculateRoute}
+          onShare={handleShareRoute}
           onReset={routing.reset}
         />
       )}
@@ -374,6 +444,20 @@ function MapView({ onNavigate }: MapViewProps) {
           onFinish={draw.finishDraft}
           onRedo={draw.redoDraw}
           onUndo={draw.undoDraw}
+        />
+      )}
+
+      {shareSubject && (
+        <GeoJSONShareDialog
+          featureCount={shareSubject.geoJSON.features.length}
+          geoJSON={shareSubject.geoJSON}
+          mapState={{
+            basemap_id: tileServerBaseMap?.id,
+            overlay_ids: tileServerOverlays.map((overlay) => overlay.id),
+          }}
+          title={t(`sharing.${shareSubject.kind}Title`)}
+          description={t(`sharing.${shareSubject.kind}Description`)}
+          onClose={() => setShareSubject(null)}
         />
       )}
     </Box>

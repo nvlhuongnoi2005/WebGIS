@@ -35,6 +35,7 @@ import {
   RotateCcw,
   Route as RouteIcon,
   Search,
+  Share2,
   TrendingDown,
   TrendingUp,
   Truck,
@@ -73,6 +74,7 @@ interface RoutingPanelProps {
   onDestinationChange: (point: MapCoordinates | null) => void;
   onVehicleChange: (vehicle: RoutingVehicle) => void;
   onCalculate: () => void;
+  onShare: () => void;
   onReset: () => void;
 }
 
@@ -105,6 +107,7 @@ function RoutingPanel({
   onDestinationChange,
   onVehicleChange,
   onCalculate,
+  onShare,
   onReset,
 }: RoutingPanelProps) {
   const { t } = useTranslation();
@@ -341,21 +344,32 @@ function RoutingPanel({
           </Box>
         )}
 
-        <Button
-          fullWidth
-          variant="contained"
-          startIcon={
-            status === "loading" ? (
-              <CircularProgress size={16} color="inherit" />
-            ) : (
-              <Search size={17} />
-            )
-          }
-          disabled={!canCalculate}
-          onClick={() => onCalculate()}
-        >
-          {status === "loading" ? t("routing.loading") : t("routing.findRoute")}
-        </Button>
+        <Stack direction="row" spacing={1}>
+          <Button
+            fullWidth
+            variant="contained"
+            startIcon={
+              status === "loading" ? (
+                <CircularProgress size={16} color="inherit" />
+              ) : (
+                <Search size={17} />
+              )
+            }
+            disabled={!canCalculate}
+            onClick={() => onCalculate()}
+          >
+            {status === "loading" ? t("routing.loading") : t("routing.findRoute")}
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<Share2 size={16} />}
+            disabled={!isRouteResult}
+            onClick={onShare}
+            sx={{ flexShrink: 0, whiteSpace: "nowrap" }}
+          >
+            {t("sharing.share")}
+          </Button>
+        </Stack>
 
         {(!origin || !destination) && (
           <Stack

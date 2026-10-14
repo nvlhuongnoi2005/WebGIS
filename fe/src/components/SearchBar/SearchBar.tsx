@@ -18,7 +18,7 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { MapPin, Navigation, Search, X } from "lucide-react";
+import { MapPin, Navigation, Search, Share2, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { formatDmsCoordinates } from "../../tools/coordinate/CoordinateTool";
 import {
@@ -47,10 +47,11 @@ interface SearchBarProps {
   activeTool: MapTool;
   map: MutableRefObject<maplibregl.Map | null>;
   onDirections: (coordinates: [number, number]) => void;
+  onShareLocation: (feature: GeocodingFeature) => void;
   onSearch: () => void;
 }
 
-function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) {
+function SearchBar({ activeTool, map, onDirections, onShareLocation, onSearch }: SearchBarProps) {
   const { t, i18n } = useTranslation();
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<SearchResult[]>([]);
@@ -504,15 +505,26 @@ function SearchBar({ activeTool, map, onDirections, onSearch }: SearchBarProps) 
               {t("search.coordinates")}:{" "}
               {formatDmsCoordinates(selectedFeature.center[0], selectedFeature.center[1])}
             </Typography>
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<Navigation size={15} />}
-              onClick={handleDirections}
-              sx={{ alignSelf: "flex-start", textTransform: "none" }}
-            >
-              {t("search.directions")}
-            </Button>
+            <Stack direction="row" spacing={1}>
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<Navigation size={15} />}
+                onClick={handleDirections}
+                sx={{ textTransform: "none" }}
+              >
+                {t("search.directions")}
+              </Button>
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<Share2 size={15} />}
+                onClick={() => onShareLocation(selectedFeature)}
+                sx={{ textTransform: "none" }}
+              >
+                {t("sharing.share")}
+              </Button>
+            </Stack>
           </Stack>
         </Paper>
       )}

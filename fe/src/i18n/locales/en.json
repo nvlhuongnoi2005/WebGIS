@@ -13,6 +13,13 @@
     "address": "Address",
     "directions": "Directions to here"
   },
+  "sharing": {
+    "share": "Share",
+    "routeTitle": "Share route",
+    "routeDescription": "Create a view-only snapshot of this route, including its start and destination.",
+    "placeTitle": "Share location",
+    "placeDescription": "Create a view-only snapshot of this location on the current map."
+  },
   "tools": {
     "route": "Routing",
     "measure": "Measure distance / area",

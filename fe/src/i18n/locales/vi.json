@@ -13,6 +13,13 @@
     "address": "Địa chỉ",
     "directions": "Chỉ đường đến đây"
   },
+  "sharing": {
+    "share": "Chia sẻ",
+    "routeTitle": "Chia sẻ tuyến đường",
+    "routeDescription": "Chia sẻ phiên bản xem của tuyến đường, gồm điểm đi và điểm đến.",
+    "placeTitle": "Chia sẻ địa điểm",
+    "placeDescription": "Chia sẻ phiên bản xem của địa điểm trên bản đồ hiện tại."
+  },
   "tools": {
     "route": "Tìm đường",
     "measure": "Đo khoảng cách / diện tích",
@@ -197,7 +204,7 @@
     "geoJsonInvalidStructure": "Hãy dùng FeatureCollection có hình học.",
     "share": "Chia sẻ",
     "shareTitle": "Chia sẻ GeoJSON",
-    "shareDescription": "Tạo bản chụp chỉ xem gồm {{count}} hình, bản đồ nền và các lớp phủ đang hiển thị. Liên kết hết hạn sau 30 ngày.",
+    "shareDescription": "Chia sẻ phiên bản xem gồm {{count}} hình, bản đồ nền và các lớp phủ đang hiển thị.",
     "shareLink": "Liên kết chia sẻ",
     "createAnotherShareLink": "Tạo thêm liên kết chia sẻ",
     "createShareLink": "Tạo liên kết",

@@ -30,6 +30,8 @@ interface GeoJSONShareDialogProps {
   featureCount: number;
   geoJSON: DrawFeatureCollection;
   mapState: GeoJSONShareMapState;
+  title?: string;
+  description?: string;
   onClose: () => void;
 }
 
@@ -37,6 +39,8 @@ export default function GeoJSONShareDialog({
   featureCount,
   geoJSON,
   mapState,
+  title,
+  description,
   onClose,
 }: GeoJSONShareDialogProps) {
   const { t } = useTranslation();
@@ -130,11 +134,11 @@ export default function GeoJSONShareDialog({
 
   return (
     <Dialog open onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>{t("draw.shareTitle")}</DialogTitle>
+      <DialogTitle>{title ?? t("draw.shareTitle")}</DialogTitle>
       <DialogContent>
         <Stack spacing={1.5} sx={{ pt: 1 }}>
           <Typography color="text.secondary">
-            {t("draw.shareDescription", { count: featureCount })}
+            {description ?? t("draw.shareDescription", { count: featureCount })}
           </Typography>
           {shareError && <Alert severity="error">{shareError}</Alert>}
           {shareUrl && (
