@@ -64,6 +64,8 @@ function SearchBar({ activeTool, map, onDirections, onShareLocation, onSearch }:
   const debounceTimerRef = useRef<number | null>(null);
   const requestControllerRef = useRef<AbortController | null>(null);
   const searchCacheRef = useRef<Map<string, SearchResult[]>>(new Map());
+  const searchVersionRef = useRef(0);
+  const suggestionsQueryRef = useRef("");
 
   const formatSuggestionDetails = (feature: SearchResult) => {
     if (isGeocodingFeature(feature)) {
@@ -261,6 +263,7 @@ function SearchBar({ activeTool, map, onDirections, onShareLocation, onSearch }:
   };
 
   const selectSearchResult = async (result: SearchResult, closeActiveTool = true) => {
+    const searchVersion = searchVersionRef.current;
     if (isGeocodingFeature(result)) {
       selectLocation(result, closeActiveTool);
       return;
@@ -272,20 +275,26 @@ function SearchBar({ activeTool, map, onDirections, onShareLocation, onSearch }:
       // Elasticsearch ranks the suggestion. Nominatim is the source of truth
       // for its geometry, so selecting an area still draws its real polygon.
       const [feature] = await fetchGeocodingResults(result.resolveQuery, activeLang);
-      if (feature) {
+      if (feature && searchVersion === searchVersionRef.current) {
         selectLocation(feature, closeActiveTool);
       }
     } catch (error) {
       console.error("Suggestion resolution error:", error);
     } finally {
-      setIsLoading(false);
+      if (searchVersion === searchVersionRef.current) {
+        setIsLoading(false);
+      }
     }
   };
 
   const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
+    const searchVersion = ++searchVersionRef.current;
     setQuery(value);
     setSelectedFeature(null);
+    setSuggestions([]);
+    suggestionsQueryRef.current = "";
+    setIsOpen(false);
     cancelPendingSearch();
 
     if (debounceTimerRef.current) {
@@ -304,9 +313,12 @@ function SearchBar({ activeTool, map, onDirections, onShareLocation, onSearch }:
 
     debounceTimerRef.current = window.setTimeout(async () => {
       const results = await fetchSuggestions(value);
-      setSuggestions(results);
-      setIsOpen(results.length > 0);
-      setIsLoading(false);
+      if (searchVersion === searchVersionRef.current) {
+        suggestionsQueryRef.current = value.trim();
+        setSuggestions(results);
+        setIsOpen(results.length > 0);
+        setIsLoading(false);
+      }
     }, SEARCH_DEBOUNCE_MS);
   };
 
@@ -321,32 +333,55 @@ function SearchBar({ activeTool, map, onDirections, onShareLocation, onSearch }:
       return;
     }
 
-    if (suggestions.length > 0) {
+    const searchVersion = ++searchVersionRef.current;
+    if (debounceTimerRef.current !== null) {
+      window.clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+    }
+    cancelPendingSearch();
+
+    if (suggestionsQueryRef.current === query.trim() && suggestions.length > 0) {
       await selectSearchResult(suggestions[0], false);
 
       return;
     }
 
     setIsLoading(true);
-    const results = await fetchGeocodingResults(
-      query,
-      getGeocodingLanguage(i18n.resolvedLanguage || i18n.language)
-    );
-    setIsLoading(false);
+    try {
+      const results = await fetchGeocodingResults(
+        query,
+        getGeocodingLanguage(i18n.resolvedLanguage || i18n.language)
+      );
+      if (searchVersion !== searchVersionRef.current) return;
 
-    if (results.length > 0) {
-      selectLocation(results[0], false);
-    } else {
-      setSuggestions([]);
-      setIsOpen(false);
+      if (results.length > 0) {
+        selectLocation(results[0], false);
+      } else {
+        setSuggestions([]);
+        setIsOpen(false);
+      }
+    } catch (error) {
+      console.error("Search submit error:", error);
+    } finally {
+      if (searchVersion === searchVersionRef.current) {
+        setIsLoading(false);
+      }
     }
   };
 
   const handleClear = () => {
+    ++searchVersionRef.current;
+    if (debounceTimerRef.current !== null) {
+      window.clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+    }
+    cancelPendingSearch();
     setQuery("");
     setSuggestions([]);
+    suggestionsQueryRef.current = "";
     setSelectedFeature(null);
     setIsOpen(false);
+    setIsLoading(false);
     clearMarker();
     clearSearchGeometry();
   };
