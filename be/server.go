@@ -1465,6 +1465,63 @@ func (server *Server) tileProxy(response http.ResponseWriter, request *http.Requ
 	}
 }
 
+// geoDataProxy keeps GeoData private while preserving its authorization
+// boundary. The Controller validates map:read and then forwards the original
+// WebGIS JWT; GeoData resolves the caller's user/organization grants before it
+// reveals a catalog entry, style, sprite, TileJSON, or tile.
+func (server *Server) geoDataProxy(response http.ResponseWriter, request *http.Request, workerPath string) {
+	if request.Method != http.MethodGet && request.Method != http.MethodHead {
+		clientError(response, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+	if workerPath == "" {
+		workerPath = "/"
+	}
+	if !strings.HasPrefix(workerPath, "/") {
+		clientError(response, http.StatusNotFound, "Not found")
+		return
+	}
+	for _, segment := range strings.Split(workerPath, "/") {
+		if segment == "." || segment == ".." || strings.Contains(segment, "\\") {
+			clientError(response, http.StatusNotFound, "Not found")
+			return
+		}
+	}
+	if _, ok := server.authenticate(response, request, "map:read"); !ok {
+		return
+	}
+	target := server.config.GeoDataURL + workerPath
+	if request.URL.RawQuery != "" {
+		target += "?" + request.URL.RawQuery
+	}
+	workerRequest, err := http.NewRequestWithContext(request.Context(), request.Method, target, nil)
+	if err != nil {
+		clientError(response, http.StatusBadGateway, "GeoData service unavailable")
+		return
+	}
+	for _, header := range []string{"Accept", "Accept-Encoding", "Authorization", "If-Modified-Since", "If-None-Match", "Range"} {
+		if value := request.Header.Get(header); value != "" {
+			workerRequest.Header.Set(header, value)
+		}
+	}
+	workerRequest.Header.Set("X-Request-Id", request.Header.Get("X-Request-Id"))
+	workerResponse, err := server.workerClient.Do(workerRequest)
+	if err != nil {
+		clientError(response, http.StatusBadGateway, "GeoData service unavailable")
+		return
+	}
+	defer workerResponse.Body.Close()
+	for _, header := range []string{"Accept-Ranges", "Cache-Control", "Content-Encoding", "Content-Length", "Content-Type", "ETag", "Last-Modified", "Vary"} {
+		if value := workerResponse.Header.Get(header); value != "" {
+			response.Header().Set(header, value)
+		}
+	}
+	response.WriteHeader(workerResponse.StatusCode)
+	if request.Method != http.MethodHead {
+		_, _ = io.Copy(response, workerResponse.Body)
+	}
+}
+
 // nominatimProxy provides the public geocoding API through the Controller so
 // the Nominatim worker remains a private ClusterIP service.
 func (server *Server) nominatimProxy(response http.ResponseWriter, request *http.Request, workerPath string) {
@@ -1714,6 +1771,10 @@ func (server *Server) ServeHTTP(response http.ResponseWriter, request *http.Requ
 		}
 	case (request.Method == http.MethodGet || request.Method == http.MethodHead) && request.URL.Path == "/api/tile-catalog":
 		server.tileProxy(response, request, "/")
+	case (request.Method == http.MethodGet || request.Method == http.MethodHead) && request.URL.Path == "/api/geodata/catalog":
+		server.geoDataProxy(response, request, "/v1/catalog")
+	case (request.Method == http.MethodGet || request.Method == http.MethodHead) && strings.HasPrefix(request.URL.Path, "/api/geodata/"):
+		server.geoDataProxy(response, request, strings.TrimPrefix(request.URL.Path, "/api/geodata"))
 	case (request.Method == http.MethodGet || request.Method == http.MethodHead) && request.URL.Path == "/api/tiles":
 		server.tileProxy(response, request, "/")
 	case (request.Method == http.MethodGet || request.Method == http.MethodHead) && strings.HasPrefix(request.URL.Path, "/api/tiles/"):

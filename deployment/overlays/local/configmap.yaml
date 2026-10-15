@@ -20,5 +20,6 @@ data:
   APP_ORIGINS: http://webgis.localhost, http://192.168.0.191
   VALHALLA_INTERNAL_URL: http://valhalla:8002
   TILE_SERVER_INTERNAL_URL: http://tile-server:8080
+  GEODATA_INTERNAL_URL: http://geodata-tile-gateway.tile-server.svc.cluster.local:8091
   NOMINATIM_INTERNAL_URL: http://nominatim:8083
   ELASTICSEARCH_URL: http://elasticsearch:9200

@@ -1,4 +1,5 @@
 import type { StyleSpecification } from "maplibre-gl";
+import { authFetch } from "../../features/auth/authClient";
 
 export interface TileServerBaseMap {
   id: string;
@@ -23,16 +24,10 @@ export const DEFAULT_TILE_SERVER_BASE_MAP: TileServerBaseMap = {
   role: "basemap",
 };
 
-const TILE_SERVER_URL = "/api/tiles";
-const TILE_SERVER_CATALOG_URL = "/api/tile-catalog";
-
-const TILE_SERVER_BACKEND_URL = (
-  import.meta.env.VITE_TILE_SERVER_URL || "http://localhost:8080"
-).replace(/\/$/, "");
-
-const TILE_SERVER_DATASET_STYLE_PATHS: Readonly<Record<string, string>> = {
-  vietnam: "/styles/openstreetmap/style.json",
-};
+// GeoData owns the published MBTiles catalog. The browser reaches it only
+// through the same-origin WebGIS Controller proxy.
+const GEODATA_URL = "/api/geodata";
+const GEODATA_CATALOG_URL = `${GEODATA_URL}/catalog`;
 
 export function getEmptyMapStyle(): StyleSpecification {
   return {
@@ -62,7 +57,10 @@ type TileServerCatalogItem = {
   maxZoom?: unknown;
   tileSize?: unknown;
   type?: unknown;
+  kind?: unknown;
+  role?: unknown;
   format?: unknown;
+  stylePath?: unknown;
   sourceLayer?: unknown;
   source_layer?: unknown;
 };
@@ -117,28 +115,28 @@ function normalizeCatalogItem(item: unknown, index: number): TileServerBaseMap {
   );
   // The tile server may expose `type: baselayer` and `format: pbf`.
   // Do not let the non-format `type` value hide the actual vector format.
-  const format =
-    `${String(record.type ?? "")} ${String(record.format ?? "")} ${tilePath}`.toLowerCase();
+  const format = `${String(record.kind ?? "")} ${String(record.type ?? "")} ${String(
+    record.format ?? ""
+  )} ${tilePath}`.toLowerCase();
   const kind =
     format.includes("pbf") || format.includes("mvt") || format.includes("vector")
       ? "vector"
       : "raster";
   const sourceLayer = record.sourceLayer ?? record.source_layer;
-  // OPENSTREETMAP_VIETNAM is published as an overlay TileJSON, but its
-  // accompanying server-side style is a complete basemap style.
-  const role = TILE_SERVER_DATASET_STYLE_PATHS[id]
-    ? "basemap"
-    : String(record.type ?? "")
-          .trim()
-          .toLowerCase() === "overlay"
-      ? "overlay"
-      : "basemap";
+  const role = String(record.role ?? record.type ?? "")
+    .trim()
+    .toLowerCase() === "overlay"
+    ? "overlay"
+    : "basemap";
 
   return {
     id,
     label,
     tilePath,
-    stylePath: TILE_SERVER_DATASET_STYLE_PATHS[id],
+    stylePath:
+      typeof record.stylePath === "string" && record.stylePath.trim()
+        ? record.stylePath.trim()
+        : undefined,
     maxzoom: positiveNumber(record.maxzoom ?? record.maxZoom, 7),
     tileSize: positiveNumber(record.tileSize, 256),
     kind,
@@ -159,57 +157,10 @@ export function splitTileServerDatasets(datasets: TileServerBaseMap[]) {
   };
 }
 
-async function getTileServerRootDatasetIds(html: string) {
-  const matches = [
-    // The Tile Server home page is rendered from a template: it lists styles
-    // and datasets as identifiers, but only datasets have a following type.
-    // This keeps `openstreetmap` (a style) out while retaining every dataset.
-    ...html.matchAll(
-      /identifier:\s*\$\{escapeHTML\("([^"]+)"\)\}<\/p>\s*<p>type:/g
-    ),
-    ...html.matchAll(/\/datas\/([a-zA-Z0-9._-]+)\/\{z\}/g),
-  ];
-
-  return Array.from(new Set(matches.map((match) => match[1])));
-}
-
-async function fetchTileServerRootCatalog(html: string): Promise<TileServerBaseMap[]> {
-  const ids = await getTileServerRootDatasetIds(html);
-
-  const datasets = await Promise.all(
-    ids.map(async (id, index) => {
-      try {
-        const response = await fetch(`${TILE_SERVER_URL}/datas/${encodeURIComponent(id)}.json`);
-
-        if (response.ok) {
-          const tileJson = (await response.json()) as Record<string, unknown>;
-          return normalizeCatalogItem(
-            {
-              id,
-              name: tileJson.name,
-              tilePath: Array.isArray(tileJson.tiles) ? tileJson.tiles[0] : undefined,
-              type: tileJson.type,
-              maxzoom: tileJson.maxzoom,
-              tileSize: tileJson.tileSize,
-            },
-            index
-          );
-        }
-      } catch {
-        // Keep the dataset discoverable even if its TileJSON request fails.
-      }
-
-      return normalizeCatalogItem({ id }, index);
-    })
-  );
-
-  return datasets;
-}
-
 export async function fetchTileServerBaseMaps(signal?: AbortSignal): Promise<TileServerBaseMap[]> {
-  // This action is explicitly triggered by the user from the layer panel, so
-  // bypass browser caches and inspect the Tile Server's current datasets.
-  const response = await fetch(TILE_SERVER_CATALOG_URL, { signal, cache: "no-store" });
+  // GeoData filters this catalog by the user and organisation claims carried
+  // by authFetch. Restricted releases never reach this browser response.
+  const response = await authFetch(GEODATA_CATALOG_URL, { signal, cache: "no-store" });
 
   if (response.ok && response.headers.get("content-type")?.includes("json")) {
     const payload = (await response.json()) as unknown;
@@ -222,14 +173,6 @@ export async function fetchTileServerBaseMaps(signal?: AbortSignal): Promise<Til
     return Array.from(new Map(datasets.map((dataset) => [dataset.id, dataset])).values());
   }
 
-  if (response.ok) {
-    const datasets = await fetchTileServerRootCatalog(await response.text());
-
-    if (datasets.length > 0) {
-      return datasets;
-    }
-  }
-
   if (!response.ok) {
     throw new Error(`Không tải được danh sách tile (${response.status}).`);
   }
@@ -238,48 +181,33 @@ export async function fetchTileServerBaseMaps(signal?: AbortSignal): Promise<Til
 }
 
 export function resolveTileServerAssetUrl(tilePath: string) {
-  // MapLibre calls transformRequest for both the style document and every
-  // asset it references. Assets already routed through the Controller must
-  // remain unchanged; otherwise `/api/tiles` gets prepended on every pass.
-  if (tilePath === TILE_SERVER_URL || tilePath.startsWith(`${TILE_SERVER_URL}/`)) {
+  // MapLibre invokes this for styles, TileJSON, sprites, and tiles. The
+  // GeoData API paths stay behind the authenticated Controller proxy.
+  if (tilePath === GEODATA_URL || tilePath.startsWith(`${GEODATA_URL}/`)) {
     return tilePath;
+  }
+
+  if (tilePath.startsWith("/tiles/v1/")) {
+    return `${GEODATA_URL}${tilePath.slice("/tiles".length)}`;
+  }
+  if (tilePath.startsWith("/v1/")) {
+    return `${GEODATA_URL}${tilePath}`;
   }
 
   if (tilePath.startsWith("http")) {
     try {
       const url = new URL(tilePath);
-      const backendUrl = new URL(TILE_SERVER_BACKEND_URL);
-
-      // TileJSON generated inside Kubernetes contains an internal URL such as
-      // http://tile-server:8080/datas/vietnam_osm/{z}/{x}/{y}.pbf. That DNS
-      // name is intentionally not visible to browsers. Tile assets from any
-      // Tile Server origin must therefore use the public Controller proxy.
-      if (
-        url.pathname.startsWith("/datas/") ||
-        url.pathname.startsWith("/fonts/") ||
-        url.pathname.startsWith("/sprites/") ||
-        url.pathname.startsWith("/styles/")
-      ) {
-        // Do not use URL.pathname here: it encodes MapLibre's {z}/{x}/{y}
-        // template placeholders as %7Bz%7D/%7Bx%7D/%7By%7D.
-        const tilePathAndQuery = tilePath.slice(url.origin.length);
-        return `${TILE_SERVER_URL}${tilePathAndQuery.startsWith("/") ? "" : "/"}${tilePathAndQuery}`;
-      }
-
-      if (url.origin === backendUrl.origin) {
-        // Do not use URL.pathname here: it encodes MapLibre's {z}/{x}/{y}
-        // template placeholders as %7Bz%7D/%7Bx%7D/%7By%7D.
-        const backendPath = tilePath.slice(backendUrl.origin.length);
-        return `${TILE_SERVER_URL}${backendPath.startsWith("/") ? "" : "/"}${backendPath}`;
+      if (url.pathname.startsWith("/v1/") || url.pathname.startsWith("/tiles/v1/")) {
+        return resolveTileServerAssetUrl(tilePath.slice(url.origin.length));
       }
     } catch {
-      // Keep the original URL when it cannot be parsed.
+      // Let MapLibre report malformed external URLs unchanged.
     }
 
     return tilePath;
   }
 
-  return `${TILE_SERVER_URL}${tilePath.startsWith("/") ? "" : "/"}${tilePath}`;
+  return tilePath;
 }
 
 export function getTileServerPreviewUrl(baseMap: TileServerBaseMap) {
@@ -304,20 +232,26 @@ export function getTileServerMapStyle(
   const sourceId = `tile-server-${baseMap.id}`;
   const tileUrl = resolveTileServerAssetUrl(baseMap.tilePath);
   const sources: StyleSpecification["sources"] = {
-    [sourceId]: {
-      type: "raster",
-      tiles: [tileUrl],
-      tileSize: baseMap.tileSize,
-      maxzoom: baseMap.maxzoom,
-    },
+    [sourceId]:
+      baseMap.kind === "vector"
+        ? { type: "vector", tiles: [tileUrl], minzoom: 0, maxzoom: baseMap.maxzoom }
+        : {
+            type: "raster",
+            tiles: [tileUrl],
+            tileSize: baseMap.tileSize,
+            maxzoom: baseMap.maxzoom,
+          },
   };
-  const layers: StyleSpecification["layers"] = [
-    {
-      id: sourceId,
-      type: "raster",
-      source: sourceId,
-    },
-  ];
+  const layers: StyleSpecification["layers"] =
+    baseMap.kind === "vector"
+      ? getOpenMapTilesOverlayLayers(sourceId, baseMap.sourceLayer)
+      : [
+          {
+            id: sourceId,
+            type: "raster",
+            source: sourceId,
+          },
+        ];
 
   overlays.forEach((overlay) => {
     const overlaySourceId = getTileServerOverlaySourceId(overlay);
@@ -359,7 +293,6 @@ export function getTileServerMapStyle(
 
   return {
     version: 8,
-    glyphs: `${TILE_SERVER_URL}/fonts/{fontstack}/{range}.pbf`,
     sources,
     layers,
   };
@@ -640,8 +573,16 @@ export function getMapStyle(
   tileServerBaseMap?: TileServerBaseMap,
   tileServerOverlays: TileServerBaseMap[] = []
 ): StyleSpecification | string {
+  if (!tileServerBaseMap) {
+    if (tileServerOverlays.length === 0) {
+      return getEmptyMapStyle();
+    }
+    // Selecting an overlay before a basemap must never resurrect the legacy
+    // TileServer default. Render the first permitted overlay on its own.
+    return getTileServerMapStyle(tileServerOverlays[0], tileServerOverlays.slice(1));
+  }
   return getTileServerMapStyle(
-    tileServerBaseMap ?? DEFAULT_TILE_SERVER_BASE_MAP,
+    tileServerBaseMap,
     tileServerOverlays
   );
 }

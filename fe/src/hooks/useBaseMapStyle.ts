@@ -4,11 +4,7 @@ import { useTranslation } from "react-i18next";
 import type { MutableRefObject } from "react";
 import type { Map } from "maplibre-gl";
 
-import {
-  DEFAULT_TILE_SERVER_BASE_MAP,
-  fetchTileServerBaseMaps,
-  getMapStyle,
-} from "../tools/map/MapStyleTool";
+import { fetchTileServerBaseMaps, getMapStyle } from "../tools/map/MapStyleTool";
 import type { TileServerBaseMap } from "../tools/map/MapStyleTool";
 
 export type TileServerCatalogStatus = "idle" | "loading" | "ready" | "error";
@@ -16,9 +12,9 @@ export type TileServerCatalogStatus = "idle" | "loading" | "ready" | "error";
 export function useBaseMapStyle(map: MutableRefObject<Map | null>) {
   const { t } = useTranslation();
   const [tileServerBaseMaps, setTileServerBaseMaps] = useState<TileServerBaseMap[]>([]);
-  const [tileServerBaseMap, setTileServerBaseMap] = useState<TileServerBaseMap | null>(
-    DEFAULT_TILE_SERVER_BASE_MAP
-  );
+  // A base map is selected only after the permission-filtered GeoData catalog
+  // has returned it. This prevents a hidden fallback call to the old service.
+  const [tileServerBaseMap, setTileServerBaseMap] = useState<TileServerBaseMap | null>(null);
   const [tileServerOverlays, setTileServerOverlays] = useState<TileServerBaseMap[]>([]);
   const [tileServerCatalogStatus, setTileServerCatalogStatus] =
     useState<TileServerCatalogStatus>("idle");
