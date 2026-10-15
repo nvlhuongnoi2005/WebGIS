@@ -5,6 +5,7 @@ export interface TileServerBaseMap {
   id: string;
   label: string;
   tilePath: string;
+  previewPath?: string;
   stylePath?: string;
   maxzoom: number;
   tileSize: number;
@@ -49,6 +50,7 @@ type TileServerCatalogItem = {
   format?: unknown;
   stylePath?: unknown;
   sourceLayer?: unknown;
+  previewPath?: unknown;
   source_layer?: unknown;
 };
 
@@ -113,6 +115,10 @@ function normalizeCatalogItem(item: unknown, index: number): TileServerBaseMap {
     id,
     label,
     tilePath,
+    previewPath:
+      typeof record.previewPath === "string" && record.previewPath.trim()
+        ? record.previewPath.trim()
+        : undefined,
     stylePath:
       typeof record.stylePath === "string" && record.stylePath.trim()
         ? record.stylePath.trim()
@@ -178,6 +184,10 @@ export function resolveTileServerAssetUrl(tilePath: string) {
 }
 
 export function getTileServerPreviewUrl(baseMap: TileServerBaseMap) {
+  if (baseMap.previewPath) {
+    return resolveTileServerAssetUrl(baseMap.previewPath);
+  }
+
   return resolveTileServerAssetUrl(baseMap.tilePath)
     .replace("{z}", "3")
     .replace("{x}", "6")

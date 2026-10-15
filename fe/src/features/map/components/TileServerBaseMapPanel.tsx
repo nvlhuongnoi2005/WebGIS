@@ -1,5 +1,5 @@
 import { Layers3, RefreshCw, X } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   Box,
   Button,
@@ -12,6 +12,7 @@ import {
 } from "@mui/material";
 import { useTranslation } from "react-i18next";
 
+import { authFetch } from "../../../features/auth/authClient";
 import { getTileServerPreviewUrl, type TileServerBaseMap } from "../../../tools/map/MapStyleTool";
 
 interface TileServerBaseMapPanelProps {
@@ -170,41 +171,7 @@ function DatasetCard({
           boxShadow: selected ? 2 : 0,
         }}
       >
-        {dataset.kind === "vector" ? (
-          <Box
-            sx={{
-              display: "grid",
-              placeItems: "center",
-              width: "100%",
-              height: { xs: 150, sm: 170 },
-              color: selected ? "primary.main" : "#64748b",
-              bgcolor: selected ? "primary.light" : "grey.100",
-              backgroundImage:
-                "linear-gradient(135deg, transparent 45%, rgba(25, 118, 210, 0.16) 46%, transparent 48%), linear-gradient(45deg, transparent 45%, rgba(229, 57, 53, 0.18) 46%, transparent 48%)",
-            }}
-          >
-            <Stack spacing={0.5} sx={{ alignItems: "center" }}>
-              <Layers3 size={28} />
-              <Typography variant="caption" sx={{ fontWeight: 700 }}>
-                {t("layers.vectorOverlay")}
-              </Typography>
-            </Stack>
-          </Box>
-        ) : (
-          <Box
-            component="img"
-            src={getTileServerPreviewUrl(dataset)}
-            alt={t("layers.previewAlt", { name: dataset.label })}
-            loading="lazy"
-            sx={{
-              display: "block",
-              width: "100%",
-              height: { xs: 150, sm: 170 },
-              objectFit: "cover",
-              bgcolor: "grey.100",
-            }}
-          />
-        )}
+        <DatasetPreview dataset={dataset} selected={selected} alt={t("layers.previewAlt", { name: dataset.label })} />
         <Stack spacing={0.25} sx={{ p: 1.25 }}>
           <Typography variant="subtitle2" sx={{ fontWeight: 700 }} noWrap>
             {dataset.label}
@@ -220,6 +187,86 @@ function DatasetCard({
         </Stack>
       </Paper>
     </ButtonBase>
+  );
+}
+
+// The Controller requires a Bearer token before it proxies GeoData. An <img>
+// element cannot attach that header, so obtain the private preview with
+// authFetch and render a short-lived object URL instead. This also means a
+// revoked user cannot keep fetching a new preview directly from the gateway.
+function DatasetPreview({
+  dataset,
+  selected,
+  alt,
+}: {
+  dataset: TileServerBaseMap;
+  selected: boolean;
+  alt: string;
+}) {
+  const { t } = useTranslation();
+  const [imageURL, setImageURL] = useState<string | null>(null);
+
+  useEffect(() => {
+    const abort = new AbortController();
+    let objectURL: string | null = null;
+    setImageURL(null);
+    void authFetch(getTileServerPreviewUrl(dataset), { signal: abort.signal })
+      .then(async (response) => {
+        if (!response.ok) throw new Error(`Preview request failed: ${response.status}`);
+        return response.blob();
+      })
+      .then((image) => {
+        if (abort.signal.aborted) return;
+        objectURL = URL.createObjectURL(image);
+        setImageURL(objectURL);
+      })
+      .catch(() => {
+        // A preview is optional. Keep the map usable when its rendering job is
+        // still running or access was revoked while this panel was open.
+      });
+    return () => {
+      abort.abort();
+      if (objectURL) URL.revokeObjectURL(objectURL);
+    };
+  }, [dataset]);
+
+  if (imageURL) {
+    return (
+      <Box
+        component="img"
+        src={imageURL}
+        alt={alt}
+        sx={{
+          display: "block",
+          width: "100%",
+          height: { xs: 150, sm: 170 },
+          objectFit: "cover",
+          bgcolor: "grey.100",
+        }}
+      />
+    );
+  }
+
+  return (
+    <Box
+      sx={{
+        display: "grid",
+        placeItems: "center",
+        width: "100%",
+        height: { xs: 150, sm: 170 },
+        color: selected ? "primary.main" : "#64748b",
+        bgcolor: selected ? "primary.light" : "grey.100",
+        backgroundImage:
+          "linear-gradient(135deg, transparent 45%, rgba(25, 118, 210, 0.16) 46%, transparent 48%), linear-gradient(45deg, transparent 45%, rgba(229, 57, 53, 0.18) 46%, transparent 48%)",
+      }}
+    >
+      <Stack spacing={0.5} sx={{ alignItems: "center" }}>
+        <Layers3 size={28} />
+        <Typography variant="caption" sx={{ fontWeight: 700 }}>
+          {dataset.previewPath ? t("layers.tileServerLoading") : t("layers.vectorOverlay")}
+        </Typography>
+      </Stack>
+    </Box>
   );
 }
 
