@@ -160,6 +160,7 @@ function DatasetCard({
   onClick: () => void;
 }) {
   const { t } = useTranslation();
+  const previewURL = getTileServerPreviewUrl(dataset);
 
   return (
     <ButtonBase onClick={onClick} sx={{ display: "block", width: "100%", textAlign: "left" }}>
@@ -171,7 +172,13 @@ function DatasetCard({
           boxShadow: selected ? 2 : 0,
         }}
       >
-        <DatasetPreview dataset={dataset} selected={selected} alt={t("layers.previewAlt", { name: dataset.label })} />
+        <DatasetPreview
+          key={previewURL}
+          dataset={dataset}
+          previewURL={previewURL}
+          selected={selected}
+          alt={t("layers.previewAlt", { name: dataset.label })}
+        />
         <Stack spacing={0.25} sx={{ p: 1.25 }}>
           <Typography variant="subtitle2" sx={{ fontWeight: 700 }} noWrap>
             {dataset.label}
@@ -196,10 +203,12 @@ function DatasetCard({
 // revoked user cannot keep fetching a new preview directly from the gateway.
 function DatasetPreview({
   dataset,
+  previewURL,
   selected,
   alt,
 }: {
   dataset: TileServerBaseMap;
+  previewURL: string;
   selected: boolean;
   alt: string;
 }) {
@@ -209,8 +218,7 @@ function DatasetPreview({
   useEffect(() => {
     const abort = new AbortController();
     let objectURL: string | null = null;
-    setImageURL(null);
-    void authFetch(getTileServerPreviewUrl(dataset), { signal: abort.signal })
+    void authFetch(previewURL, { signal: abort.signal })
       .then(async (response) => {
         if (!response.ok) throw new Error(`Preview request failed: ${response.status}`);
         return response.blob();
@@ -228,7 +236,7 @@ function DatasetPreview({
       abort.abort();
       if (objectURL) URL.revokeObjectURL(objectURL);
     };
-  }, [dataset]);
+  }, [previewURL]);
 
   if (imageURL) {
     return (
