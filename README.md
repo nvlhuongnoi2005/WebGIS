@@ -1,6 +1,6 @@
-# VGIS — Nền tảng WebGIS full-stack
+# GeoForce WebGIS — Ứng dụng WebGIS của nền tảng GeoForce
 
-VGIS là ứng dụng bản đồ web phục vụ hiển thị dữ liệu không gian, tìm kiếm địa điểm, định tuyến, đo đạc, biên tập GeoJSON và chia sẻ bản đồ. Dự án gồm frontend React/MapLibre, backend Go đóng vai trò API gateway, cơ sở dữ liệu PostgreSQL/PostGIS và các dịch vụ địa lý Nominatim, Valhalla, Tile Server, Elasticsearch.
+GeoForce WebGIS là ứng dụng bản đồ web của nền tảng GeoForce, phục vụ hiển thị dữ liệu không gian, tìm kiếm địa điểm, định tuyến, đo đạc, biên tập GeoJSON và chia sẻ bản đồ. Dự án gồm frontend React/MapLibre, backend Go đóng vai trò API gateway, cơ sở dữ liệu PostgreSQL/PostGIS và các dịch vụ địa lý Nominatim, Valhalla, Tile Server, Elasticsearch.
 
 Ứng dụng có thể chạy trong môi trường phát triển local hoặc triển khai bằng Docker/Kubernetes. Trong mô hình production, trình duyệt chỉ giao tiếp với frontend và Go Controller; các dịch vụ địa lý và cơ sở dữ liệu được giữ trong mạng nội bộ.
 
