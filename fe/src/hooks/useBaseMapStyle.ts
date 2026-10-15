@@ -50,7 +50,24 @@ export function useBaseMapStyle(map: MutableRefObject<Map | null>) {
 
     try {
       const datasets = await fetchTileServerBaseMaps();
+      const permittedIDs = new Set(datasets.map((dataset) => dataset.id));
+      const nextBaseMap =
+        tileServerBaseMap && permittedIDs.has(tileServerBaseMap.id)
+          ? tileServerBaseMap
+          : null;
+      const nextOverlays = tileServerOverlays.filter((overlay) => permittedIDs.has(overlay.id));
+
       setTileServerBaseMaps(datasets);
+
+      // A catalog refresh is also an authorization refresh. A release which
+      // is no longer returned by GeoData must immediately be removed from the
+      // active map, rather than remaining visible until the next selection.
+      if (nextBaseMap !== tileServerBaseMap || nextOverlays.length !== tileServerOverlays.length) {
+        setTileServerBaseMap(nextBaseMap);
+        setTileServerOverlays(nextOverlays);
+        changeMapStyle(nextBaseMap, nextOverlays);
+      }
+
       setTileServerCatalogStatus("ready");
       return datasets;
     } catch {
@@ -58,7 +75,7 @@ export function useBaseMapStyle(map: MutableRefObject<Map | null>) {
       setTileServerCatalogStatus("error");
       return [];
     }
-  }, [t]);
+  }, [changeMapStyle, t, tileServerBaseMap, tileServerOverlays]);
 
   const changeTileServerBaseMap = useCallback(
     (nextBaseMap: TileServerBaseMap) => {

@@ -166,10 +166,9 @@ export async function fetchTileServerBaseMaps(signal?: AbortSignal): Promise<Til
     const payload = (await response.json()) as unknown;
     const datasets = getCatalogItems(payload).map(normalizeCatalogItem);
 
-    if (datasets.length === 0) {
-      throw new Error("Tile server chưa có dataset nào.");
-    }
-
+    // An empty catalog is a valid authorization result. For example, every
+    // release visible to this user may just have been revoked; pass the empty
+    // set through so useBaseMapStyle can remove the active selection.
     return Array.from(new Map(datasets.map((dataset) => [dataset.id, dataset])).values());
   }
 
