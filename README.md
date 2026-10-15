@@ -4,6 +4,21 @@ VGIS là ứng dụng bản đồ web phục vụ hiển thị dữ liệu khôn
 
 Ứng dụng có thể chạy trong môi trường phát triển local hoặc triển khai bằng Docker/Kubernetes. Trong mô hình production, trình duyệt chỉ giao tiếp với frontend và Go Controller; các dịch vụ địa lý và cơ sở dữ liệu được giữ trong mạng nội bộ.
 
+> **Đọc nhanh:** dùng Docker Compose nếu cần một môi trường demo có xác thực; dùng hướng dẫn local nếu đang phát triển; dùng Kubernetes khi triển khai môi trường dùng chung hoặc production. Các worker bản đồ lớn (Tile Server, Valhalla, Nominatim và Elasticsearch) là thành phần tùy chọn khi phát triển, nhưng cần được chuẩn bị dữ liệu trước khi bật đầy đủ chức năng bản đồ.
+
+## Mục lục
+
+- [Tính năng](#tính-năng)
+- [Kiến trúc](#kiến-trúc)
+- [Công nghệ và cấu trúc dự án](#công-nghệ)
+- [Cài đặt và chạy local](#chạy-local)
+- [Cấu hình môi trường](#cấu-hình-môi-trường)
+- [Hướng dẫn sử dụng](#hướng-dẫn-sử-dụng)
+- [Kiểm thử và chất lượng mã](#kiểm-thử-và-ghi-nhận-kết-quả)
+- [API](#api-chính)
+- [Triển khai Docker và Kubernetes](#docker-và-kubernetes)
+- [Bảo mật, CI/CD và xử lý sự cố](#bảo-mật)
+
 ## Tính năng
 
 ### Bản đồ và lớp dữ liệu
@@ -118,6 +133,19 @@ flowchart LR
 ```
 
 Controller chịu trách nhiệm xác thực, quota, chia sẻ GeoJSON, quản trị và proxy có kiểm soát tới các worker. Tile Server, Nominatim, Valhalla, Elasticsearch và hai database không cần được public ra ngoài cluster.
+
+### Luồng yêu cầu và ranh giới mạng
+
+| Luồng | Đường đi | Ghi chú |
+| --- | --- | --- |
+| Trang web | Browser → Vite/Nginx → React | Nginx trả SPA và fallback về `index.html` cho các route client-side. |
+| Xác thực và API | Browser → `/auth` hoặc `/api` → Controller → Auth PostgreSQL | Access token gửi theo Bearer; refresh token chỉ ở cookie `HttpOnly`. |
+| Bản đồ | Browser → `/api/tile-catalog` hoặc `/api/tiles/*` → Controller → Tile Server/GeoData | Catalog và asset tile đi qua gateway để giữ worker trong mạng riêng. |
+| Tìm kiếm | Browser → Controller → Elasticsearch/Nominatim | Suggestion có thể tắt nếu không cấu hình Elasticsearch; geocoding cần Nominatim. |
+| Định tuyến | Browser → `/api/gateway/*` → Controller → Valhalla | Controller kiểm tra token, quota và giới hạn payload trước khi chuyển tiếp. |
+| Thông báo | Browser → SSE `/auth/session-events` → Controller → Auth PostgreSQL | Dùng cho sự kiện thu hồi phiên và nhận chia sẻ mới. |
+
+Phân tách này là nguyên tắc triển khai: chỉ frontend/Ingress được nhận traffic từ bên ngoài; Controller, database và worker phải ở private network. Không cấu hình trình duyệt gọi trực tiếp database, Valhalla, Nominatim hoặc Tile Server trong production.
 
 ## Công nghệ
 
@@ -273,6 +301,56 @@ npm start
 | Health check  | `http://localhost:3001/health`  |
 
 Vite proxy các đường dẫn `/auth` và `/api` sang Controller, vì vậy trình duyệt vẫn dùng cùng cấu trúc URL như production.
+
+## Cấu hình môi trường
+
+Không commit `.env`, `be/.env`, khóa JWT hoặc manifest secret đã điền giá trị. File mẫu chỉ là điểm xuất phát; biến môi trường do shell, Docker hoặc Kubernetes cung cấp sẽ được ưu tiên hơn nội dung `be/.env`.
+
+### Frontend và Vite
+
+File `.env` nằm ở thư mục gốc. Trong môi trường phát triển, Vite dùng các biến sau để cấu hình proxy:
+
+| Biến | Mặc định | Mục đích |
+| --- | --- | --- |
+| `VITE_AUTH_URL` | `http://localhost:3001` | Controller đích cho `/auth` và các API `/api` được bảo vệ. |
+| `VITE_VALHALLA_URL` | `http://localhost:8002` | Chỉ dùng cho proxy tương thích `/api/valhalla` khi phát triển. Luồng ứng dụng chính dùng `/api/gateway/*` qua Controller. |
+
+Các biến `VITE_*` được nhúng vào bundle frontend. Không đặt mật khẩu, token hay URL nội bộ nhạy cảm trong các biến này. Những biến Tile Server/Nominatim cũ trong `.env.example` chỉ hữu ích khi tương thích với cấu hình local cũ; frontend hiện dùng các route tương đối đi qua Controller.
+
+### Controller
+
+Copy `be/.env.example` thành `be/.env`, sau đó thay các giá trị `CHANGE_ME`. Các biến quan trọng:
+
+| Biến | Bắt buộc | Mục đích |
+| --- | --- | --- |
+| `DATABASE_URL` | Có | Chuỗi kết nối PostgreSQL/PostGIS của dữ liệu tài khoản. |
+| `APP_ORIGINS` | Có khi khác local | Danh sách origin CORS, phân cách bằng dấu phẩy. |
+| `AUTH_REFRESH_TOKEN_PEPPER` | Có ở production | Secret ngẫu nhiên tối thiểu 32 byte để băm refresh token. |
+| `AUTH_JWT_PRIVATE_KEY`, `AUTH_JWT_PUBLIC_KEY` | Có ở production | Cặp khóa PEM Ed25519 để ký/xác minh access token. |
+| `AUTH_DEV_EPHEMERAL_KEYS` | Chỉ local | Cho phép sinh khóa tạm khi không có PEM; phải là `false` ở production. |
+| `AUTH_SECURE_COOKIES` | Có ở production | Bật `true` khi ứng dụng được phục vụ qua HTTPS. |
+| `VALHALLA_INTERNAL_URL` | Khi dùng định tuyến | Endpoint Valhalla riêng tư. |
+| `TILE_SERVER_INTERNAL_URL` | Khi dùng lớp bản đồ | Endpoint Tile Server riêng tư. |
+| `GEODATA_INTERNAL_URL` | Tùy chọn | Gateway GeoData dùng để phân quyền catalog/tile. |
+| `NOMINATIM_INTERNAL_URL` | Khi dùng geocoding | Endpoint Nominatim riêng tư. |
+| `ELASTICSEARCH_URL` | Tùy chọn | Endpoint autocomplete; để trống nếu không triển khai Elasticsearch. |
+
+Các tham số có thể điều chỉnh khác gồm TTL access token (`AUTH_ACCESS_TOKEN_TTL_SECONDS`, mặc định 900), TTL refresh token (`AUTH_REFRESH_TOKEN_TTL_DAYS`, mặc định 30), timeout phiên rỗi (`AUTH_SESSION_IDLE_TIMEOUT_SECONDS`, mặc định 7200), chi phí Argon2id và giới hạn đăng nhập. Xem [be/.env.example](be/.env.example) và [be/config.go](be/config.go) để biết giá trị mặc định, giới hạn hợp lệ.
+
+## Hướng dẫn sử dụng
+
+Sau khi mở ứng dụng, thực hiện theo luồng sau để kiểm tra các chức năng chính:
+
+1. Đăng ký hoặc đăng nhập. Người dùng thông thường được đưa đến trang bản đồ; tài khoản `admin` có thêm khu vực quản trị.
+2. Mở **Layers/Basemap**, chọn một lớp nền và bật/tắt overlay. Nếu catalog trống, kiểm tra Tile Server và route `/api/tile-catalog`.
+3. Dùng ô tìm kiếm để chọn địa điểm. Chọn kết quả để zoom tới geometry; có thể dùng kết quả làm điểm đầu/cuối cho định tuyến.
+4. Mở công cụ **Route**, đặt A/B trên bản đồ hoặc từ kết quả tìm kiếm, chọn phương tiện và xem tuyến, ETA, chỉ dẫn và biểu đồ độ cao (khi dữ liệu Valhalla hỗ trợ).
+5. Mở **Draw** hoặc **Measure** để vẽ/chỉnh sửa GeoJSON, đo khoảng cách/diện tích, undo/redo, import hoặc export `FeatureCollection`. Chọn CRS phù hợp trước khi import/export.
+6. Dùng **Share** để tạo snapshot GeoJSON bất biến, sao chép liên kết công khai hoặc gửi cho người dùng nội bộ. Snapshot có thể bị thu hồi bởi chủ sở hữu.
+7. Mở hồ sơ để cập nhật thông tin, ngôn ngữ, giao diện và trợ năng; xem quota sử dụng trong mục Billing.
+8. Với quyền admin, vào `/admin` để xem dashboard, quản lý người dùng/quota và audit log. Mở `/swagger` để thử nghiệm contract API của Controller đang chạy.
+
+Nếu một worker không chạy, các tính năng phụ thuộc worker đó có thể không khả dụng nhưng xác thực, quản trị, GeoJSON cục bộ và phần giao diện còn lại vẫn dùng được.
 
 ## Các lệnh thường dùng
 
@@ -448,7 +526,35 @@ Workflow `.github/workflows/ci.yaml` thực hiện:
 1. Chạy Go test, ESLint, build backend/frontend và render Kustomize trên pull request.
 2. Khi merge vào `main`, chỉ build các image có source thay đổi.
 3. Push image lên GHCR với tag bất biến `sha-<commit>`.
-4. Cập nhật image tag trong manifest GitOps nếu nhánh `main` chưa thay đổi trong lúc build.
+4. Đồng thời gắn tag kênh `dev` cho image mới nhất của từng thành phần đã thay đổi.
+
+Workflow hiện **không tự sửa manifest GitOps**. Khi dùng tag bất biến, hãy cập nhật image tag trong overlay/repository GitOps bằng pull request rồi để Argo CD hoặc quy trình deploy của tổ chức đồng bộ thay đổi đó.
+
+## Checklist triển khai production
+
+Trước khi mở ứng dụng ra Internet, hoàn thành các hạng mục sau:
+
+1. Xây dựng và publish image Controller/Frontend với tag bất biến; không dùng tag `latest`.
+2. Tạo secret ngoài Git bằng [template](deployment/secrets/secret.example.yaml): database URL, `AUTH_REFRESH_TOKEN_PEPPER` và cặp khóa Ed25519. Không bật `AUTH_DEV_EPHEMERAL_KEYS`.
+3. Thiết lập `APP_ORIGINS` đúng HTTPS origin, `AUTH_SECURE_COOKIES=true`, ingress domain thật và TLS/cert-manager.
+4. Triển khai Auth PostgreSQL, đợi database healthy, chạy Job migration một lần, sau đó rollout Controller và Frontend.
+5. Nạp dữ liệu tile/OSM vào PVC, triển khai các worker cần thiết và kiểm tra NetworkPolicy cho phép Controller kết nối nhưng chặn truy cập public vào worker/database.
+6. Chạy smoke test `/health`, đăng nhập, catalog tile, tìm kiếm, route và `/swagger`; theo dõi log migration/Controller trước khi chuyển traffic.
+7. Thiết lập sao lưu PostgreSQL, giám sát tài nguyên PVC/worker, quy trình xoay vòng JWT key và quy trình khôi phục dữ liệu.
+
+Hướng dẫn chi tiết gồm Argo CD, PVC, nhập dữ liệu Tile Server/Nominatim/Valhalla, NetworkPolicy và thao tác vận hành nằm tại [deployment/README.md](deployment/README.md). Đây là tài liệu chuẩn cho các bước cần thay đổi trạng thái cluster hoặc dữ liệu lớn.
+
+## Xử lý sự cố nhanh
+
+| Hiện tượng | Kiểm tra và cách xử lý |
+| --- | --- |
+| Controller không khởi động | Kiểm tra `DATABASE_URL`, kết nối PostgreSQL và `AUTH_REFRESH_TOKEN_PEPPER`; ở production cần đủ PEM private/public key. |
+| `npm start` chạy frontend nhưng API lỗi CORS | Kiểm tra `APP_ORIGINS` chứa đúng URL Vite (`http://localhost:5173`) hoặc origin đang dùng. |
+| Không có basemap hoặc preview tile | Kiểm tra `GET /api/tile-catalog`, `TILE_SERVER_INTERNAL_URL`, dữ liệu tile và log Controller/Tile Server. |
+| Search/routing lỗi | Xác nhận Nominatim/Valhalla đang reachable từ Controller, access token còn hiệu lực và quota chưa hết; Elasticsearch là tùy chọn riêng cho suggestion. |
+| Đăng nhập được nhưng refresh bị lỗi | Kiểm tra HTTPS, `AUTH_SECURE_COOKIES`, `APP_ORIGINS`, cookie của trình duyệt và CSRF header. |
+| Migration Kubernetes không hoàn tất | Xem `kubectl -n webgis logs job/auth-migrate`, trạng thái `auth-postgres` và giá trị `DATABASE_URL` trong secret. |
+| CI lỗi lint/build | Chạy `npm run verify` tại thư mục gốc để tái hiện bộ kiểm tra chính. |
 
 ## Kịch bản kiểm thử nhanh
 
