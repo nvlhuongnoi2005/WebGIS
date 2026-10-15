@@ -28,7 +28,6 @@ import {
   transformFromWgs84,
   type CoordinateReferenceSystem,
 } from "../../tools/coordinate/CoordinateTool";
-import { splitTileServerDatasets } from "../../tools/map/MapStyleTool";
 import {
   getDrawGeoJSONCrs,
   transformDrawFeatureCollection,
@@ -72,9 +71,7 @@ function MapView({ onNavigate }: MapViewProps) {
   const { user } = useAuth();
   const [activeTool, setActiveTool] = useState<MapTool>(null);
   const [shareSubject, setShareSubject] = useState<MapShareSubject | null>(null);
-  const [tileServerPanelMode, setTileServerPanelMode] = useState<"base-map" | "layers" | null>(
-    null
-  );
+  const [tileServerPanelOpen, setTileServerPanelOpen] = useState(false);
   const [spatialSearchOpen, setSpatialSearchOpen] = useState(false);
   const [coordinateReferenceSystem, setCoordinateReferenceSystem] =
     useState<CoordinateReferenceSystem>(DEFAULT_COORDINATE_REFERENCE_SYSTEM);
@@ -86,19 +83,13 @@ function MapView({ onNavigate }: MapViewProps) {
     );
   const {
     tileServerBaseMap,
-    tileServerOverlays,
     tileServerBaseMaps,
     tileServerCatalogStatus,
     tileServerCatalogError,
     loadTileServerBaseMaps,
     changeTileServerBaseMap,
-    toggleTileServerOverlay,
     mapStyleVersion,
   } = useBaseMapStyle(map);
-  const tileServerDatasets = useMemo(
-    () => splitTileServerDatasets(tileServerBaseMaps),
-    [tileServerBaseMaps]
-  );
 
   useMapLanguage({ map, mapLoaded, mapStyleVersion });
 
@@ -115,7 +106,7 @@ function MapView({ onNavigate }: MapViewProps) {
 
   const handleSearchDirections = (coordinates: [number, number]) => {
     routing.setDestination(coordinates);
-    setTileServerPanelMode(null);
+    setTileServerPanelOpen(false);
     setActiveTool("route");
   };
 
@@ -179,7 +170,7 @@ function MapView({ onNavigate }: MapViewProps) {
       routing.reset();
     }
 
-    setTileServerPanelMode(null);
+    setTileServerPanelOpen(false);
     setActiveTool(null);
   };
 
@@ -209,7 +200,7 @@ function MapView({ onNavigate }: MapViewProps) {
       }
 
       if (tool === "layer") {
-        setTileServerPanelMode(null);
+        setTileServerPanelOpen(false);
       }
 
       setActiveTool(null);
@@ -222,7 +213,7 @@ function MapView({ onNavigate }: MapViewProps) {
 
     if (tool === "measure") measure.startMeasure();
     if (tool === "route") routing.reset();
-    if (tool !== "layer") setTileServerPanelMode(null);
+    if (tool !== "layer") setTileServerPanelOpen(false);
     setActiveTool(tool);
   };
 
@@ -231,8 +222,8 @@ function MapView({ onNavigate }: MapViewProps) {
     setActiveTool(null);
   };
 
-  const openTileServerPanel = (mode: "base-map" | "layers") => {
-    setTileServerPanelMode(mode);
+  const openTileServerPanel = () => {
+    setTileServerPanelOpen(true);
     setActiveTool(null);
 
     if (tileServerCatalogStatus === "idle") {
@@ -345,9 +336,7 @@ function MapView({ onNavigate }: MapViewProps) {
 
       {activeTool === "layer" && (
         <LayerPanel
-          onOpenBaseMap={() => openTileServerPanel("base-map")}
-          onOpenLayers={() => openTileServerPanel("layers")}
-          selectedOverlayCount={tileServerOverlays.length}
+          onOpenMaps={openTileServerPanel}
         />
       )}
 
@@ -363,19 +352,15 @@ function MapView({ onNavigate }: MapViewProps) {
         />
       )}
 
-      {tileServerPanelMode && (
+      {tileServerPanelOpen && (
         <TileServerBaseMapPanel
-          mode={tileServerPanelMode}
-          selectedBaseMap={tileServerBaseMap}
-          baseMaps={tileServerDatasets.baseMaps}
-          overlays={tileServerDatasets.overlays}
-          selectedOverlayIds={tileServerOverlays.map((overlay) => overlay.id)}
+          selectedMap={tileServerBaseMap}
+          datasets={tileServerBaseMaps}
           status={tileServerCatalogStatus}
           error={tileServerCatalogError}
           onReload={loadTileServerBaseMaps}
           onSelect={changeTileServerBaseMap}
-          onToggleOverlay={toggleTileServerOverlay}
-          onClose={() => setTileServerPanelMode(null)}
+          onClose={() => setTileServerPanelOpen(false)}
         />
       )}
 
@@ -430,7 +415,7 @@ function MapView({ onNavigate }: MapViewProps) {
           shareGeoJSON={draw.geoJSON}
           shareMapState={{
             basemap_id: tileServerBaseMap?.id,
-            overlay_ids: tileServerOverlays.map((overlay) => overlay.id),
+            overlay_ids: [],
           }}
           hiddenFeatureIds={draw.hiddenFeatureIds}
           selectedFeatureId={draw.selectedFeatureId}
@@ -453,7 +438,7 @@ function MapView({ onNavigate }: MapViewProps) {
           geoJSON={shareSubject.geoJSON}
           mapState={{
             basemap_id: tileServerBaseMap?.id,
-            overlay_ids: tileServerOverlays.map((overlay) => overlay.id),
+            overlay_ids: [],
           }}
           title={t(`sharing.${shareSubject.kind}Title`)}
           description={t(`sharing.${shareSubject.kind}Description`)}

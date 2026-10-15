@@ -15,16 +15,12 @@ import { useTranslation } from "react-i18next";
 import { getTileServerPreviewUrl, type TileServerBaseMap } from "../../../tools/map/MapStyleTool";
 
 interface TileServerBaseMapPanelProps {
-  mode: "base-map" | "layers";
-  selectedBaseMap: TileServerBaseMap | null;
-  baseMaps: TileServerBaseMap[];
+  selectedMap: TileServerBaseMap | null;
+  datasets: TileServerBaseMap[];
   status: "idle" | "loading" | "ready" | "error";
   error: string | null;
   onReload: () => void;
-  onSelect: (baseMap: TileServerBaseMap) => void;
-  overlays: TileServerBaseMap[];
-  selectedOverlayIds: string[];
-  onToggleOverlay: (overlay: TileServerBaseMap) => void;
+  onSelect: (map: TileServerBaseMap) => void;
   onClose: () => void;
 }
 
@@ -42,20 +38,15 @@ const panelSx = {
 };
 
 function TileServerBaseMapPanel({
-  mode,
-  selectedBaseMap,
-  baseMaps,
+  selectedMap,
+  datasets,
   status,
   error,
   onReload,
   onSelect,
-  overlays,
-  selectedOverlayIds,
-  onToggleOverlay,
   onClose,
 }: TileServerBaseMapPanelProps) {
   const { t } = useTranslation();
-  const isBaseMapMode = mode === "base-map";
 
   return (
     <Paper className="map-floating-panel" elevation={8} sx={panelSx}>
@@ -63,12 +54,10 @@ function TileServerBaseMapPanel({
         <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between" }}>
           <Box>
             <Typography variant="h6" sx={{ fontWeight: 700 }}>
-              {isBaseMapMode ? t("layers.selectBaseMap") : t("layers.selectLayer")}
+              {t("layers.mapCatalogTitle")}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              {isBaseMapMode
-                ? t("layers.tileServerBaseMapDescription")
-                : t("layers.tileServerLayerDescription")}
+              {t("layers.mapCatalogDescription")}
             </Typography>
           </Box>
           <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
@@ -110,58 +99,24 @@ function TileServerBaseMapPanel({
           </Stack>
         )}
 
-        {isBaseMapMode && status !== "loading" && baseMaps.length > 0 && (
+        {status !== "loading" && datasets.length > 0 && (
           <DatasetGrid>
-            {baseMaps.map((baseMap) => (
+            {datasets.map((dataset) => (
               <DatasetCard
-                key={baseMap.id}
-                dataset={baseMap}
-                selected={selectedBaseMap?.id === baseMap.id}
+                key={dataset.id}
+                dataset={dataset}
+                selected={selectedMap?.id === dataset.id}
                 selectedLabel={t("layers.selected")}
-                onClick={() => onSelect(baseMap)}
+                onClick={() => onSelect(dataset)}
               />
             ))}
           </DatasetGrid>
         )}
 
-        {!isBaseMapMode && status !== "loading" && (
-          <Stack spacing={1}>
-            <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
-              <Layers3 size={17} />
-              <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                {t("layers.overlaysTitle")}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {t("layers.overlaysDescription")}
-              </Typography>
-            </Stack>
-
-            {overlays.length > 0 ? (
-              <DatasetGrid>
-                {overlays.map((overlay) => (
-                  <DatasetCard
-                    key={overlay.id}
-                    dataset={overlay}
-                    selected={selectedOverlayIds.includes(overlay.id)}
-                    selectedLabel={t("layers.overlayActive")}
-                    onClick={() => onToggleOverlay(overlay)}
-                  />
-                ))}
-              </DatasetGrid>
-            ) : (
-              <Typography variant="body2" color="text.secondary">
-                {t("layers.noOverlays")}
-              </Typography>
-            )}
-          </Stack>
-        )}
-
-        {status !== "loading" &&
-          (isBaseMapMode ? baseMaps.length === 0 : overlays.length === 0) &&
-          status !== "error" && (
+        {status !== "loading" && datasets.length === 0 && status !== "error" && (
             <Stack spacing={1} sx={{ py: 1 }}>
               <Typography variant="body2" color="text.secondary">
-                {isBaseMapMode ? t("layers.noTileServerData") : t("layers.noOverlays")}
+                {t("layers.noAccessibleMaps")}
               </Typography>
               <Button
                 size="small"
@@ -172,7 +127,7 @@ function TileServerBaseMapPanel({
                 {t("layers.reloadTileServer")}
               </Button>
             </Stack>
-          )}
+        )}
       </Stack>
     </Paper>
   );

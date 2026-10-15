@@ -9,20 +9,8 @@ export interface TileServerBaseMap {
   maxzoom: number;
   tileSize: number;
   kind: "raster" | "vector";
-  role: "basemap" | "overlay";
   sourceLayer?: string;
 }
-
-export const DEFAULT_TILE_SERVER_BASE_MAP: TileServerBaseMap = {
-  id: "vietnam",
-  label: "OPENSTREETMAP_VIETNAM",
-  tilePath: "/datas/vietnam/{z}/{x}/{y}.pbf",
-  stylePath: "/styles/openstreetmap/style.json",
-  maxzoom: 14,
-  tileSize: 512,
-  kind: "vector",
-  role: "basemap",
-};
 
 // GeoData owns the published MBTiles catalog. The browser reaches it only
 // through the same-origin WebGIS Controller proxy.
@@ -58,7 +46,6 @@ type TileServerCatalogItem = {
   tileSize?: unknown;
   type?: unknown;
   kind?: unknown;
-  role?: unknown;
   format?: unknown;
   stylePath?: unknown;
   sourceLayer?: unknown;
@@ -99,7 +86,6 @@ function normalizeCatalogItem(item: unknown, index: number): TileServerBaseMap {
       maxzoom: 7,
       tileSize: 256,
       kind: "raster",
-      role: "basemap",
     };
   }
 
@@ -123,12 +109,6 @@ function normalizeCatalogItem(item: unknown, index: number): TileServerBaseMap {
       ? "vector"
       : "raster";
   const sourceLayer = record.sourceLayer ?? record.source_layer;
-  const role = String(record.role ?? record.type ?? "")
-    .trim()
-    .toLowerCase() === "overlay"
-    ? "overlay"
-    : "basemap";
-
   return {
     id,
     label,
@@ -140,20 +120,8 @@ function normalizeCatalogItem(item: unknown, index: number): TileServerBaseMap {
     maxzoom: positiveNumber(record.maxzoom ?? record.maxZoom, 7),
     tileSize: positiveNumber(record.tileSize, 256),
     kind,
-    role,
     sourceLayer:
       typeof sourceLayer === "string" && sourceLayer.trim() ? sourceLayer.trim() : undefined,
-  };
-}
-
-export function isTileServerOverlay(dataset: TileServerBaseMap) {
-  return dataset.role === "overlay";
-}
-
-export function splitTileServerDatasets(datasets: TileServerBaseMap[]) {
-  return {
-    baseMaps: datasets.filter((dataset) => !isTileServerOverlay(dataset)),
-    overlays: datasets.filter((dataset) => isTileServerOverlay(dataset)),
   };
 }
 
@@ -216,15 +184,8 @@ export function getTileServerPreviewUrl(baseMap: TileServerBaseMap) {
     .replace("{y}", "3");
 }
 
-function getTileServerOverlaySourceId(overlay: TileServerBaseMap) {
-  return `tile-server-overlay-${overlay.id}`;
-}
-
-export function getTileServerMapStyle(
-  baseMap: TileServerBaseMap,
-  overlays: TileServerBaseMap[] = []
-): StyleSpecification | string {
-  if (baseMap.stylePath && overlays.length === 0) {
+export function getTileServerMapStyle(baseMap: TileServerBaseMap): StyleSpecification | string {
+  if (baseMap.stylePath) {
     return resolveTileServerAssetUrl(baseMap.stylePath);
   }
 
@@ -251,44 +212,6 @@ export function getTileServerMapStyle(
             source: sourceId,
           },
         ];
-
-  overlays.forEach((overlay) => {
-    const overlaySourceId = getTileServerOverlaySourceId(overlay);
-    const overlayTileUrl = resolveTileServerAssetUrl(overlay.tilePath);
-
-    const isVector = overlay.kind === "vector" || /\.(pbf|mvt)(?:$|\?)/i.test(overlay.tilePath);
-
-    if (isVector) {
-      sources[overlaySourceId] = {
-        type: "vector",
-        // Use the concrete tile template here. Some MapLibre versions are
-        // stricter when the TileJSON document advertises a non-standard
-        // `type` value (the tile server uses `baselayer` for this dataset).
-        // The pbf endpoint itself is valid and was already rendering before
-        // the generic layer fallback was added.
-        tiles: [overlayTileUrl],
-        minzoom: 0,
-        maxzoom: overlay.maxzoom,
-      };
-      layers.push(...getOpenMapTilesOverlayLayers(overlaySourceId, overlay.sourceLayer));
-      return;
-    }
-
-    sources[overlaySourceId] = {
-      type: "raster",
-      tiles: [overlayTileUrl],
-      tileSize: overlay.tileSize,
-      maxzoom: overlay.maxzoom,
-    };
-    layers.push({
-      id: `${overlaySourceId}-raster`,
-      type: "raster",
-      source: overlaySourceId,
-      // Keep the active basemap visible beneath a raster overlay. Multiple
-      // selected overlays remain distinguishable instead of becoming opaque.
-      paint: { "raster-opacity": 0.72 },
-    } as StyleSpecification["layers"][number]);
-  });
 
   return {
     version: 8,
@@ -568,20 +491,9 @@ function textLayer(
   } as StyleSpecification["layers"][number];
 }
 
-export function getMapStyle(
-  tileServerBaseMap?: TileServerBaseMap,
-  tileServerOverlays: TileServerBaseMap[] = []
-): StyleSpecification | string {
+export function getMapStyle(tileServerBaseMap?: TileServerBaseMap): StyleSpecification | string {
   if (!tileServerBaseMap) {
-    if (tileServerOverlays.length === 0) {
-      return getEmptyMapStyle();
-    }
-    // Selecting an overlay before a basemap must never resurrect the legacy
-    // TileServer default. Render the first permitted overlay on its own.
-    return getTileServerMapStyle(tileServerOverlays[0], tileServerOverlays.slice(1));
+    return getEmptyMapStyle();
   }
-  return getTileServerMapStyle(
-    tileServerBaseMap,
-    tileServerOverlays
-  );
+  return getTileServerMapStyle(tileServerBaseMap);
 }

@@ -15,7 +15,6 @@ export function useBaseMapStyle(map: MutableRefObject<Map | null>) {
   // A base map is selected only after the permission-filtered GeoData catalog
   // has returned it. This prevents a hidden fallback call to the old service.
   const [tileServerBaseMap, setTileServerBaseMap] = useState<TileServerBaseMap | null>(null);
-  const [tileServerOverlays, setTileServerOverlays] = useState<TileServerBaseMap[]>([]);
   const [tileServerCatalogStatus, setTileServerCatalogStatus] =
     useState<TileServerCatalogStatus>("idle");
   const [tileServerCatalogError, setTileServerCatalogError] = useState<string | null>(null);
@@ -23,8 +22,7 @@ export function useBaseMapStyle(map: MutableRefObject<Map | null>) {
 
   const changeMapStyle = useCallback(
     (
-      nextTileServerBaseMap: TileServerBaseMap | null = tileServerBaseMap,
-      nextTileServerOverlays: TileServerBaseMap[] = tileServerOverlays
+      nextTileServerBaseMap: TileServerBaseMap | null = tileServerBaseMap
     ) => {
       if (!map.current) {
         return;
@@ -35,13 +33,13 @@ export function useBaseMapStyle(map: MutableRefObject<Map | null>) {
         setMapStyleVersion((version) => version + 1);
       });
       mapInstance.setStyle(
-        getMapStyle(nextTileServerBaseMap ?? undefined, nextTileServerOverlays),
+        getMapStyle(nextTileServerBaseMap ?? undefined),
         // Rebuild the style so newly selected vector sources/layers are not
         // lost by the style diff when switching from basemap-only mode.
         { diff: false }
       );
     },
-    [map, tileServerBaseMap, tileServerOverlays]
+    [map, tileServerBaseMap]
   );
 
   const loadTileServerBaseMaps = useCallback(async () => {
@@ -55,17 +53,15 @@ export function useBaseMapStyle(map: MutableRefObject<Map | null>) {
         tileServerBaseMap && permittedIDs.has(tileServerBaseMap.id)
           ? tileServerBaseMap
           : null;
-      const nextOverlays = tileServerOverlays.filter((overlay) => permittedIDs.has(overlay.id));
 
       setTileServerBaseMaps(datasets);
 
       // A catalog refresh is also an authorization refresh. A release which
       // is no longer returned by GeoData must immediately be removed from the
       // active map, rather than remaining visible until the next selection.
-      if (nextBaseMap !== tileServerBaseMap || nextOverlays.length !== tileServerOverlays.length) {
+      if (nextBaseMap !== tileServerBaseMap) {
         setTileServerBaseMap(nextBaseMap);
-        setTileServerOverlays(nextOverlays);
-        changeMapStyle(nextBaseMap, nextOverlays);
+        changeMapStyle(nextBaseMap);
       }
 
       setTileServerCatalogStatus("ready");
@@ -75,38 +71,23 @@ export function useBaseMapStyle(map: MutableRefObject<Map | null>) {
       setTileServerCatalogStatus("error");
       return [];
     }
-  }, [changeMapStyle, t, tileServerBaseMap, tileServerOverlays]);
+  }, [changeMapStyle, t, tileServerBaseMap]);
 
   const changeTileServerBaseMap = useCallback(
     (nextBaseMap: TileServerBaseMap) => {
-      changeMapStyle(nextBaseMap, tileServerOverlays);
+      changeMapStyle(nextBaseMap);
       setTileServerBaseMap(nextBaseMap);
     },
-    [changeMapStyle, tileServerOverlays]
-  );
-
-  const toggleTileServerOverlay = useCallback(
-    (overlay: TileServerBaseMap) => {
-      const isSelected = tileServerOverlays.some((item) => item.id === overlay.id);
-      const nextOverlays = isSelected
-        ? tileServerOverlays.filter((item) => item.id !== overlay.id)
-        : [...tileServerOverlays, overlay];
-
-      setTileServerOverlays(nextOverlays);
-      changeMapStyle(tileServerBaseMap, nextOverlays);
-    },
-    [changeMapStyle, tileServerBaseMap, tileServerOverlays]
+    [changeMapStyle]
   );
 
   return {
     tileServerBaseMap,
-    tileServerOverlays,
     tileServerBaseMaps,
     tileServerCatalogStatus,
     tileServerCatalogError,
     loadTileServerBaseMaps,
     changeTileServerBaseMap,
-    toggleTileServerOverlay,
     mapStyleVersion,
   };
 }

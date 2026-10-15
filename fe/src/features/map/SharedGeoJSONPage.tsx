@@ -13,7 +13,6 @@ import { ArrowLeft, Download } from "lucide-react";
 import * as maplibregl from "maplibre-gl";
 import { useTranslation } from "react-i18next";
 import {
-  DEFAULT_TILE_SERVER_BASE_MAP,
   fetchTileServerBaseMaps,
   getMapStyle,
   resolveTileServerAssetUrl,
@@ -191,37 +190,25 @@ interface LoadedSharedMap {
 async function resolveSharedMapStyle(mapState: GeoJSONShareMapState) {
   const baseMapID = mapState.basemap_id?.trim();
   const overlayIDs = Array.from(new Set(mapState.overlay_ids));
-  const needsCatalog =
-    overlayIDs.length > 0 || Boolean(baseMapID && baseMapID !== DEFAULT_TILE_SERVER_BASE_MAP.id);
+  const selectedMapID = baseMapID || overlayIDs[0];
 
-  if (!needsCatalog) {
+  if (!selectedMapID) {
     return { style: getMapStyle(), unavailableLayerCount: 0 };
   }
 
   try {
     const datasets = await fetchTileServerBaseMaps();
     const datasetsByID = new Map(datasets.map((dataset) => [dataset.id, dataset]));
-    const requestedBaseMap =
-      !baseMapID || baseMapID === DEFAULT_TILE_SERVER_BASE_MAP.id
-        ? DEFAULT_TILE_SERVER_BASE_MAP
-        : datasetsByID.get(baseMapID);
-    const baseMap = requestedBaseMap?.role === "basemap" ? requestedBaseMap : undefined;
-    const overlays = overlayIDs.flatMap((id) => {
-      const dataset = datasetsByID.get(id);
-      return dataset?.role === "overlay" ? [dataset] : [];
-    });
-    const unavailableLayerCount =
-      (baseMapID && !baseMap ? 1 : 0) + (overlayIDs.length - overlays.length);
+    const selectedMap = datasetsByID.get(selectedMapID);
 
     return {
-      style: getMapStyle(baseMap ?? DEFAULT_TILE_SERVER_BASE_MAP, overlays),
-      unavailableLayerCount,
+      style: getMapStyle(selectedMap),
+      unavailableLayerCount: selectedMap ? Math.max(0, overlayIDs.length - 1) : 1,
     };
   } catch {
     return {
       style: getMapStyle(),
-      unavailableLayerCount:
-        overlayIDs.length + (baseMapID && baseMapID !== DEFAULT_TILE_SERVER_BASE_MAP.id ? 1 : 0),
+      unavailableLayerCount: 1,
     };
   }
 }

@@ -1,11 +1,9 @@
-import { Layers3, Map } from "lucide-react";
+import { Layers3 } from "lucide-react";
 import { Button, Paper, Stack, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
 
 interface LayerPanelProps {
-  onOpenBaseMap: () => void;
-  onOpenLayers: () => void;
-  selectedOverlayCount: number;
+  onOpenMaps: () => void;
 }
 
 const panelSx = {
@@ -18,7 +16,7 @@ const panelSx = {
   p: 1.5,
 };
 
-function LayerPanel({ onOpenBaseMap, onOpenLayers, selectedOverlayCount }: LayerPanelProps) {
+function LayerPanel({ onOpenMaps }: LayerPanelProps) {
   const { t } = useTranslation();
 
   return (
@@ -48,21 +46,11 @@ function LayerPanel({ onOpenBaseMap, onOpenLayers, selectedOverlayCount }: Layer
         <Button
           fullWidth
           variant="outlined"
-          startIcon={<Map size={17} />}
-          onClick={onOpenBaseMap}
-          sx={{ justifyContent: "flex-start", textTransform: "none" }}
-        >
-          {t("layers.selectBaseMap")}
-        </Button>
-        <Button
-          fullWidth
-          variant="outlined"
           startIcon={<Layers3 size={17} />}
-          onClick={onOpenLayers}
+          onClick={onOpenMaps}
           sx={{ justifyContent: "flex-start", textTransform: "none" }}
         >
-          {t("layers.selectLayer")}
-          {selectedOverlayCount > 0 && ` (${selectedOverlayCount})`}
+          {t("layers.openMapCatalog")}
         </Button>
       </Stack>
     </Paper>
